@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fcs-xxx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fcs-xxx
+  template:
+    metadata:
+      labels:
+        app: fcs-xxx
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+      # initContainers:
+      #   - name: init-sysctl
+      #     image: "gtsartifact.jfrog.io/pwc-cn-gts-bs-fcs/backendtemplate:__image-tag__"
+      #     imagePullPolicy: Always
+      #     securityContext:
+      #       privileged: true
+      #     command:
+      #     - sh
+      #     - -c
+      #     - |
+      #       sysctl -w net.core.somaxconn=1024
+      containers:
+        - name: fcs-xxx
+          image: "gtsartifact.jfrog.io/pwc-cn-gts-bs-fcs/backendtemplate:__image-tag__"
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: appsettings-data
+              mountPath: /app/Configurations
+            - name: temporary-data
+              mountPath: /tmp
+            - name: log-data
+              mountPath: /app/logs
+            - name: protection-keys
+              mountPath: /app/keys
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /healthy
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 7
+          envFrom:
+            - secretRef:
+                name: xxx-runtime-secrets
+          imagePullPolicy: Always
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: __env__
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "8080"
+            - name: DataProtection__KeyPath
+              value: /app/keys
+          securityContext:        
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+      imagePullSecrets:
+        - name: jfrog
+      volumes:
+        - name: temporary-data
+          emptyDir:
+            sizeLimit: 128Mi
+        - name: log-data
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: protection-keys
+          persistentVolumeClaim:
+            claimName: xxx-protection-keys
+        - name: appsettings-data
+          configMap:
+            name: xxx-appsettings

@@ -1,0 +1,205 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>My.XXX.APIs</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.AspNetCore.DataProtection.DataProtectionBuilderExtensions">
+            <summary>
+            Extensions for configuring data protection using an <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.DataProtection.DataProtectionBuilderExtensions.ProtectKeysWithAES(Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder)">
+            <summary>
+            Configures keys to be encrypted with AES before being persisted to
+            storage.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/>.</param>
+            use on the local machine, 'false' if the key should only be decryptable by the current
+            Windows user account.
+            <returns>A reference to the <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder" /> after this operation has completed.</returns>
+        </member>
+        <member name="T:Microsoft.AspNetCore.DataProtection.AesXmlEncryptor">
+            <summary>
+            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlEncryptor"/> that encrypts XML elements with a Aes encryptor.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.DataProtection.AesXmlEncryptor.Encrypt(System.Xml.Linq.XElement)">
+            <summary>
+            Encrypts the specified <see cref="T:System.Xml.Linq.XElement"/> with a null encryptor, i.e.,
+            by returning the original value of <paramref name="plaintextElement"/> unencrypted.
+            </summary>
+            <param name="plaintextElement">The plaintext to echo back.</param>
+            <returns>
+            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.EncryptedXmlInfo"/> that contains the null-encrypted value of
+            <paramref name="plaintextElement"/> along with information about how to
+            decrypt it.
+            </returns>
+        </member>
+        <member name="T:Microsoft.AspNetCore.DataProtection.AesXmlDecryptor">
+            <summary>
+            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlDecryptor"/> that decrypts XML elements with a Aes decryptor.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.DataProtection.AesXmlDecryptor.Decrypt(System.Xml.Linq.XElement)">
+            <summary>
+            Decrypts the specified XML element.
+            </summary>
+            <param name="encryptedElement">An encrypted XML element.</param>
+            <returns>The decrypted form of <paramref name="encryptedElement"/>.</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.AppMetricsAsync.IsMetrics(Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor)">
+            <summary>
+            是否忽略当前过滤器
+            </summary>
+            <param name="context"></param>
+            <returns></returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.AppMetricsAsync.GetRawUrl(Microsoft.AspNetCore.Http.HttpRequest)">
+            <summary>
+            获取Url
+            </summary>
+            <param name="request"></param>
+            <returns></returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.GetUrlReferrer">
+            <summary>
+            Get URL referrer if exists
+            </summary>
+            <returns>URL referrer</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.GetCurrentIpAddress">
+            <summary>
+            Get IP address from HTTP context
+            </summary>
+            <returns>String of IP address</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.IsCurrentConnectionSecured">
+            <summary>
+            Gets a value indicating whether current connection is secured
+            </summary>
+            <returns>True if it's secured, otherwise false</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.GetStoreHost(System.Boolean)">
+            <summary>
+            Gets store host location
+            </summary>
+            <param name="useSsl">Whether to get SSL secured URL</param>
+            <returns>Store host location</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.IsStaticResource">
+            <summary>
+            Returns true if the requested resource is one of the typical resources that needn't be processed by the CMS engine.
+            </summary>
+            <returns>True if the request targets a static resource file.</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.QueryString``1(System.String)">
+            <summary>
+            Gets query string value by name
+            </summary>
+            <typeparam name="T">Returned value type</typeparam>
+            <param name="name">Query parameter name</param>
+            <returns>Query string value</returns>
+        </member>
+        <member name="P:My.XXX.APIs.Common.IWebHelper.IsRequestBeingRedirected">
+            <summary>
+            Gets a value that indicates whether the client is being redirected to a new location
+            </summary>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.GetCurrentRequestProtocol">
+            <summary>
+            Gets current HTTP request protocol
+            </summary>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.GetRawUrl(Microsoft.AspNetCore.Http.HttpRequest)">
+            <summary>
+            Get the raw path and full query of request
+            </summary>
+            <param name="request">HTTP request</param>
+            <returns>Raw URL</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.IWebHelper.IsAjaxRequest(Microsoft.AspNetCore.Http.HttpRequest)">
+            <summary>
+            Gets whether the request is made with AJAX
+            </summary>
+            <param name="request">HTTP request</param>
+            <returns>Result</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.IsRequestAvailable">
+            <summary>
+            检查当前HTTP请求是否可用
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.GetUrlReferrer">
+            <summary>
+            Get URL referrer if exists
+            </summary>
+            <returns>URL referrer</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.GetCurrentIpAddress">
+            <summary>
+            从HttpContext获取IP地址
+            </summary>
+            <returns>String of IP address</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.IsCurrentConnectionSecured">
+            <summary>
+            获取一个值，该值指示当前连接是否安全
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.GetStoreHost(System.Boolean)">
+            <summary>
+            Gets store host location
+            </summary>
+            <param name="useSsl">Whether to get SSL secured URL</param>
+            <returns>Store host location</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.IsStaticResource">
+            <summary>
+            Returns true if the requested resource is one of the typical resources that needn't be processed by the cms engine.
+            </summary>
+            <returns>True if the request targets a static resource file.</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.QueryString``1(System.String)">
+            <summary>
+            按名称获取查询字符串值
+            </summary>
+            <typeparam name="T">Returned value type</typeparam>
+            <param name="name">Query parameter name</param>
+            <returns>Query string value</returns>
+        </member>
+        <member name="P:My.XXX.APIs.Common.WebHelper.IsRequestBeingRedirected">
+            <summary>
+            获取一个值，该值指示客户端是否被重定向到新位置
+            </summary>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.GetCurrentRequestProtocol">
+            <summary>
+            获取当前HTTP请求协议
+            </summary>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.GetRawUrl(Microsoft.AspNetCore.Http.HttpRequest)">
+            <summary>
+            获取请求的原始路径和完整查询
+            </summary>
+            <param name="request">HTTP request</param>
+            <returns>Raw URL</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Common.WebHelper.IsAjaxRequest(Microsoft.AspNetCore.Http.HttpRequest)">
+            <summary>
+            判断是否为AJAX请求
+            </summary>
+            <param name="request">HTTP request</param>
+            <returns>Result</returns>
+        </member>
+        <member name="M:My.XXX.APIs.Controllers.DemoController.Encrypt(System.String)">
+            <summary>
+            加密字符串
+            </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
