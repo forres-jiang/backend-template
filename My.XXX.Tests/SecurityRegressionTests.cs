@@ -213,7 +213,7 @@ public class SecurityRegressionTests
     {
         var context = new DefaultHttpContext();
         context.Features.Set<IRequestCultureFeature>(new RequestCultureFeature(new RequestCulture("zh-CN"), null));
-        var service = new MenuService(new HttpContextAccessor { HttpContext = context },
+        var service = new MenuService(new TestCurrentRequest("zh-CN"), null,
             new Monitor<AppConfig>(new()), new Monitor<JwtConfig>(Jwt), null, NullLogger<MenuService>.Instance,
             null, null, new ApplicationMapper());
         var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
@@ -278,10 +278,18 @@ public class SecurityRegressionTests
         public IDisposable OnChange(Action<T, string> listener) => null;
     }
 
+    private sealed class TestCurrentRequest(string cultureName) : ICurrentRequest
+    {
+        public System.Security.Claims.ClaimsPrincipal Principal => new();
+        public UserInfo User => null;
+        public DateTime TokenExpirationTime => DateTime.MinValue;
+        public string CultureName => cultureName;
+    }
+
     private sealed class FailingOperations : IOperationService
     {
         public Task Save(MetricsInfo request) => throw new InvalidOperationException("storage unavailable");
-        public Task<Paged<My.XXX.Data.PersistantObjects.Operation>> GetRequestLogs(OperationQeury query) => throw new NotSupportedException();
+        public Task<Paged<OperationDto>> GetRequestLogs(OperationQeury query) => throw new NotSupportedException();
     }
 
     private sealed class Factory(HttpMessageHandler handler) : IHttpClientFactory

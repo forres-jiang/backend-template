@@ -28,7 +28,7 @@ namespace My.XXX.Service
             await _requestLogRepository.Save(model);
         }
 
-        public async Task<Paged<Operation>> GetRequestLogs(OperationQeury query)
+        public async Task<Paged<OperationDto>> GetRequestLogs(OperationQeury query)
         {
             var rl = _requestLogRepository.GetRequestLogs();
             if (!string.IsNullOrEmpty(query.Controller))
@@ -52,7 +52,7 @@ namespace My.XXX.Service
                 .Skip(query.PageIndex * query.PageSize)
                 .Take(query.PageSize).ToListAsync();
 
-            return Paged<Operation>.Create(list, total);
+            return Paged<OperationDto>.Create(_mapper.ToOperationDtos(list), total);
         }
     }
 }

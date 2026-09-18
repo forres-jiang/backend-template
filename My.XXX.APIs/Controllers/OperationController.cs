@@ -21,7 +21,7 @@ namespace My.XXX.APIs.Controllers
 
         [HttpPost]
         [Route("list")]
-        public async Task<Paged<Operation>> List(OperationQeury query)
+        public async Task<Paged<OperationDto>> List(OperationQeury query)
         {
             return await _requestLogService.GetRequestLogs(query);
         }

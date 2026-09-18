@@ -72,9 +72,7 @@ namespace My.XXX.APIs
             var supportedCultures = new[]
             {
                 new CultureInfo(CultureType.en_US),
-                new CultureInfo(CultureType.zh_CN),
-                new CultureInfo(CultureType.zh_TW),
-                new CultureInfo(CultureType.zh_HK)
+                new CultureInfo(CultureType.zh_CN)
             };
 
             app.UseRequestLocalization(new RequestLocalizationOptions

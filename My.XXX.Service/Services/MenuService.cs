@@ -1,7 +1,5 @@
 using LinqToDB;
 using LinqToDB.Data;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -22,7 +20,8 @@ namespace My.XXX.Service
 {
     public class MenuService : IMenuService, IScopeDependency
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ICurrentRequest _currentRequest;
+        private readonly IPermissionCache _permissionCache;
         private readonly IMenuRepository _menuRepository;
         private readonly ILogger<MenuService> _logger;
         private readonly IUserService _userService;
@@ -33,7 +32,8 @@ namespace My.XXX.Service
         private readonly string _cultureName;
 
         public MenuService(
-            IHttpContextAccessor httpContextAccessor,
+            ICurrentRequest currentRequest,
+            IPermissionCache permissionCache,
             IOptionsMonitor<AppConfig> appConfig,
             IOptionsMonitor<JwtConfig> jwtConfig,
             IMenuRepository menuRepository,
@@ -49,8 +49,9 @@ namespace My.XXX.Service
             _dbContext = dbContext;
             _mapper = mapper;
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
-            _cultureName = (_httpContextAccessor.HttpContext?.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Name;
+            _currentRequest = currentRequest;
+            _permissionCache = permissionCache;
+            _cultureName = currentRequest.CultureName;
         }
 
         /// <summary>
@@ -465,14 +466,13 @@ namespace My.XXX.Service
         {
             if (_appConfig.PermissionDataCache == PermissionDataCache.Redis)
             {
-                var list = RedisHelper.Get<List<string>>(userId);
-                if (null != list && list.Count > 0)
+                if (_permissionCache.TryGet(userId, out var list))
                 {
                     return list;
                 }
 
                 var paths = GetRoleMenuPaths(roleIds);
-                RedisHelper.Set(userId, paths, TimeSpan.FromMinutes(_jwtConfig.ExpiryInMinutes), null);
+                _permissionCache.Set(userId, paths, TimeSpan.FromMinutes(_jwtConfig.ExpiryInMinutes));
                 return paths;
             }
             else
@@ -717,7 +717,7 @@ namespace My.XXX.Service
         /// <returns></returns>
         private string BuildDisplayNames(string oldName, string newName)
         {
-            var cultureName = (_httpContextAccessor.HttpContext?.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Name;
+            var cultureName = _currentRequest.CultureName;
             var oldItems = JsonConvert.DeserializeObject<Dictionary<string, string>>(oldName);
             var list = new Dictionary<string, string>();
 
@@ -756,13 +756,13 @@ namespace My.XXX.Service
 
         private string CreateDisplayNames(string menuName)
         {
-            var cultureName = (_httpContextAccessor.HttpContext?.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Name;
+            var cultureName = _currentRequest.CultureName;
             return JsonConvert.SerializeObject(new Dictionary<string, string> { { cultureName, menuName.Trim() } });
         }
 
         private void SetDisplayName(List<Menus> menuList)
         {
-            var cultureName = (_httpContextAccessor.HttpContext?.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Name;
+            var cultureName = _currentRequest.CultureName;
 
             foreach (var menu in menuList)
             {

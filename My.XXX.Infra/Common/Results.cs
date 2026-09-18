@@ -74,7 +74,7 @@ namespace My.XXX.Infra
 
         public static PwCResult Fail(string message, int statusCode)
         {
-            return new PwCResult(_failStatus, message, statusCode);
+            return new PwCResult(statusCode, message);
         }
 
         public static PwCResult Fail(IList<ValidationFailure> errors)
@@ -102,9 +102,9 @@ namespace My.XXX.Infra
             return new PwCResult(_successStatus, _successMessage);
         }
 
-        public static PwCResult Success(object data)
+        public static PwCResult<T> Success(T data)
         {
-            return new PwCResult(_successStatus, _successMessage, data);
+            return new PwCResult<T>(_successStatus, _successMessage, data);
         }
 
         public new static PwCResult Fail(string message)

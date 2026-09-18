@@ -75,4 +75,9 @@ public partial class ApplicationMapper
     [MapperIgnoreTarget(nameof(Operation.Inputs))]
     [MapperIgnoreTarget(nameof(Operation.ReturnValue))]
     private partial Operation MapOperationCore(MetricsInfo source);
+
+    public partial OperationDto? ToOperationDto(Operation? source);
+    public partial List<OperationDto> ToOperationDtos(IEnumerable<Operation>? source);
+    public partial List<MailQueueDto> ToMailQueueDtos(IEnumerable<MailQueue>? source);
+    public partial AttachmentDto? ToAttachmentDto(Attachment? source);
 }

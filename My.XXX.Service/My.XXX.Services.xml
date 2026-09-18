@@ -27,6 +27,9 @@
             多个角色ID
             </summary>
         </member>
+        <member name="T:My.XXX.Service.Interfaces.ICurrentRequest">
+            <summary>Framework-neutral view of the current request and authenticated user.</summary>
+        </member>
         <member name="M:My.XXX.Service.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Service.DTOs.InputRoleMenus)">
              <summary>
             

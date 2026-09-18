@@ -23,6 +23,7 @@ namespace My.XXX.APIs.Controllers
         private readonly ILogger<UserController> _logger;
         private readonly IMenuService _menuService;
         private readonly IUserService _userService;
+        private readonly IPermissionCache _permissionCache;
         private readonly JwtConfig _jwtConfig;
         private readonly AppConfig _appConfig;
 
@@ -32,13 +33,15 @@ namespace My.XXX.APIs.Controllers
             IOptionsMonitor<JwtConfig> config,
             ILogger<UserController> logger,
             IMenuService menuService,
-            IUserService userService)
+            IUserService userService,
+            IPermissionCache permissionCache)
         {
             _appCenterService = appCenterService;
             _appConfig = appConfig.CurrentValue;
             _jwtConfig = config.CurrentValue;
             _menuService = menuService;
             _userService = userService;
+            _permissionCache = permissionCache;
             _logger = logger;
         }
 
@@ -96,7 +99,7 @@ namespace My.XXX.APIs.Controllers
             if (_appConfig.PermissionDataCache == PermissionDataCache.Redis)
             {
                 var currentUser = _userService.CurrentUser;
-                RedisHelper.Del(currentUser.UserId);
+                _permissionCache.Remove(currentUser.UserId);
             }
             return BaseResult.Success();
         }

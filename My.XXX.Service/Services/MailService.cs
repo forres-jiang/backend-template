@@ -59,9 +59,9 @@ namespace My.XXX.Service
             return value;
         }
 
-        public List<MailQueue> GetEmail()
+        public List<MailQueueDto> GetEmail()
         {
-            return _mailContext.MailQueues.Take(10).ToList();
+            return _mapper.ToMailQueueDtos(_mailContext.MailQueues.Take(10).ToList());
         }
 
         public PwCResult BatchInsertEmail()
@@ -149,9 +149,9 @@ namespace My.XXX.Service
             }
         }
 
-        public Attachment GetAttachment(int id)
+        public AttachmentDto GetAttachment(int id)
         {
-            return _mailContext.Attachments.Where(m => m.AttachmentId == id).FirstOrDefault();
+            return _mapper.ToAttachmentDto(_mailContext.Attachments.Where(m => m.AttachmentId == id).FirstOrDefault());
         }
     }
 }

@@ -20,6 +20,8 @@ namespace My.XXX.APIs.Common.DI
             builder.RegisterType<DemoValidator>().As<IValidator<DemoModel>>().InstancePerLifetimeScope();
             builder.RegisterType<MailValidator>().As<IValidator<Mail>>().InstancePerLifetimeScope();
             builder.RegisterType<UserService>().As<IUserService>().InstancePerLifetimeScope();
+            builder.RegisterType<HttpCurrentRequest>().As<ICurrentRequest>().InstancePerLifetimeScope();
+            builder.RegisterType<PermissionCache>().As<IPermissionCache>().InstancePerLifetimeScope();
 
             //获取需要注入对象的程序集
             var service = typeof(UserService).Assembly;

@@ -6,11 +6,11 @@ namespace My.XXX.Service.Common
 {
     public class QueryHelper
     {
-        public static void Build<T>(IQueryable<T> search, object requestParams)
+        public static IQueryable<T> Build<T>(IQueryable<T> search, object requestParams)
         {
             var requestProps = requestParams.GetType().GetProperties();
 
-            var dbProps = typeof(T).GetType().GetProperties();
+            var dbProps = typeof(T).GetProperties();
 
             foreach (var property in requestProps)
             {
@@ -24,12 +24,13 @@ namespace My.XXX.Service.Common
                 }
 
                 ParameterExpression parameterExpression = Expression.Parameter(typeof(T), "m");
-                MemberExpression memberExpression = Expression.Property(parameterExpression, property.Name);
+                MemberExpression memberExpression = Expression.Property(parameterExpression, field.Name);
                 ConstantExpression constant = Expression.Constant(value, field.PropertyType);
                 BinaryExpression equal = Expression.Equal(memberExpression, constant);
                 var lambda = Expression.Lambda<Func<T, bool>>(equal, parameterExpression);
                 search = search.Where(lambda);
             }
+            return search;
         }
     }
 }
