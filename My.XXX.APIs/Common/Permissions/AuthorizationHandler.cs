@@ -37,7 +37,7 @@ namespace My.XXX.APIs.Common
             _userService = userService;
         }
 
-        protected override Task HandleRequirementAsync(
+        protected override async Task HandleRequirementAsync(
             AuthorizationHandlerContext context,
             PermissionsRequirement requirement)
         {
@@ -45,13 +45,13 @@ namespace My.XXX.APIs.Common
             //判断是否登录
             if (user is null)
             {
-                return Task.CompletedTask;
+                return;
             }
 
             //判断是否配置角色
             if (user.Roles.Count == 0)
             {
-                return Task.CompletedTask;
+                return;
             }
 
             string requestPath = string.Empty;
@@ -64,7 +64,7 @@ namespace My.XXX.APIs.Common
             }
             else
             {
-                return Task.CompletedTask;
+                return;
             }
 
             if (_permissionWhitelist != null && _permissionWhitelist.Controllers != null)
@@ -76,7 +76,7 @@ namespace My.XXX.APIs.Common
                 if (isController != null)
                 {
                     context.Succeed(requirement);
-                    return Task.CompletedTask;
+                    return;
                 }
             }
 
@@ -89,7 +89,7 @@ namespace My.XXX.APIs.Common
                 if (isAction != null)
                 {
                     context.Succeed(requirement);
-                    return Task.CompletedTask;
+                    return;
                 }
             }
 
@@ -98,18 +98,18 @@ namespace My.XXX.APIs.Common
             if (null != appAdmin)
             {
                 context.Succeed(requirement);
-                return Task.CompletedTask;
+                return;
             }
 
             bool flag = false;
-            var paths = _permissions.GetRoleMenuPaths(user.RoleIds, user.UserId);
+            var paths = await _permissions.GetRoleMenuPathsAsync(user.RoleIds, user.UserId, httpContext.RequestAborted);
 
             if (requirement.Name == PolicyType.Default)
             {
                 var result = paths.FirstOrDefault(m => m.Equals(requestPath, StringComparison.OrdinalIgnoreCase));
                 if (null == result)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 flag = true;
@@ -120,7 +120,7 @@ namespace My.XXX.APIs.Common
                 //验证通过
                 context.Succeed(requirement);
             }
-            return Task.CompletedTask;
+            return;
         }
     }
 }

@@ -7,10 +7,11 @@ using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace My.XXX.APIs.Common
 {
-    public class Permissions : IAuthorizationFilter
+    public class Permissions : IAsyncAuthorizationFilter
     {
         private readonly PermissionWhitelist _permissionWhitelist;
         private readonly IPermissionQuery _permissions;
@@ -26,7 +27,7 @@ namespace My.XXX.APIs.Common
             _userService = userService;
         }
 
-        public void OnAuthorization(AuthorizationFilterContext context)
+        public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             if (context.ActionDescriptor is ControllerActionDescriptor actionObject)
             {
@@ -52,7 +53,7 @@ namespace My.XXX.APIs.Common
                 return;
             }
 
-            if (!IsPermission(context))
+            if (!await IsPermissionAsync(context))
             {
                 context.Result = new ForbidResult();
             }
@@ -75,7 +76,7 @@ namespace My.XXX.APIs.Common
             return IsVerify;
         }
 
-        private bool IsPermission(AuthorizationFilterContext context)
+        private async Task<bool> IsPermissionAsync(AuthorizationFilterContext context)
         {
             var user = _userService.CurrentUser;
             if (user == null)
@@ -90,7 +91,7 @@ namespace My.XXX.APIs.Common
                 return true;
             }
 
-            var paths = _permissions.GetRoleMenuPaths(user.RoleIds, user.UserId);
+            var paths = await _permissions.GetRoleMenuPathsAsync(user.RoleIds, user.UserId, context.HttpContext.RequestAborted);
             var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
             var currentPath = descriptor.ControllerName + "/" + descriptor.ActionName;
             var result = paths

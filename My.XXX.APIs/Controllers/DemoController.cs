@@ -8,6 +8,7 @@ using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,19 +26,19 @@ namespace My.XXX.APIs.Controllers
     public class DemoController : ControllerBase
     {
         private readonly IStringLocalizer<DemoController> _localizer;
-        private readonly IAppCenterService _appCenterService;
         private readonly IMailService _mailService;
         private readonly IMenuService _menuService;
         private readonly IDemoService _demoService;
+        private readonly IConnectionMultiplexer _redis;
 
         public DemoController(
             IStringLocalizer<DemoController> localizer,
-            IAppCenterService appCenterService,
             IDemoService demoService,
             IMenuService menuService,
-            IMailService mailService)
+            IMailService mailService,
+            IConnectionMultiplexer redis)
         {
-            _appCenterService = appCenterService;
+            _redis = redis;
             _demoService = demoService;
             _menuService = menuService;
             _mailService = mailService;
@@ -179,28 +180,11 @@ namespace My.XXX.APIs.Controllers
 
         [AllowAnonymous]
         [HttpGet("BulkCopy")]
-        public MyResult BulkCopy()
+        public async Task<MyResult> BulkCopy()
         {
             string key = DateTime.Now.ToString("HHssmmfff");
-            RedisHelper.Set("XXX" + key, key, TimeSpan.FromHours(1));
+            await _redis.GetDatabase().StringSetAsync("XXX" + key, key, TimeSpan.FromHours(1));
             return _mailService.BatchInsertEmail().ToApiResult();
-        }
-
-        [UnifyResult]
-        [HttpGet("retry")]
-        public async Task<IActionResult> Export()
-        {
-            var token = await _appCenterService.GetToken();
-            return new ContentResult() { Content = token };
-        }
-
-        [AllowAnonymous]
-        [HttpGet("GetRoles")]
-        public async Task<List<Role>> GetRoles()
-        {
-            var result = await _appCenterService.GetRole();
-            //await _appCenterService.GetUserByTicket("test");
-            return result;
         }
 
         [HttpPost("RoleMenuAction")]
@@ -225,19 +209,12 @@ namespace My.XXX.APIs.Controllers
 
         [AllowAnonymous]
         [HttpGet("redis")]
-        public string Redis()
+        public async Task<string> Redis()
         {
             var key = DateTime.Now.ToString("yyyyMMddHHmmss");
-            RedisHelper.Set(key, "dddddddd-" + key, TimeSpan.FromHours(10));
-            string cache = RedisHelper.Get(key);
+            await _redis.GetDatabase().StringSetAsync(key, "dddddddd-" + key, TimeSpan.FromHours(10));
+            string cache = await _redis.GetDatabase().StringGetAsync(key);
             return cache;
-        }
-
-        [HttpGet("flurl")]
-        public async Task<string> Flurl()
-        {
-            var s = await _appCenterService.GetUserByTicket("aaa");
-            return s.UserName;
         }
 
         [AllowAnonymous]

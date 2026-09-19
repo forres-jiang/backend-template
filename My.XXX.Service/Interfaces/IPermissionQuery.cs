@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace My.XXX.Service.Interfaces;
 
 public interface IPermissionQuery
 {
     List<string> GetRoleMenuPaths(List<Guid> roleIds);
-    List<string> GetRoleMenuPaths(List<Guid> roleIds, string userId);
+    Task<List<string>> GetRoleMenuPathsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default);
 }

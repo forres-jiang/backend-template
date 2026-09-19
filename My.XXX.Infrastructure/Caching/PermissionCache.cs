@@ -1,19 +1,39 @@
 using My.XXX.Service.Interfaces;
+using Newtonsoft.Json;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace My.XXX.Infrastructure;
 
-public sealed class PermissionCache : IPermissionCache
+public sealed class PermissionCache(IConnectionMultiplexer connection) : IPermissionCache
 {
-    public bool TryGet(string userId, out List<string> paths)
+    public async Task<List<string>> GetAsync(string userId, CancellationToken cancellationToken = default)
     {
-        paths = RedisHelper.Get<List<string>>(userId);
-        return paths is { Count: > 0 };
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        cancellationToken.ThrowIfCancellationRequested();
+        var value = await connection.GetDatabase().StringGetAsync(userId).WaitAsync(cancellationToken);
+        // Preserve existing user-id keys and JSON arrays during migration.
+        return value.IsNull ? null : JsonConvert.DeserializeObject<List<string>>((string)value);
     }
 
-    public void Set(string userId, List<string> paths, TimeSpan expiration) =>
-        RedisHelper.Set(userId, paths, expiration, null);
+    public async Task SetAsync(string userId, List<string> paths, TimeSpan expiration, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        ArgumentNullException.ThrowIfNull(paths);
+        if (expiration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(expiration));
+        cancellationToken.ThrowIfCancellationRequested();
+        // SET includes the TTL atomically; never cache permissions indefinitely.
+        await connection.GetDatabase().StringSetAsync(userId, JsonConvert.SerializeObject(paths), expiration)
+            .WaitAsync(cancellationToken);
+    }
 
-    public void Remove(string userId) => RedisHelper.Del(userId);
+    public async Task RemoveAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        cancellationToken.ThrowIfCancellationRequested();
+        await connection.GetDatabase().KeyDeleteAsync(userId).WaitAsync(cancellationToken);
+    }
 }

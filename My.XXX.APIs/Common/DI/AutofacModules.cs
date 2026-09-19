@@ -22,7 +22,6 @@ namespace My.XXX.APIs.Common.DI
             builder.RegisterType<MailValidator>().As<IValidator<Mail>>().InstancePerLifetimeScope();
             builder.RegisterType<UserService>().As<IUserService>().InstancePerLifetimeScope();
             builder.RegisterType<HttpCurrentRequest>().As<ICurrentRequest>().InstancePerLifetimeScope();
-            builder.RegisterType<PermissionCache>().As<IPermissionCache>().InstancePerLifetimeScope();
 
             builder.RegisterType<JwtTokenIssuer>().As<ITokenIssuer>().InstancePerLifetimeScope();
 

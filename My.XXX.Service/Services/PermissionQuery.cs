@@ -6,6 +6,8 @@ using My.XXX.Shared.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace My.XXX.Service;
 
@@ -41,17 +43,18 @@ public sealed class PermissionQuery : IPermissionQuery, IScopeDependency
         return list;
     }
 
-    public List<string> GetRoleMenuPaths(List<Guid> roleIds, string userId)
+    public async Task<List<string>> GetRoleMenuPathsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default)
     {
         if (_appConfig.PermissionDataCache == PermissionDataCache.Redis)
         {
-            if (_permissionCache.TryGet(userId, out var list))
+            var list = await _permissionCache.GetAsync(userId, cancellationToken);
+            if (list != null)
             {
                 return list;
             }
 
             var paths = GetRoleMenuPaths(roleIds);
-            _permissionCache.Set(userId, paths, TimeSpan.FromMinutes(_jwtConfig.ExpiryInMinutes));
+            await _permissionCache.SetAsync(userId, paths, TimeSpan.FromMinutes(_jwtConfig.ExpiryInMinutes), cancellationToken);
             return paths;
         }
         else

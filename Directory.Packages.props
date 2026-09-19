@@ -10,7 +10,7 @@
 		<PackageVersion Include="ClosedXML" Version="0.105.1" />
 		<PackageVersion Include="ConfigMapFileProvider" Version="2.0.1" />
 		<PackageVersion Include="coverlet.collector" Version="10.0.1" />
-		<PackageVersion Include="CSRedisCore" Version="3.8.807" />
+		<PackageVersion Include="StackExchange.Redis" Version="3.3.0" />
 		<PackageVersion Include="FluentResults" Version="4.0.0" />
 		<PackageVersion Include="FluentValidation" Version="12.1.1" />
 		<PackageVersion Include="linq2db.Extensions" Version="6.5.0" />

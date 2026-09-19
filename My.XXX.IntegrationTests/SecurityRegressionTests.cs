@@ -128,7 +128,6 @@ public class SecurityRegressionTests
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IMailService>());
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IAuthenticationService>());
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IPermissionQuery>());
-                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IAppCenterService>());
                     Assert.AreNotSame(first.ServiceProvider.GetRequiredService<ExceptionHandlingMiddleware>(),
                         second.ServiceProvider.GetRequiredService<ExceptionHandlingMiddleware>());
                     Assert.AreNotSame(first.ServiceProvider.GetRequiredService<DBContext>(),

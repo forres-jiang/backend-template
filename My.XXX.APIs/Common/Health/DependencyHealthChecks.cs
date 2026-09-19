@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using StackExchange.Redis;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System;
 using System.Threading;
@@ -27,14 +28,14 @@ public sealed class SqlHealthCheck(string connectionString) : IHealthCheck
     }
 }
 
-public sealed class RedisHealthCheck(CSRedis.CSRedisClient client) : IHealthCheck
+public sealed class RedisHealthCheck(IConnectionMultiplexer connection) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
-            var healthy = await client.PingAsync().WaitAsync(cancellationToken);
-            return healthy ? HealthCheckResult.Healthy() : HealthCheckResult.Unhealthy("Redis unavailable.");
+            await connection.GetDatabase().PingAsync().WaitAsync(cancellationToken);
+            return HealthCheckResult.Healthy();
         }
         catch (Exception)
         {

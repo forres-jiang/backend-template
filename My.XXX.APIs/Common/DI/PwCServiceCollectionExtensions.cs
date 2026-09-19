@@ -16,6 +16,9 @@ using My.XXX.Service.Mapping;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
+using StackExchange.Redis;
+using My.XXX.Infrastructure;
+using My.XXX.Service.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -228,11 +231,21 @@ namespace Microsoft.Extensions.DependencyInjection
             var redisConfig = configuration.GetSection("RedisConfig").Get<RedisConfig>();
             if (redisConfig != null && !string.IsNullOrWhiteSpace(redisConfig.ConnectionString))
             {
-                var redis = new CSRedis.CSRedisClient(ResolveConnectionString(redisConfig.ConnectionString, "Redis"));
-                RedisHelper.Initialization(redis);
-                services.AddSingleton(redis);
+                var options = ConfigurationOptions.Parse(ResolveConnectionString(redisConfig.ConnectionString, "Redis"));
+                options.AbortOnConnectFail = false;
+                // Do not queue permission writes while disconnected; a delayed write could restore stale permissions.
+                options.BacklogPolicy = BacklogPolicy.FailFast;
+                // The container owns and disposes the single shared connection.
+                services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(options));
+                services.AddSingleton<IPermissionCache, PermissionCache>();
                 services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.RedisHealthCheck>(
                     "redis", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
+            }
+            else
+            {
+                if (configuration.GetValue<PermissionDataCache>("AppConfig:PermissionDataCache") == PermissionDataCache.Redis)
+                    throw new InvalidOperationException("Redis permission caching requires RedisConfig:ConnectionString.");
+                services.AddSingleton<IPermissionCache, NullPermissionCache>();
             }
         }
     }

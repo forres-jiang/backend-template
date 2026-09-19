@@ -37,6 +37,8 @@ bin
 /My.XXX.Contracts/obj
 /My.XXX.Infrastructure/bin
 /My.XXX.Infrastructure/obj
+/My.XXX.Contracts/bin
+/My.XXX.Contracts/obj
 /My.XXX.Contracts/obj/Debug/net10.0/ref/My.XXX.Contracts.dll
 /My.XXX.Contracts/obj/Debug/net10.0/refint/My.XXX.Contracts.dll
 /My.XXX.Contracts/obj/04My.XXX.Contracts.csproj.nuget.dgspec.json

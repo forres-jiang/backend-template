@@ -83,7 +83,7 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationAssemblyDoesNotReferenceTechnicalImplementations()
     {
-        var forbidden = new[] { "linq2db", "Microsoft.Data.SqlClient", "CSRedisCore", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs" };
+        var forbidden = new[] { "linq2db", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs" };
         foreach (var reference in typeof(IMenuService).Assembly.GetReferencedAssemblies())
             Assert.IsFalse(forbidden.Contains(reference.Name), reference.Name);
     }

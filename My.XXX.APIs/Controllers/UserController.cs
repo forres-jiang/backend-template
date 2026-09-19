@@ -19,16 +19,11 @@ public class UserController : ControllerBase
         _authentication = authentication; _users = users;
     }
 
-    [HttpPost, AllowAnonymous]
-    [Route("Login")]
-    public async Task<LoginResult> Login(LoginModel model) =>
-        (await _authentication.Login(model.Ticket)).ToLoginResult();
-
     [HttpPost]
     [Route("Logout")]
-    public BaseResult Logout()
+    public async Task<BaseResult> Logout()
     {
-        _authentication.Logout();
+        await _authentication.LogoutAsync(HttpContext.RequestAborted);
         return BaseResult.Success();
     }
 

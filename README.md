@@ -47,6 +47,16 @@ Application services choose an atomic repository operation. Persistence executes
 
 Both response filters share runtime normalization and preserve HTTP status. Explicitly returning an unconverted FluentResults value is rejected instead of silently wrapping a failure as success. `NonUnifyResult` opts out. Validation and unexpected-exception envelopes retain their existing distinct formats for client compatibility.
 
+## Redis configuration
+
+Redis uses StackExchange.Redis with one container-owned `IConnectionMultiplexer` per application instance. Permission cache operations, authorization and logout use asynchronous calls; connection recovery is handled by the multiplexer. Disconnected commands fail promptly rather than being queued and replayed as potentially stale permission writes. Redis failures propagate; failed invalidation must not be reported as successful logout.
+
+Provide `RedisConfig__ConnectionString` through environment variables or a secret provider, for example `localhost:6379,defaultDatabase=0,connectTimeout=5000,asyncTimeout=5000`. Authentication and TLS options include `user=...`, `password=...` and `ssl=true`. Existing `enc:v1:` encrypted connection strings remain supported, but their decrypted contents must use StackExchange.Redis syntax: keep `defaultDatabase`, remove pooling options such as `poolsize`/`preheat`, and move any CSRedis `prefix` into an explicit application key strategy before migrating. Unknown options are rejected rather than silently ignored.
+
+Set `AppConfig:PermissionDataCache` to `1` to enable Redis permission caching; this requires a connection string. With database mode (`0`) and no Redis connection string, no Redis connection or readiness check is registered. When configured, the Redis readiness check pings the selected database.
+
+Existing user-id keys and JSON string arrays are retained; reads distinguish a missing key from an empty permission list. Writes set the value and positive TTL in one command. Keep the same database and key namespace when migrating existing deployments. Request cancellation stops waiting for an operation; it cannot retract a Redis command already sent. Connection settings are read at startup; restart the application after changing them.
+
 ## Verification
 
 ```sh
