@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Localization;
 using My.XXX.Infra;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -25,21 +24,12 @@ namespace My.XXX.APIs.Common
             if (context.Result is ObjectResult)
             {
                 var objectResult = context.Result as ObjectResult;
-                var declaredType = objectResult?.DeclaredType;
-                var typeList = new List<string>()
-                {
-                    typeof(BaseResult).Name,
-                    typeof(PwCResult).Name,
-                    typeof(PwCResult<>).Name,
-                    typeof(LoginResult).Name,
-                    typeof(PagesResult).Name
-                };
-
-                if (declaredType == null || typeList.Contains(declaredType.Name))
+                if (objectResult.Value is BaseResult || objectResult.DeclaredType == null)
                 {
                     return;
                 }
-                context.Result = new ObjectResult(PwCResult.Success(objectResult?.Value));
+                objectResult.Value = MyResult.Success(objectResult.Value);
+                objectResult.DeclaredType = objectResult.Value.GetType();
             }
         }
     }
@@ -71,13 +61,13 @@ namespace My.XXX.APIs.Common
             {
                 var objectResult = context.Result as ObjectResult;
                 var declaredType = objectResult?.DeclaredType;
-                if (declaredType == null)
+                if (declaredType == null && objectResult.Value is not BaseResult)
                 {
                     await next();
                     return;
                 }
 
-                if (declaredType.BaseType.Name is (nameof(BaseResult)) or (nameof(PwCResult)))
+                if (objectResult.Value is BaseResult)
                 {
                     SetLocalization(objectResult);
 
@@ -85,14 +75,15 @@ namespace My.XXX.APIs.Common
                     return;
                 }
 
-                var result = PwCResult.Success(objectResult?.Value);
+                var result = MyResult.Success(objectResult?.Value);
                 var message = _resultLocalization[result.Message];
                 if (!message.ResourceNotFound)
                 {
                     result.Localization(message.Value);
                 }
 
-                context.Result = new ObjectResult(result);
+                objectResult.Value = result;
+                objectResult.DeclaredType = result.GetType();
             }
 
             await next();

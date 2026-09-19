@@ -1,3 +1,4 @@
+using FluentResults;
 using FluentValidation;
 using LinqToDB;
 using LinqToDB.Data;
@@ -37,25 +38,27 @@ namespace My.XXX.Service
             _logger = logger;
         }
 
-        public PwCResult SendEmail(Mail mail)
+        public Result SendEmail(Mail mail)
         {
             var validate = _validator.Validate(mail);
             if (!validate.IsValid)
             {
-                return PwCResult.Fail(validate.Errors);
+                return Result.Fail(validate.Errors.Select(error => new Error(error.ErrorMessage)
+                    .WithMetadata("PropertyName", error.PropertyName)
+                    .WithMetadata("ErrorCode", error.ErrorCode)));
             }
             var date = DateTime.Now;
             var model = _mapper.ToMailQueue(mail);
             model.APPCODE = _appCenterConfig.AppCode;
             model.REPLYTO = "DO NOT REPLY";
-            model.ORGANISATION = "PwC";
+            model.ORGANISATION = "xxx";
             model.POSTEDFLAG = 'N';
             model.SUBMITDATE = date;
             model.IMMEDIATEFLAG = 'Y';
             model.ENCODE = "utf-8";
             model.SUBMITBY = "System";
             model.SENDDATE = date;
-            var value = _mailContext.Insert(model) > 0 ? PwCResult.Success() : PwCResult.Fail("Failed to send mail.");
+            var value = _mailContext.Insert(model) > 0 ? Result.Ok() : Result.Fail("Failed to send mail.");
             return value;
         }
 
@@ -64,7 +67,7 @@ namespace My.XXX.Service
             return _mapper.ToMailQueueDtos(_mailContext.MailQueues.Take(10).ToList());
         }
 
-        public PwCResult BatchInsertEmail()
+        public Result<BulkCopyRowsCopied> BatchInsertEmail()
         {
             var list = new List<MailQueue>();
             for (int i = 0; i < 10; i++)
@@ -72,13 +75,13 @@ namespace My.XXX.Service
                 var model = new MailQueue
                 {
                     MFROM = "CNHK GTS SDC Support",
-                    MTO = "Forres Jiang/CN/GTS/PwC",
+                    MTO = "Forres Jiang/CN/GTS/xxx",
                     SUBMITBY = "Test" + DateTime.Now.ToString("yyMMddHHmmssfff"),
                     CONTENT = "Test" + DateTime.Now.ToString("yyMMddHHmmssfff"),
                     SENDDATE = DateTime.Now,
                     APPCODE = _appCenterConfig.AppCode,
                     REPLYTO = "DO NOT REPLY",
-                    ORGANISATION = "PwC",
+                    ORGANISATION = "xxx",
                     POSTEDFLAG = ' ',
                     SUBMITDATE = DateTime.Now,
                     IMMEDIATEFLAG = 'Y',
@@ -88,7 +91,7 @@ namespace My.XXX.Service
             }
 
             var result = _mailContext.BulkCopy(list);
-            return PwCResult.Success(result);
+            return Result.Ok(result);
         }
 
         public bool SendEmailWithFile(Mail mail, byte[] fileData, string fileName, string mimeType)
@@ -100,7 +103,7 @@ namespace My.XXX.Service
                 MTO = mail.MTO,
                 CC = mail.CC,
                 BCC = string.Empty,
-                ORGANISATION = "PwC",
+                ORGANISATION = "xxx",
                 MFROM = mail.MFROM,
                 REPLYTO = "DO NOT REPLY",
                 SUBJECT = mail.SUBJECT,

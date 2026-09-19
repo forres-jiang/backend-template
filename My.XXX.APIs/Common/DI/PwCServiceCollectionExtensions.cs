@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSwaggerGen(c =>
             {
-                var doc = new OpenApiInfo { Title = "PwC XXX API", Version = "v1" };
+                var doc = new OpenApiInfo { Title = "My XXX API", Version = "v1" };
                 c.SwaggerDoc("v1", doc);
 
                 c.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme

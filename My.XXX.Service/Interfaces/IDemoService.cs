@@ -1,13 +1,14 @@
-﻿using My.XXX.Infra;
+using FluentResults;
+using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 
 namespace My.XXX.Service.Interfaces
 {
     public interface IDemoService
     {
-        PwCResult Save(DemoModel model);
+        Result Save(DemoModel model);
 
-        PwCResult Update(DemoModel model);
+        Result Update(DemoModel model);
 
         public void ExecProc();
     }

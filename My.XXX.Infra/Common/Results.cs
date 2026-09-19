@@ -36,90 +36,90 @@ namespace My.XXX.Infra
         }
     }
 
-    public class PwCResult : BaseResult
+    public class MyResult : BaseResult
     {
         public object Data { get; protected set; }
 
-        public PwCResult(int statusCode, string msg) : base(statusCode, msg)
+        public MyResult(int statusCode, string msg) : base(statusCode, msg)
         {
         }
 
-        public PwCResult(int statusCode, string msg, object data) : base(statusCode, msg)
+        public MyResult(int statusCode, string msg, object data) : base(statusCode, msg)
         {
             Data = data;
         }
 
-        public static PwCResult Successed
+        public static MyResult Successed
         {
             get
             {
-                return new PwCResult(_successStatus, _successMessage);
+                return new MyResult(_successStatus, _successMessage);
             }
         }
 
-        public new static PwCResult Success()
+        public new static MyResult Success()
         {
-            return new PwCResult(_successStatus, _successMessage);
+            return new MyResult(_successStatus, _successMessage);
         }
 
-        public static PwCResult Success(object data)
+        public static MyResult Success(object data)
         {
-            return new PwCResult(_successStatus, _successMessage, data);
+            return new MyResult(_successStatus, _successMessage, data);
         }
 
-        public new static PwCResult Fail(string message)
+        public new static MyResult Fail(string message)
         {
-            return new PwCResult(_failStatus, message);
+            return new MyResult(_failStatus, message);
         }
 
-        public static PwCResult Fail(string message, int statusCode)
+        public static MyResult Fail(string message, int statusCode)
         {
-            return new PwCResult(statusCode, message);
+            return new MyResult(statusCode, message);
         }
 
-        public static PwCResult Fail(IList<ValidationFailure> errors)
+        public static MyResult Fail(IList<ValidationFailure> errors)
         {
             var msg = string.Join(",", errors.Select(m => m.ErrorMessage).ToList());
-            return new PwCResult(_failStatus, msg);
+            return new MyResult(_failStatus, msg);
         }
     }
 
-    public class PwCResult<T> : BaseResult
+    public class MyResult<T> : BaseResult
     {
         public T Data { get; protected set; }
 
-        public PwCResult(int statusCode, string msg) : base(statusCode, msg)
+        public MyResult(int statusCode, string msg) : base(statusCode, msg)
         {
         }
 
-        public PwCResult(int statusCode, string msg, T data) : base(statusCode, msg)
+        public MyResult(int statusCode, string msg, T data) : base(statusCode, msg)
         {
             Data = data;
         }
 
-        public new static PwCResult Success()
+        public new static MyResult Success()
         {
-            return new PwCResult(_successStatus, _successMessage);
+            return new MyResult(_successStatus, _successMessage);
         }
 
-        public static PwCResult<T> Success(T data)
+        public static MyResult<T> Success(T data)
         {
-            return new PwCResult<T>(_successStatus, _successMessage, data);
+            return new MyResult<T>(_successStatus, _successMessage, data);
         }
 
-        public new static PwCResult Fail(string message)
+        public new static MyResult Fail(string message)
         {
-            return new PwCResult(_failStatus, message);
+            return new MyResult(_failStatus, message);
         }
 
-        public static PwCResult Fail(IList<ValidationFailure> errors)
+        public static MyResult Fail(IList<ValidationFailure> errors)
         {
             var msg = string.Join(",", errors.Select(m => m.ErrorMessage).ToList());
-            return new PwCResult(_failStatus, msg);
+            return new MyResult(_failStatus, msg);
         }
     }
 
-    public sealed class LoginResult : PwCResult
+    public sealed class LoginResult : MyResult
     {
         public string AccessToken { get; private set; }
         public string RefreshToken { get; private set; }
@@ -167,7 +167,7 @@ namespace My.XXX.Infra
         }
     }
 
-    public sealed class PagesResult : PwCResult
+    public sealed class PagesResult : MyResult
     {
         public int Total { get; private set; }
 

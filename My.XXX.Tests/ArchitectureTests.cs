@@ -36,7 +36,7 @@ public class ArchitectureTests
     [TestMethod]
     public void FailureFactoryPreservesRequestedStatusCode()
     {
-        var result = PwCResult.Fail("conflict", 409);
+        var result = MyResult.Fail("conflict", 409);
         Assert.AreEqual(409, result.StatusCode);
         Assert.IsNull(result.Data);
     }

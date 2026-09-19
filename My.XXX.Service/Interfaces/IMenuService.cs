@@ -1,4 +1,7 @@
-﻿using My.XXX.Infra;
+using My.XXX.Data.PersistantObjects;
+using LinqToDB.Data;
+using FluentResults;
+using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using System;
 using System.Collections.Generic;
@@ -7,21 +10,21 @@ namespace My.XXX.Service.Interfaces
 {
     public interface IMenuService
     {
-        PwCResult Add(SaveMenu menu);
+        Result Add(SaveMenu menu);
 
-        public PwCResult Remove(List<int> ids);
+        public Result Remove(List<int> ids);
 
-        public PwCResult Update(EditMenu menu);
+        public Result Update(EditMenu menu);
 
         public MenuBaseDto Get(int menuId);
 
         public bool RoleMenus(Guid roleId, List<int> menuIds, bool isFull);
 
-        public PwCResult RemoveRoleMenu(Guid roleId, int menuId);
+        public Result RemoveRoleMenu(Guid roleId, int menuId);
 
-        public PwCResult RoleMenuAction(RoleMenuActionModel model);
+        public Result<BulkCopyRowsCopied> RoleMenuAction(RoleMenuActionModel model);
 
-        public PwCResult GetMenus();
+        public Result<List<Menus>> GetMenus();
 
         public Paged<MenuBaseDto> GetMenus(QueryMenu query);
 

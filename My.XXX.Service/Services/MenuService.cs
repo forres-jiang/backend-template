@@ -1,3 +1,4 @@
+using FluentResults;
 using LinqToDB;
 using LinqToDB.Data;
 using Microsoft.Extensions.Logging;
@@ -59,11 +60,11 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="menu"></param>
         /// <returns></returns>
-        public PwCResult Add(SaveMenu menu)
+        public Result Add(SaveMenu menu)
         {
             if (string.IsNullOrWhiteSpace(menu.DisplayName))
             {
-                return PwCResult.Fail("Menu name cannot be empty.");
+                return Result.Fail("Menu name cannot be empty.");
             }
 
             if (menu.IsAction.Value)
@@ -73,12 +74,12 @@ namespace My.XXX.Service
 
                 if (parentNode == null)
                 {
-                    return PwCResult.Fail("Parent node not found.");
+                    return Result.Fail("Parent node not found.");
                 }
 
                 if (parentNode.IsAction)
                 {
-                    return PwCResult.Fail("A button node cannot add child nodes.");
+                    return Result.Fail("A button node cannot add child nodes.");
                 }
             }
 
@@ -101,7 +102,7 @@ namespace My.XXX.Service
             model.UpdatedTime = DateTime.Now;
 
             var value = _dbContext.Insert(model);
-            return value > 0 ? PwCResult.Success() : PwCResult.Fail("Add data failed.");
+            return value > 0 ? Result.Ok() : Result.Fail("Add data failed.");
         }
 
         /// <summary>
@@ -109,11 +110,11 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public PwCResult Remove(List<int> ids)
+        public Result Remove(List<int> ids)
         {
             if (ids == null || ids.Count == 0)
             {
-                return PwCResult.Fail("Id cannot be empty");
+                return Result.Fail("Id cannot be empty");
             }
 
             var value = _dbContext.Menus.Where(m => !m.IsDeleted && ids.Contains(m.Id))
@@ -122,7 +123,7 @@ namespace My.XXX.Service
                 .Set(m => m.UpdatedBy, _userService.CurrentUser.UserId)
                 .Update();
 
-            return value > 0 ? PwCResult.Success() : PwCResult.Fail("Delete failed.");
+            return value > 0 ? Result.Ok() : Result.Fail("Delete failed.");
         }
 
         /// <summary>
@@ -130,11 +131,11 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="menu"></param>
         /// <returns></returns>
-        public PwCResult Update(EditMenu menu)
+        public Result Update(EditMenu menu)
         {
             if (menu.Id <= 0)
             {
-                return PwCResult.Fail("MenuId invalid.");
+                return Result.Fail("MenuId invalid.");
             }
 
             var statement = _dbContext.Menus.Where(m => m.Id == menu.Id && !m.IsDeleted)
@@ -178,7 +179,7 @@ namespace My.XXX.Service
 
             int value = statement.Update();
 
-            return value > 0 ? PwCResult.Success() : PwCResult.Fail("Update failed.");
+            return value > 0 ? Result.Ok() : Result.Fail("Update failed.");
         }
 
         /// <summary>
@@ -358,13 +359,13 @@ namespace My.XXX.Service
         /// <param name="roleId"></param>
         /// <param name="menuId"></param>
         /// <returns></returns>
-        public PwCResult RemoveRoleMenu(Guid roleId, int menuId)
+        public Result RemoveRoleMenu(Guid roleId, int menuId)
         {
             var result = _menuRepository.RemoveRoleMenu(new List<Guid> { roleId },
                 new List<int> { menuId },
                 _userService.CurrentUser.UserId);
 
-            return result ? PwCResult.Success() : PwCResult.Fail("Remove failed.");
+            return result ? Result.Ok() : Result.Fail("Remove failed.");
         }
 
         /// <summary>
@@ -372,16 +373,16 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public PwCResult RoleMenuAction(RoleMenuActionModel model)
+        public Result<BulkCopyRowsCopied> RoleMenuAction(RoleMenuActionModel model)
         {
             if (model.RoleId == Guid.Empty)
             {
-                return PwCResult.Fail("RoleId invalid.");
+                return Result.Fail<BulkCopyRowsCopied>("RoleId invalid.");
             }
 
             if (model.Menus == null || model.Menus.Count == 0)
             {
-                return PwCResult.Fail("MenuId invalid.");
+                return Result.Fail<BulkCopyRowsCopied>("MenuId invalid.");
             }
 
             _dbContext.BeginTransaction();
@@ -399,16 +400,16 @@ namespace My.XXX.Service
                 if (result.RowsCopied != relations.Count)
                 {
                     _dbContext.RollbackTransaction();
-                    return PwCResult.Fail("Save failed.");
+                    return Result.Fail<BulkCopyRowsCopied>("Save failed.");
                 }
 
                 _dbContext.CommitTransaction();
-                return PwCResult.Success(result);
+                return Result.Ok(result);
             }
             catch (Exception)
             {
                 _dbContext.RollbackTransaction();
-                return PwCResult.Fail("Save failed.");
+                return Result.Fail<BulkCopyRowsCopied>("Save failed.");
             }
         }
 
@@ -515,10 +516,10 @@ namespace My.XXX.Service
         /// 获取所有菜单
         /// </summary>
         /// <returns></returns>
-        public PwCResult GetMenus()
+        public Result<List<Menus>> GetMenus()
         {
             var menus = _menuRepository.GetMenus().ToList();
-            return PwCResult.Success(menus);
+            return Result.Ok(menus);
         }
 
         /// <summary>

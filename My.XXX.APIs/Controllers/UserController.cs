@@ -107,7 +107,7 @@ namespace My.XXX.APIs.Controllers
         [HttpPost]
         [Route("RefreshToken")]
         [Authorize(AuthenticationSchemes = "Refresh")]
-        public PwCResult RefreshToken()
+        public MyResult RefreshToken()
         {
             if (!User.Identity.IsAuthenticated)
             {
@@ -123,7 +123,7 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpGet("GetRoles")]
-        public PwCResult GetRoles()
+        public MyResult GetRoles()
         {
             if (!User.Identity.IsAuthenticated)
             {
@@ -131,7 +131,7 @@ namespace My.XXX.APIs.Controllers
             }
 
             var currentUser = _userService.CurrentUser;
-            return PwCResult.Success(currentUser);
+            return MyResult.Success(currentUser);
         }
     }
 }

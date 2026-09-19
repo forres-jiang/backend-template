@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using My.XXX.APIs.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
@@ -21,21 +22,21 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("add")]
-        public PwCResult Add(SaveMenu model)
+        public MyResult Add(SaveMenu model)
         {
-            return _menuService.Add(model);
+            return _menuService.Add(model).ToApiResult();
         }
 
         [HttpDelete("remove")]
-        public PwCResult Remove(InputRemoveMenu model)
+        public MyResult Remove(InputRemoveMenu model)
         {
-            return _menuService.Remove(model.MenuIds);
+            return _menuService.Remove(model.MenuIds).ToApiResult();
         }
 
         [HttpPatch("edit")]
-        public PwCResult Edit(EditMenu model)
+        public MyResult Edit(EditMenu model)
         {
-            return _menuService.Update(model);
+            return _menuService.Update(model).ToApiResult();
         }
 
         [HttpGet("Get/{menuId}")]
@@ -45,24 +46,24 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("List")]
-        public PwCResult List(QueryMenu query)
+        public MyResult List(QueryMenu query)
         {
             var result = _menuService.GetMenus(query);
-            return PwCResult.Success(result);
+            return MyResult.Success(result);
         }
 
         [HttpPost("Search")]
-        public PwCResult Search(QueryMenu query)
+        public MyResult Search(QueryMenu query)
         {
             var result = _menuService.SearchMenus(query);
-            return PwCResult.Success(result);
+            return MyResult.Success(result);
         }
 
         [HttpPost("RoleMenu")]
-        public PwCResult RoleMenu(InputRoleMenu model)
+        public MyResult RoleMenu(InputRoleMenu model)
         {
             var result = _menuService.RoleMenuRelation(model);
-            return result ? PwCResult.Success() : PwCResult.Fail("Data save failed.");
+            return result ? MyResult.Success() : MyResult.Fail("Data save failed.");
         }
 
         [HttpPost("RoleMenus")]
@@ -78,9 +79,9 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("RemoveRoleMenu")]
-        public PwCResult RemoveRoleMenu(RemoveRoleMenu rrm)
+        public MyResult RemoveRoleMenu(RemoveRoleMenu rrm)
         {
-            return _menuService.RemoveRoleMenu(rrm.RoleId, rrm.MenuId);
+            return _menuService.RemoveRoleMenu(rrm.RoleId, rrm.MenuId).ToApiResult();
         }
 
         [HttpPost("Tree")]
@@ -112,10 +113,10 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPatch("UpdateSort")]
-        public PwCResult UpdateSort(MenuSortModel model)
+        public MyResult UpdateSort(MenuSortModel model)
         {
             var result = _menuService.UpdateSort(model);
-            return result ? PwCResult.Success() : PwCResult.Fail("Failed to adjust menu order.");
+            return result ? MyResult.Success() : MyResult.Fail("Failed to adjust menu order.");
         }
     }
 }

@@ -52,7 +52,7 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpGet("Index")]
-        public PwCResult Index()
+        public MyResult Index()
         {
             //var r = new DataValidator<UserRole>();
             //r.Valid(null);
@@ -67,7 +67,7 @@ namespace My.XXX.APIs.Controllers
             var s = JsonConvert.SerializeObject(new { name = "test" });
             //_logger.LogError("{env}", environment);
 
-            return PwCResult.Success(new
+            return MyResult.Success(new
             {
                 _appCenterConfig.AppCode,
                 Environment = environment,
@@ -116,34 +116,34 @@ namespace My.XXX.APIs.Controllers
         [AllowAnonymous]
         [HttpPost, IgnoreMetrics]
         [Route("Save")]
-        public PwCResult Save(DemoModel model)
+        public MyResult Save(DemoModel model)
         {
             if (!ModelState.IsValid)
             {
-                return PwCResult.Fail("errors");
+                return MyResult.Fail("errors");
             }
-            return _demoService.Save(model);
+            return _demoService.Save(model).ToApiResult();
         }
 
         [HttpPost("Update")]
-        public PwCResult Update(DemoModel model)
+        public MyResult Update(DemoModel model)
         {
-            return _demoService.Update(model);
+            return _demoService.Update(model).ToApiResult();
         }
 
         [HttpGet("SendEmail")]
-        public PwCResult SendEmail()
+        public MyResult SendEmail()
         {
             var sc = "Test" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var model = new Mail
             {
                 MFROM = "CNHK GTS SDC Support",
-                MTO = "Forres Jiang/CN/GTS/PwC",
+                MTO = "Forres Jiang/CN/GTS",
                 SUBJECT = sc,
                 CONTENT = sc,
                 SENDDATE = DateTime.Now
             };
-            return _mailService.SendEmail(model);
+            return _mailService.SendEmail(model).ToApiResult();
         }
 
         [AllowAnonymous]
@@ -165,7 +165,7 @@ namespace My.XXX.APIs.Controllers
             var model = new Mail
             {
                 MFROM = "CNHK GTS SDC Support",
-                MTO = "Forres Jiang/CN/GTS/PwC",
+                MTO = "Forres Jiang/CN/GTS",
                 SUBJECT = sc,
                 CONTENT = sc,
                 SENDDATE = DateTime.Now
@@ -188,11 +188,11 @@ namespace My.XXX.APIs.Controllers
 
         [AllowAnonymous]
         [HttpGet("BulkCopy")]
-        public PwCResult BulkCopy()
+        public MyResult BulkCopy()
         {
             string key = DateTime.Now.ToString("HHssmmfff");
             RedisHelper.Set("XXX" + key, key, TimeSpan.FromHours(1));
-            return _mailService.BatchInsertEmail();
+            return _mailService.BatchInsertEmail().ToApiResult();
         }
 
         [UnifyResult]
@@ -213,16 +213,16 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("RoleMenuAction")]
-        public PwCResult RoleMenuAction(RoleMenuActionModel model)
+        public MyResult RoleMenuAction(RoleMenuActionModel model)
         {
-            return _menuService.RoleMenuAction(model);
+            return _menuService.RoleMenuAction(model).ToApiResult();
         }
 
         [AllowAnonymous]
         [HttpGet("ResultTest")]
         public BaseResult ResultTest()
         {
-            return PwCResult.Success();
+            return MyResult.Success();
         }
 
         [AllowAnonymous]

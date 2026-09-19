@@ -1,3 +1,4 @@
+using FluentResults;
 using FluentValidation;
 using My.XXX.Data.Interfaces;
 using My.XXX.Infra;
@@ -24,26 +25,26 @@ namespace My.XXX.Service
             _mapper = mapper;
         }
 
-        public PwCResult Save(DemoModel model)
+        public Result Save(DemoModel model)
         {
             var val = _validator.Validate(model);
             if (!val.IsValid)
             {
-                return PwCResult.Fail(val.Errors.First().ErrorMessage);
+                return Result.Fail(val.Errors.First().ErrorMessage);
             }
 
             var demo = _mapper.ToDemo(model);
             var details = _mapper.ToDemoDetails(model.Details);
 
             var result = _demoRepository.Add(demo, details);
-            return result ? PwCResult.Success() : PwCResult.Fail("Save failed.");
+            return result ? Result.Ok() : Result.Fail("Save failed.");
         }
 
-        public PwCResult Update(DemoModel model)
+        public Result Update(DemoModel model)
         {
             var demo = _mapper.ToDemo(model);
             var value = _demoRepository.Upate(demo);
-            return value > 0 ? PwCResult.Success() : PwCResult.Fail("Save failed.");
+            return value > 0 ? Result.Ok() : Result.Fail("Save failed.");
         }
 
         public void ExecProc()
