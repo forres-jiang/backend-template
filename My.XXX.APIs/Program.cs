@@ -1,5 +1,3 @@
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
@@ -37,7 +35,6 @@ namespace My.XXX.APIs
 
         public static WebApplication CreateApplication(string[] args, Action<WebApplicationBuilder> configure = null)
         {
-            //Scrutor 依赖注入
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 Args = args,
@@ -53,16 +50,10 @@ namespace My.XXX.APIs
                 logger.Enrich.FromLogContext();
             });
 
-            //Autofac
-            builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
-                .ConfigureContainer<ContainerBuilder>(builder =>
-                {
-                    builder.RegisterModule(new AutofacModules());
-                });
-
             builder.Services.AddConfiguration(builder.Configuration);
             builder.Services.AddDefaultService(builder.Configuration);
             builder.Services.AddDBs(builder.Configuration);
+            builder.Services.AddApplicationServices();
 
             var app = builder.Build();
             if (app.Environment.IsDevelopment())

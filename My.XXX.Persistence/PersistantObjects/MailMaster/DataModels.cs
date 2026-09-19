@@ -1,3 +1,4 @@
+using LinqToDB;
 using LinqToDB.Mapping;
 using System;
 
@@ -5,6 +6,7 @@ namespace My.XXX.Persistence.PersistantObjects
 {
 
     [Table(Schema = "dbo", Name = "MAILQUEUE")]
+    [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "MAILQUEUE")]
     public partial class MailQueue
     {
         [PrimaryKey, Identity]

@@ -65,3 +65,20 @@ dotnet publish My.XXX.APIs/01My.XXX.APIs.csproj -c Release
 ```
 
 Tests cover dependency rules, transaction commit/rollback through an instrumented ADO.NET connection, login orchestration, DTO serialization, DI resolution and real HTTP success, failure, validation, authorization and exception paths. SQL Server write semantics and rollback against a real database still require integration validation in an environment with disposable databases. No database migrations are introduced by this refactor.
+
+## Database providers
+
+The business database (`Default`) and mail database (`MailMaster`) independently support SQL Server (2016+) or PostgreSQL (13+). Existing installations default to SQL Server. Set each provider to `SqlServer` or `PostgreSQL` (case insensitive); unknown values fail at startup.
+
+For PostgreSQL, supply these environment variables through your deployment/secret provider:
+
+```text
+DatabaseProviders__Default=PostgreSQL
+DatabaseProviders__MailMaster=PostgreSQL
+ConnectionStrings__Default=Host=localhost;Port=5432;Database=xxx;Username=xxx;Password=<secret>
+ConnectionStrings__MailMaster=Host=localhost;Port=5432;Database=mailmaster;Username=xxx;Password=<secret>
+```
+
+For SQL Server, use `SqlServer` and a connection string such as `Server=localhost;Database=xxx;User Id=xxx;Password=<secret>;Encrypt=true`. Mixed deployments are supported, for example PostgreSQL for `Default` and SQL Server for `MailMaster`. Both database readiness checks use the selected driver. Existing `enc:v1:` encrypted connection strings remain supported.
+
+Provision tables before running the application; it does not automatically create or migrate databases. PostgreSQL tables use `public` (SQL Server mappings retain `dbo`), with the exact table and column casing declared in the entities: for example `public."Menus"`, `"Id"`, and `public."MAILQUEUE"`. Tables without an explicit schema use the connection's default schema/search path. Use quoted identifiers when creating PostgreSQL tables, identity columns for generated integer keys, `uuid` for GUIDs, `boolean` for booleans, `bytea` for attachments, and `timestamp without time zone` for the existing wall-clock `DateTime` fields. Existing SQL Server data and stored procedures require a separate migration. `DemoRepository.QueryProcMultiple` is a SQL Server-only example requiring a custom `TEST` procedure; it explicitly rejects PostgreSQL.

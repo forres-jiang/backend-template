@@ -47,6 +47,7 @@
 		<PackageReference Include="linq2db.Extensions" />
 		<PackageReference Include="linq2db.SqlServer" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<PackageReference Include="Npgsql" />
 		<PackageReference Include="Microsoft.Extensions.Options" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
 		<ProjectReference Include="../My.XXX.Contracts/04My.XXX.Contracts.csproj" />

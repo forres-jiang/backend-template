@@ -5,7 +5,7 @@
 
 	<ItemGroup>
         <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="11.0.2" />
+		<PackageVersion Include="Scrutor" Version="7.0.0" />
 		<PackageVersion Include="Azure.Identity" Version="1.21.0" />
 		<PackageVersion Include="ClosedXML" Version="0.105.1" />
 		<PackageVersion Include="ConfigMapFileProvider" Version="2.0.1" />
@@ -17,6 +17,7 @@
 		<PackageVersion Include="linq2db.SqlServer" Version="6.5.0" />
 		<PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
 		<PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.12" />
+		<PackageVersion Include="Npgsql" Version="10.0.3" />
 		<PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" />
 		<PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
 		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />

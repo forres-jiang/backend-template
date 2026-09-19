@@ -4,8 +4,6 @@ using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 

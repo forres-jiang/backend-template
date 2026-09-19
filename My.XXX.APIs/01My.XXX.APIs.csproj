@@ -69,7 +69,7 @@
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
+    <PackageReference Include="Scrutor" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="ConfigMapFileProvider" />
     <PackageReference Include="StackExchange.Redis" />

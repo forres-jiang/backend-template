@@ -48,6 +48,8 @@ namespace My.XXX.Persistence.Repositories
 
         public void QueryProcMultiple()
         {
+            if (_dbContext.DataProvider.Name.StartsWith(ProviderName.PostgreSQL, System.StringComparison.Ordinal))
+                throw new System.NotSupportedException("QueryProcMultiple is a SQL Server demo requiring the custom TEST procedure; PostgreSQL routines need their own implementation.");
             //执行存储过程
             _dbContext.ExecuteProc("TEST", new DataParameter("@StaffId", "a"));
             //执行存储过程返回单个结果集

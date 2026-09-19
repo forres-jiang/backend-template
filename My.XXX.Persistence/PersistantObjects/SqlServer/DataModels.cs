@@ -1,3 +1,4 @@
+using LinqToDB;
 using LinqToDB.Mapping;
 using System;
 
@@ -45,6 +46,7 @@ namespace My.XXX.Persistence.PersistantObjects
     }
 
     [Table(Schema = "dbo", Name = "Menus")]
+    [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "Menus")]
     public class Menus
     {
         [PrimaryKey, Identity]
@@ -112,6 +114,7 @@ namespace My.XXX.Persistence.PersistantObjects
     }
 
     [Table(Schema = "dbo", Name = "RoleMenu")]
+    [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "RoleMenu")]
     public class RoleMenu
     {
         [PrimaryKey, Identity]
@@ -140,6 +143,7 @@ namespace My.XXX.Persistence.PersistantObjects
     }
 
     [Table(Schema = "dbo", Name = "RequestLogs")]
+    [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "RequestLogs")]
     public class Operation
     {
         [Column, NotNull]

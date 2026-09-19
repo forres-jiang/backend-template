@@ -11,14 +11,14 @@ using Microsoft.OpenApi;
 using My.XXX.APIs;
 using My.XXX.APIs.Common;
 using My.XXX.APIs.Common.Middleware;
+using My.XXX.Infrastructure;
 using My.XXX.Persistence;
+using My.XXX.Service.Interfaces;
 using My.XXX.Service.Mapping;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using StackExchange.Redis;
-using My.XXX.Infrastructure;
-using My.XXX.Service.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -201,15 +201,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static void AddDBs(this IServiceCollection services, IConfiguration configuration)
         {
-            var SqlServerProvider = LinqToDB.DataProvider.SqlServer.SqlServerProvider.MicrosoftDataSqlClient;
-            var SqlServerVersion = LinqToDB.DataProvider.SqlServer.SqlServerVersion.v2016;
+            var defaultProvider = DatabaseConfiguration.ParseProvider(configuration["DatabaseProviders:Default"]);
+            var mailProvider = DatabaseConfiguration.ParseProvider(configuration["DatabaseProviders:MailMaster"]);
             var connStrings = configuration.GetSection("ConnectionStrings").Get<ConnectionStrings>();
 
             //DB
             var defaultConnection = ResolveConnectionString(connStrings?.Default, "Default");
             services.AddLinqToDBContext<DBContext>((provider, options) =>
             {
-                return options.UseSqlServer(defaultConnection, SqlServerVersion, SqlServerProvider)
+                return DatabaseConfiguration.Configure(options, defaultConnection, defaultProvider)
                 .UseDefaultLogging(provider);
             });
 
@@ -217,14 +217,14 @@ namespace Microsoft.Extensions.DependencyInjection
             var mailMasterConnection = ResolveConnectionString(connStrings?.MailMaster, "MailMaster");
             services.AddLinqToDBContext<MailContext>((provider, options) =>
             {
-                return options.UseSqlServer(mailMasterConnection, SqlServerVersion, SqlServerProvider)
+                return DatabaseConfiguration.Configure(options, mailMasterConnection, mailProvider)
                 .UseDefaultLogging(provider);
             });
 
             services.AddHealthChecks()
-                .AddCheck("database", new My.XXX.APIs.Common.Health.SqlHealthCheck(defaultConnection),
+                .AddCheck("database", new My.XXX.APIs.Common.Health.SqlHealthCheck(defaultConnection, defaultProvider),
                     tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5))
-                .AddCheck("mail-database", new My.XXX.APIs.Common.Health.SqlHealthCheck(mailMasterConnection),
+                .AddCheck("mail-database", new My.XXX.APIs.Common.Health.SqlHealthCheck(mailMasterConnection, mailProvider),
                     tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
 
             //Redis
