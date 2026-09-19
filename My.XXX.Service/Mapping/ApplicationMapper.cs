@@ -1,5 +1,5 @@
 #nullable enable
-using My.XXX.Data.PersistantObjects;
+using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
 using Newtonsoft.Json;
 using Riok.Mapperly.Abstractions;
@@ -50,6 +50,8 @@ public partial class ApplicationMapper
     [MapperIgnoreTarget(nameof(MenuDto.Actions))]
     [MapperIgnoreTarget(nameof(MenuDto.Children))]
     public partial MenuDto? ToMenuDto(Menus? source);
+
+    public partial List<MenuBase> ToMenuBases(IEnumerable<Menus>? source);
 
     public partial MenuBaseDto? ToMenuBaseDto(Menus? source);
     public partial MenuSearchPickerDto? ToMenuSearchPickerDto(Menus? source);

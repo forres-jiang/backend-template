@@ -1,5 +1,5 @@
-using My.XXX.Infra;
 using My.XXX.Service.DTOs;
+using My.XXX.Shared;
 using System.Threading.Tasks;
 
 namespace My.XXX.Service.Interfaces

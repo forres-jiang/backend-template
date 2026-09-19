@@ -50,7 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\My.XXX.Infra\04My.XXX.Infra.csproj" />
+    <ProjectReference Include="..\My.XXX.Shared\05My.XXX.Shared.csproj" />
     <ProjectReference Include="..\My.XXX.Service\02My.XXX.Service.csproj" />
   </ItemGroup>
 
@@ -68,4 +68,22 @@
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="ConfigMapFileProvider" />
+    <PackageReference Include="CSRedisCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Expressions" />
+    <PackageReference Include="Serilog.Sinks.Splunk" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="FluentValidation" />
+    <ProjectReference Include="../My.XXX.Persistence/03My.XXX.Persistence.csproj" />
+    <ProjectReference Include="../My.XXX.Infrastructure/06My.XXX.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

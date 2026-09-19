@@ -4,29 +4,6 @@
         <name>My.XXX.Service</name>
     </assembly>
     <members>
-        <member name="M:My.XXX.Service.Common.UpdateHelper`1.#ctor(LinqToDB.Linq.IUpdatable{`0})">
-             <summary>
-            
-             </summary>
-             <param name="condition"></param>
-        </member>
-        <member name="M:My.XXX.Service.Common.UpdateHelper`1.#ctor(LinqToDB.Linq.IUpdatable{`0},System.Collections.Generic.List{System.String})">
-            <summary>
-            不需要更新的字段
-            </summary>
-            <param name="condition"></param>
-            <param name="excludeFields"></param>
-        </member>
-        <member name="T:My.XXX.Service.DTOs.MenuDto">
-            <summary>
-            用于前台菜单和用户登录成功
-            </summary>
-        </member>
-        <member name="P:My.XXX.Service.DTOs.RoleMenuQuery.RoleIds">
-            <summary>
-            多个角色ID
-            </summary>
-        </member>
         <member name="T:My.XXX.Service.Interfaces.ICurrentRequest">
             <summary>Framework-neutral view of the current request and authenticated user.</summary>
         </member>

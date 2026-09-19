@@ -1,10 +1,10 @@
 using FluentResults;
 using FluentValidation;
-using My.XXX.Data.Interfaces;
-using My.XXX.Infra;
+using My.XXX.Persistence.Interfaces;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Service.Mapping;
+using My.XXX.Shared;
 using System.Linq;
 
 namespace My.XXX.Service

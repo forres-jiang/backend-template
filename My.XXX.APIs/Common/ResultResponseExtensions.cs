@@ -1,5 +1,6 @@
 using FluentResults;
-using My.XXX.Infra;
+using My.XXX.Service.DTOs;
+using My.XXX.Shared;
 using System.Linq;
 
 namespace My.XXX.APIs.Common;
@@ -12,6 +13,14 @@ public static class ResultResponseExtensions
 
     public static MyResult ToApiResult<T>(this Result<T> result) =>
         result.IsSuccess ? MyResult.Success(result.Value) : Failure(result);
+
+    public static LoginResult ToLoginResult(this Result<AuthenticationSession> result)
+    {
+        if (result.IsFailed) return LoginResult.Fail(string.Join(",", result.Errors.Select(error => error.Message)));
+        var session = result.Value;
+        return LoginResult.Success(session.User, session.Tokens.AccessToken,
+            session.Tokens.RefreshToken, session.Tokens.ExpiryInMinutes);
+    }
 
     private static MyResult Failure(ResultBase result)
     {

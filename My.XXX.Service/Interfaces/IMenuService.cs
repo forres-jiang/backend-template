@@ -1,8 +1,6 @@
 using FluentResults;
-using LinqToDB.Data;
-using My.XXX.Data.PersistantObjects;
-using My.XXX.Infra;
 using My.XXX.Service.DTOs;
+using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
 
@@ -18,17 +16,17 @@ namespace My.XXX.Service.Interfaces
 
         public MenuBaseDto Get(int menuId);
 
-        public bool RoleMenus(Guid roleId, List<int> menuIds, bool isFull);
+        public Result RoleMenus(Guid roleId, List<int> menuIds, bool isFull);
 
         public Result RemoveRoleMenu(Guid roleId, int menuId);
 
-        public Result<BulkCopyRowsCopied> RoleMenuAction(RoleMenuActionModel model);
+        public Result<BatchWriteSummary> RoleMenuAction(RoleMenuActionModel model);
 
-        public Result<List<Menus>> GetMenus();
+        public Result<List<MenuBase>> GetMenus();
 
         public Paged<MenuBaseDto> GetMenus(QueryMenu query);
 
-        public bool UpdateSort(MenuSortModel model);
+        public Result UpdateSort(MenuSortModel model);
 
         public List<MenuDto> GetMenuByRoles(RoleMenuQuery query);
 
@@ -36,19 +34,17 @@ namespace My.XXX.Service.Interfaces
 
         public List<MenuDto> GetTreeMenus(bool? isDisplay);
 
-        public bool RoleMenuRelation(InputRoleMenu input);
+        public Result RoleMenuRelation(InputRoleMenu input);
 
         public Paged<MenuSearchPickerDto> SearchMenus(QueryMenu query);
 
-        public List<string> GetRoleMenuPaths(List<Guid> roleIds);
 
-        public List<string> GetRoleMenuPaths(List<Guid> roleIds, string userId);
 
         /// <summary>
         ///
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public bool RoleMenusRelation(InputRoleMenus input);
+        public Result RoleMenusRelation(InputRoleMenus input);
     }
 }

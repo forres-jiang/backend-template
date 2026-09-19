@@ -40,8 +40,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\My.XXX.Data\03My.XXX.Data.csproj" />
-	  <ProjectReference Include="..\My.XXX.Infra\04My.XXX.Infra.csproj" />
+	  <ProjectReference Include="..\My.XXX.Persistence\03My.XXX.Persistence.csproj" />
+	  <ProjectReference Include="..\My.XXX.Shared\05My.XXX.Shared.csproj" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FluentResults" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <ProjectReference Include="../My.XXX.Contracts/04My.XXX.Contracts.csproj" />
+  </ItemGroup>
 </Project>

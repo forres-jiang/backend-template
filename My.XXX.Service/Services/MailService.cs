@@ -1,15 +1,12 @@
 using FluentResults;
 using FluentValidation;
-using LinqToDB;
-using LinqToDB.Data;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using My.XXX.Data;
-using My.XXX.Data.PersistantObjects;
-using My.XXX.Infra;
+using My.XXX.Persistence.Interfaces;
+using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Service.Mapping;
+using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,23 +16,20 @@ namespace My.XXX.Service
     public class MailService : IMailService, IScopeDependency
     {
         private readonly AppCenterConfig _appCenterConfig;
-        private readonly ILogger<MailService> _logger;
         private readonly IValidator<Mail> _validator;
-        private readonly MailContext _mailContext;
+        private readonly IMailRepository _mailRepository;
         private readonly ApplicationMapper _mapper;
 
         public MailService(
             IOptionsMonitor<AppCenterConfig> appConfig,
-            ILogger<MailService> logger,
             IValidator<Mail> validator,
-            MailContext mailContext,
+            IMailRepository mailRepository,
             ApplicationMapper mapper)
         {
             _appCenterConfig = appConfig.CurrentValue;
-            _mailContext = mailContext;
+            _mailRepository = mailRepository;
             _validator = validator;
             _mapper = mapper;
-            _logger = logger;
         }
 
         public Result SendEmail(Mail mail)
@@ -58,16 +52,16 @@ namespace My.XXX.Service
             model.ENCODE = "utf-8";
             model.SUBMITBY = "System";
             model.SENDDATE = date;
-            var value = _mailContext.Insert(model) > 0 ? Result.Ok() : Result.Fail("Failed to send mail.");
+            var value = _mailRepository.Insert(model) > 0 ? Result.Ok() : Result.Fail("Failed to send mail.");
             return value;
         }
 
         public List<MailQueueDto> GetEmail()
         {
-            return _mapper.ToMailQueueDtos(_mailContext.MailQueues.Take(10).ToList());
+            return _mapper.ToMailQueueDtos(_mailRepository.GetRecent(10));
         }
 
-        public Result<BulkCopyRowsCopied> BatchInsertEmail()
+        public Result<BatchWriteSummary> BatchInsertEmail()
         {
             var list = new List<MailQueue>();
             for (int i = 0; i < 10; i++)
@@ -90,11 +84,11 @@ namespace My.XXX.Service
                 list.Add(model);
             }
 
-            var result = _mailContext.BulkCopy(list);
-            return Result.Ok(result);
+            var result = _mailRepository.InsertBatch(list);
+            return result.RowsCopied == list.Count ? Result.Ok(result) : Result.Fail<BatchWriteSummary>("Failed to send mail.");
         }
 
-        public bool SendEmailWithFile(Mail mail, byte[] fileData, string fileName, string mimeType)
+        public Result SendEmailWithFile(Mail mail, byte[] fileData, string fileName, string mimeType)
         {
             var currnetDate = DateTime.Now;
             var data = new MailQueue()
@@ -118,7 +112,7 @@ namespace My.XXX.Service
 
             if (null == fileData || fileData.Length == 0)
             {
-                return _mailContext.Insert(data) > 0;
+                return Result.OkIf(_mailRepository.Insert(data) > 0, "Save failed.");
             }
 
             var fileObject = new Attachment
@@ -130,31 +124,12 @@ namespace My.XXX.Service
                 AttachmentMimeType = mimeType
             };
 
-            try
-            {
-                _mailContext.BeginTransaction();
-                var AttachmentId = _mailContext.InsertWithInt32Identity(fileObject);
-                var MailSeq = _mailContext.InsertWithInt32Identity(data);
-                var mapData = new AttachmentMapping
-                {
-                    MailSeq = MailSeq,
-                    AttachmentId = AttachmentId
-                };
-                var result = _mailContext.Insert(mapData);
-                _mailContext.CommitTransaction();
-                return result > 0;
-            }
-            catch (Exception ex)
-            {
-                _mailContext.RollbackTransaction();
-                _logger.LogError(ex, "send email error.");
-                return false;
-            }
+            return Result.OkIf(_mailRepository.InsertWithAttachment(data, fileObject), "Save failed.");
         }
 
         public AttachmentDto GetAttachment(int id)
         {
-            return _mapper.ToAttachmentDto(_mailContext.Attachments.Where(m => m.AttachmentId == id).FirstOrDefault());
+            return _mapper.ToAttachmentDto(_mailRepository.GetAttachment(id));
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using My.XXX.Infra.Common;
+using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using System;
 using System.Xml.Linq;

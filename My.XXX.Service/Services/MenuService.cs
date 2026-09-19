@@ -1,17 +1,11 @@
 using FluentResults;
-using LinqToDB;
-using LinqToDB.Data;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using My.XXX.Data;
-using My.XXX.Data.Interfaces;
-using My.XXX.Data.PersistantObjects;
-using My.XXX.Infra;
-using My.XXX.Infra.Common;
+using My.XXX.Persistence.Interfaces;
+using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.Common;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Service.Mapping;
+using My.XXX.Shared;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -22,36 +16,21 @@ namespace My.XXX.Service
     public class MenuService : IMenuService, IScopeDependency
     {
         private readonly ICurrentRequest _currentRequest;
-        private readonly IPermissionCache _permissionCache;
         private readonly IMenuRepository _menuRepository;
-        private readonly ILogger<MenuService> _logger;
         private readonly IUserService _userService;
-        private readonly DBContext _dbContext;
-        private readonly JwtConfig _jwtConfig;
-        private readonly AppConfig _appConfig;
         private readonly ApplicationMapper _mapper;
         private readonly string _cultureName;
 
         public MenuService(
             ICurrentRequest currentRequest,
-            IPermissionCache permissionCache,
-            IOptionsMonitor<AppConfig> appConfig,
-            IOptionsMonitor<JwtConfig> jwtConfig,
             IMenuRepository menuRepository,
-            ILogger<MenuService> logger,
             IUserService userService,
-            DBContext dbContext,
             ApplicationMapper mapper)
         {
-            _appConfig = appConfig.CurrentValue;
-            _jwtConfig = jwtConfig.CurrentValue;
             _menuRepository = menuRepository;
             _userService = userService;
-            _dbContext = dbContext;
             _mapper = mapper;
-            _logger = logger;
             _currentRequest = currentRequest;
-            _permissionCache = permissionCache;
             _cultureName = currentRequest.CultureName;
         }
 
@@ -69,8 +48,7 @@ namespace My.XXX.Service
 
             if (menu.IsAction.Value)
             {
-                var parentNode = _dbContext.Menus
-                    .Where(m => m.Id == menu.ParentId && !m.IsDeleted).FirstOrDefault();
+                var parentNode = _menuRepository.Get(menu.ParentId);
 
                 if (parentNode == null)
                 {
@@ -101,7 +79,7 @@ namespace My.XXX.Service
             model.UpdatedBy = user.UserId;
             model.UpdatedTime = DateTime.Now;
 
-            var value = _dbContext.Insert(model);
+            var value = _menuRepository.Insert(model);
             return value > 0 ? Result.Ok() : Result.Fail("Add data failed.");
         }
 
@@ -117,11 +95,7 @@ namespace My.XXX.Service
                 return Result.Fail("Id cannot be empty");
             }
 
-            var value = _dbContext.Menus.Where(m => !m.IsDeleted && ids.Contains(m.Id))
-                .Set(m => m.IsDeleted, true)
-                .Set(m => m.UpdatedTime, DateTime.Now)
-                .Set(m => m.UpdatedBy, _userService.CurrentUser.UserId)
-                .Update();
+            var value = _menuRepository.Remove(ids, _userService.CurrentUser.UserId);
 
             return value > 0 ? Result.Ok() : Result.Fail("Delete failed.");
         }
@@ -133,53 +107,16 @@ namespace My.XXX.Service
         /// <returns></returns>
         public Result Update(EditMenu menu)
         {
-            if (menu.Id <= 0)
-            {
-                return Result.Fail("MenuId invalid.");
-            }
-
-            var statement = _dbContext.Menus.Where(m => m.Id == menu.Id && !m.IsDeleted)
-                .Set(m => m.UpdatedTime, DateTime.Now)
-                .Set(m => m.UpdatedBy, _userService.CurrentUser.UserId);
-            /*
-            if (!string.IsNullOrEmpty(menu.Description))
-                statement = statement.Set(m => m.Description, menu.Description);
-
-            if (!string.IsNullOrEmpty(menu.Icon))
-                statement = statement.Set(m => m.Icon, menu.Icon);
-
-            if (!string.IsNullOrEmpty(menu.Url))
-                statement = statement.Set(m => m.Url, menu.Url);
-
-            if (!string.IsNullOrEmpty(menu.Component))
-                statement = statement.Set(m => m.Component, menu.Component);
-
-            if (!string.IsNullOrEmpty(menu.RequestParameter))
-                statement = statement.Set(m => m.RequestParameter, menu.RequestParameter);
-
-            if (!string.IsNullOrEmpty(menu.ControllerName))
-                statement = statement.Set(m => m.ControllerName, menu.ControllerName);
-
-            if (!string.IsNullOrEmpty(menu.ActionName))
-                statement = statement.Set(m => m.ActionName, menu.ActionName);
-
-            if (!string.IsNullOrEmpty(menu.LinkTarget))
-                statement = statement.Set(m => m.LinkTarget, menu.LinkTarget);
-            */
-
-            var updateHelper = new UpdateHelper<Menus>(statement);
-            statement = updateHelper.GetCondition(menu);
-
+            if (menu.Id <= 0) return Result.Fail("MenuId invalid.");
+            string displayNames = null;
             if (!string.IsNullOrWhiteSpace(menu.DisplayName))
             {
-                var oldMenu = _dbContext.Menus.Where(m => m.Id == menu.Id).FirstOrDefault();
-                var displayNames = BuildDisplayNames(oldMenu.DisplayNames, menu.DisplayName);
-                statement = statement.Set(m => m.DisplayNames, displayNames);
+                var oldMenu = _menuRepository.Get(menu.Id);
+                if (oldMenu == null) return Result.Fail("Update failed.");
+                displayNames = BuildDisplayNames(oldMenu.DisplayNames, menu.DisplayName);
             }
-
-            int value = statement.Update();
-
-            return value > 0 ? Result.Ok() : Result.Fail("Update failed.");
+            return _menuRepository.Update(menu, displayNames, _userService.CurrentUser.UserId) > 0
+                ? Result.Ok() : Result.Fail("Update failed.");
         }
 
         /// <summary>
@@ -189,7 +126,7 @@ namespace My.XXX.Service
         /// <returns></returns>
         public MenuBaseDto Get(int menuId)
         {
-            var menu = _menuRepository.GetMenus().Where(m => m.Id == menuId).FirstOrDefault();
+            var menu = _menuRepository.Get(menuId);
             if (menu != null)
             {
                 var menuDto = _mapper.ToMenuBaseDto(menu);
@@ -209,10 +146,12 @@ namespace My.XXX.Service
         /// <param name="menuIds">多个菜单Id</param>
         /// <param name="isFull">是否保存整个树选中的节点</param>
         /// <returns></returns>
-        public bool RoleMenus(Guid roleId, List<int> menuIds, bool isFull)
+        public Result RoleMenus(Guid roleId, List<int> menuIds, bool isFull)
         {
+            if (roleId == Guid.Empty || menuIds == null || menuIds.Any(id => id <= 0))
+                return Result.Fail("Invalid role or menu selection.");
             var inputMenuIds = menuIds.Distinct().OrderBy(m => m).ToList();
-            var query = _menuRepository.GetRoleMenu().Where(m => m.RoleId == roleId);
+            var query = _menuRepository.GetRoleMenu(roleId).AsEnumerable();
             if (!isFull)
             {
                 query = query.Where(m => menuIds.Contains(m.MenuId));
@@ -224,7 +163,7 @@ namespace My.XXX.Service
                 var isEqual = inputMenuIds.SequenceEqual(dbMenuIds);
                 if (isEqual)
                 {
-                    return true;
+                    return Result.Ok();
                 }
             }
 
@@ -242,60 +181,18 @@ namespace My.XXX.Service
                 });
             }
 
-            _dbContext.BeginTransaction();
-            try
-            {
-                if (dbMenuIds.Count > 0)
-                {
-                    var removeIds = dbMenuIds.Except(inputMenuIds).ToList();
-                    if (removeIds.Count > 0)
-                    {
-                        var value = _dbContext.RoleMenu
-                            .Where(m => m.RoleId == roleId && !m.IsDeleted && removeIds.Contains(m.MenuId))
-                            .Set(m => m.IsDeleted, true)
-                            .Set(m => m.UpdatedBy, _userService.CurrentUser.UserId)
-                            .Set(m => m.UpdatedTime, DateTime.Now)
-                            .Update();
-
-                        if (value <= 0)
-                        {
-                            _dbContext.RollbackTransaction();
-                            return false;
-                        }
-                    }
-                }
-
-                BulkCopyRowsCopied result = null;
-                if (roleMenuModel.Count > 0)
-                {
-                    result = _dbContext.BulkCopy(roleMenuModel);
-                }
-
-                if (result != null && result.RowsCopied != roleMenuModel.Count)
-                {
-                    _dbContext.RollbackTransaction();
-                    return false;
-                }
-
-                _dbContext.CommitTransaction();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _dbContext.RollbackTransaction();
-                _logger.LogError("{Message}", ex.Message);
-                return false;
-            }
+            var removeIds = dbMenuIds.Except(inputMenuIds).ToList();
+            return Result.OkIf(_menuRepository.SaveRoleChanges(roleId, removeIds, roleMenuModel, _userService.CurrentUser.UserId), "Save failed.");
         }
 
-        public bool RoleMenuRelation(InputRoleMenu input)
+        public Result RoleMenuRelation(InputRoleMenu input)
         {
-            if (input.RoleId == Guid.Empty)
+            if (input.RoleId == Guid.Empty || !input.Checked.HasValue || input.MenuId <= 0)
             {
-                return false;
+                return Result.Fail("Save failed.");
             }
 
-            var rm = _menuRepository.GetRoleMenu()
+            var rm = _menuRepository.GetRoleMenu(input.RoleId)
                 .Where(m => m.RoleId == input.RoleId && m.MenuId == input.MenuId)
                 .FirstOrDefault();
 
@@ -303,43 +200,45 @@ namespace My.XXX.Service
             {
                 if (null != rm)
                 {
-                    return true;
+                    return Result.Ok();
                 }
 
-                return _menuRepository.AddRoleMenu(new Data.PersistantObjects.RoleMenu
+                return Result.OkIf(_menuRepository.AddRoleMenu(new Persistence.PersistantObjects.RoleMenu
                 {
                     CreatedBy = _userService.CurrentUser.UserId,
                     CreatedTime = DateTime.Now,
                     RoleId = input.RoleId,
                     MenuId = input.MenuId,
-                });
+                }), "Save failed.");
             }
             else
             {
                 if (null == rm)
                 {
-                    return true;
+                    return Result.Ok();
                 }
                 else
                 {
-                    return _menuRepository.DeleteRoleMenu(new Data.PersistantObjects.RoleMenu
+                    return Result.OkIf(_menuRepository.DeleteRoleMenu(new Persistence.PersistantObjects.RoleMenu
                     {
                         UpdatedBy = _userService.CurrentUser.UserId,
                         RoleId = input.RoleId,
                         MenuId = input.MenuId
-                    });
+                    }), "Save failed.");
                 }
             }
         }
 
-        public bool RoleMenusRelation(InputRoleMenus input)
+        public Result RoleMenusRelation(InputRoleMenus input)
         {
+            if (input.RoleId == Guid.Empty || !input.Checked.HasValue || input.MenuIds == null)
+                return Result.Fail("Invalid role or menu selection.");
             if (input.Checked.Value)
             {
                 return RoleMenus(input.RoleId, input.MenuIds, false);
             }
 
-            var list = _menuRepository.GetRoleMenu()
+            var list = _menuRepository.GetRoleMenu(input.RoleId)
                 .Where(m => m.RoleId == input.RoleId && input.MenuIds.Contains(m.MenuId))
                 .Select(m => m.MenuId)
                 .Distinct()
@@ -347,10 +246,10 @@ namespace My.XXX.Service
 
             if (list.Count <= 0)
             {
-                return true;
+                return Result.Ok();
             }
-            return _menuRepository.RemoveRoleMenu(new List<Guid> { input.RoleId },
-                  list, _userService.CurrentUser.UserId);
+            return Result.OkIf(_menuRepository.RemoveRoleMenu(new List<Guid> { input.RoleId },
+                  list, _userService.CurrentUser.UserId), "Save failed.");
         }
 
         /// <summary>
@@ -373,44 +272,15 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public Result<BulkCopyRowsCopied> RoleMenuAction(RoleMenuActionModel model)
+        public Result<BatchWriteSummary> RoleMenuAction(RoleMenuActionModel model)
         {
-            if (model.RoleId == Guid.Empty)
-            {
-                return Result.Fail<BulkCopyRowsCopied>("RoleId invalid.");
-            }
-
-            if (model.Menus == null || model.Menus.Count == 0)
-            {
-                return Result.Fail<BulkCopyRowsCopied>("MenuId invalid.");
-            }
-
-            _dbContext.BeginTransaction();
-            try
-            {
-                _dbContext.RoleMenu.Where(m => m.RoleId == model.RoleId && !m.IsDeleted)
-                    .Set(m => m.IsDeleted, true)
-                    .Set(m => m.UpdatedTime, DateTime.Now)
-                    .Set(m => m.UpdatedBy, _userService.CurrentUser.UserId)
-                    .Update();
-
-                var relations = RoleMenuRelations.Build(model, _userService.CurrentUser.UserId, DateTime.UtcNow);
-
-                var result = _dbContext.BulkCopy(relations);
-                if (result.RowsCopied != relations.Count)
-                {
-                    _dbContext.RollbackTransaction();
-                    return Result.Fail<BulkCopyRowsCopied>("Save failed.");
-                }
-
-                _dbContext.CommitTransaction();
-                return Result.Ok(result);
-            }
-            catch (Exception)
-            {
-                _dbContext.RollbackTransaction();
-                return Result.Fail<BulkCopyRowsCopied>("Save failed.");
-            }
+            if (model.RoleId == Guid.Empty) return Result.Fail<BatchWriteSummary>("RoleId invalid.");
+            if (model.Menus == null || model.Menus.Count == 0 || model.Menus.Any(menu =>
+                menu == null || menu.MenuId <= 0 || (menu.ActionIds != null && menu.ActionIds.Any(id => id <= 0))))
+                return Result.Fail<BatchWriteSummary>("MenuId invalid.");
+            var relations = RoleMenuRelations.Build(model, _userService.CurrentUser.UserId, DateTime.UtcNow);
+            var result = _menuRepository.ReplaceRoleActions(model.RoleId, relations, _userService.CurrentUser.UserId);
+            return result.RowsCopied == relations.Count ? Result.Ok(result) : Result.Fail<BatchWriteSummary>("Save failed.");
         }
 
         /// <summary>
@@ -442,46 +312,6 @@ namespace My.XXX.Service
             return tree;
         }
 
-        public List<string> GetRoleMenuPaths(List<Guid> roleIds)
-        {
-            var roleMenus = _menuRepository.GetRoleMenuByRoles(roleIds).ToList();
-            var list = new List<string>();
-            roleMenus.ForEach(m =>
-            {
-                if (!string.IsNullOrEmpty(m.ControllerName) && !string.IsNullOrEmpty(m.ActionName))
-                {
-                    list.Add(m.ControllerName + "/" + m.ActionName);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(m.Url))
-                    {
-                        list.Add(m.Url);
-                    }
-                }
-            });
-            return list;
-        }
-
-        public List<string> GetRoleMenuPaths(List<Guid> roleIds, string userId)
-        {
-            if (_appConfig.PermissionDataCache == PermissionDataCache.Redis)
-            {
-                if (_permissionCache.TryGet(userId, out var list))
-                {
-                    return list;
-                }
-
-                var paths = GetRoleMenuPaths(roleIds);
-                _permissionCache.Set(userId, paths, TimeSpan.FromMinutes(_jwtConfig.ExpiryInMinutes));
-                return paths;
-            }
-            else
-            {
-                return GetRoleMenuPaths(roleIds);
-            }
-        }
-
         /// <summary>
         /// 根据多个角色获取菜单树，并且选中已经配置的节点
         /// </summary>
@@ -489,15 +319,12 @@ namespace My.XXX.Service
         /// <returns></returns>
         public List<MenuDto> GetMenuTreeCheckedByRoles(List<Guid> roleIds)
         {
-            var menus = (from m in _dbContext.Menus where !m.IsDeleted select m).ToList();
+            var menus = _menuRepository.GetMenus();
             var list = _mapper.ToMenuDtos(menus);
 
             SetMenuLanguage(list);
 
-            var roleMenus = (from rm in _dbContext.RoleMenu
-                             join m in _dbContext.Menus on rm.MenuId equals m.Id
-                             where !rm.IsDeleted && !m.IsDeleted && roleIds.Contains(rm.RoleId)
-                             select rm.MenuId).Distinct().ToList();
+            var roleMenus = _menuRepository.GetRoleMenuByRoles(roleIds).Select(m => m.Id).Distinct().ToList();
 
             foreach (var item in roleMenus)
             {
@@ -516,10 +343,10 @@ namespace My.XXX.Service
         /// 获取所有菜单
         /// </summary>
         /// <returns></returns>
-        public Result<List<Menus>> GetMenus()
+        public Result<List<MenuBase>> GetMenus()
         {
             var menus = _menuRepository.GetMenus().ToList();
-            return Result.Ok(menus);
+            return Result.Ok(_mapper.ToMenuBases(menus));
         }
 
         /// <summary>
@@ -528,48 +355,16 @@ namespace My.XXX.Service
         /// <returns></returns>
         public List<MenuDto> GetTreeMenus(bool? isDisplay)
         {
-            var allMenu = _menuRepository.GetMenus();
-
-            if (isDisplay != null)
-            {
-                allMenu = allMenu.Where(m => m.IsDisplay == isDisplay);
-            }
-
-            var list = _mapper.ToMenuDtos(allMenu.ToList());
+            var list = _mapper.ToMenuDtos(_menuRepository.GetMenus(isDisplay: isDisplay));
             SetMenuLanguage(list);
-            var tree = BulidMenusTree(list, new List<MenuDto>(), 0);
-            return tree;
+            return BulidMenusTree(list, new List<MenuDto>(), 0);
         }
 
         public Paged<MenuBaseDto> GetMenus(QueryMenu query)
         {
-            var menus = _menuRepository.GetMenus();
-
-            if (query.IsAction != null)
-            {
-                menus = menus.Where(m => m.IsAction == query.IsAction);
-            }
-
-            if (!string.IsNullOrEmpty(query.DisplayName))
-            {
-                menus = menus.Where(m => m.DisplayNames.Contains(query.DisplayName));
-            }
-
-            if (query.ParentId != null)
-            {
-                menus = menus.Where(m => m.ParentId == query.ParentId.Value);
-            }
-
-            var total = menus.Count();
-
-            var list = menus.OrderByDescending(m => m.CreatedTime)
-                .Skip(query.PageIndex * query.PageSize)
-                .Take(query.PageSize).ToList();
-
-            SetDisplayName(list);
-
-            var dtoList = _mapper.ToMenuBaseDtos(list);
-            return Paged<MenuBaseDto>.Create(dtoList, total);
+            var page = _menuRepository.Search(query);
+            SetDisplayName(page.List);
+            return Paged<MenuBaseDto>.Create(_mapper.ToMenuBaseDtos(page.List), page.Total);
         }
 
         public Paged<MenuSearchPickerDto> SearchMenus(QueryMenu query)
@@ -630,15 +425,15 @@ namespace My.XXX.Service
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public bool UpdateSort(MenuSortModel model)
+        public Result UpdateSort(MenuSortModel model)
         {
             if (model.PrevId == model.NextId)
             {
-                return false;
+                return Result.Fail("Save failed.");
             }
 
             var ids = new List<int>() { model.PrevId, model.CurrentId, model.NextId };
-            var menus = _menuRepository.GetMenus().Where(m => ids.Contains(m.Id)).ToList();
+            var menus = _menuRepository.GetMenus(ids: ids);
 
             var prevNode = menus.Where(m => m.Id == model.PrevId).FirstOrDefault();
             var currentNode = menus.Where(m => m.Id == model.CurrentId).FirstOrDefault();
@@ -652,7 +447,7 @@ namespace My.XXX.Service
             {
                 if (null == currentNode || null == nextNode)
                 {
-                    return false;
+                    return Result.Fail("Save failed.");
                 }
                 parentId = nextNode.ParentId;
                 parentLevel = nextNode.ParentId == currentNode.ParentId;
@@ -661,14 +456,14 @@ namespace My.XXX.Service
             {
                 if (null == currentNode || null == prevNode)
                 {
-                    return false;
+                    return Result.Fail("Save failed.");
                 }
                 isPrev = true;
                 parentId = prevNode.ParentId;
                 parentLevel = prevNode.ParentId == currentNode.ParentId;
             }
 
-            var query = _menuRepository.GetMenus().Where(m => m.ParentId == parentId);
+            var query = _menuRepository.GetMenus(parentId: parentId).AsEnumerable();
             if (parentLevel)
             {
                 query = query.Where(m => m.Id != currentNode.Id);
@@ -695,19 +490,7 @@ namespace My.XXX.Service
             }
 
             var user = _userService.CurrentUser;
-            var resultList = new List<int>();
-            var dt = DateTime.Now;
-            for (int i = 0; i < allList.Count; i++)
-            {
-                var value = _dbContext.Menus.Where(m => m.Id == allList[i].Id)
-                      .Set(m => m.Number, i)
-                      .Set(m => m.UpdatedTime, dt)
-                      .Set(m => m.UpdatedBy, user.UserId)
-                      .Set(m => m.ParentId, allList[i].ParentId).Update();
-                resultList.Add(value);
-            }
-
-            return !resultList.Contains(0);
+            return Result.OkIf(_menuRepository.SaveOrder(allList, user.UserId), "Save failed.");
         }
 
         /// <summary>

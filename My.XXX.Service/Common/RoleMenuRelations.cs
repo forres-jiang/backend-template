@@ -1,4 +1,4 @@
-using My.XXX.Data.PersistantObjects;
+using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
 using System;
 using System.Collections.Generic;

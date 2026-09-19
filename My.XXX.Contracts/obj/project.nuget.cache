@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "FaXFWXVaGvw=",
+  "success": true,
+  "projectFilePath": "D:\\NewCode\\backend-template\\My.XXX.Contracts\\04My.XXX.Contracts.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\jianglijie\\.nuget\\packages\\fluentresults\\4.0.0\\fluentresults.4.0.0.nupkg.sha512",
+    "C:\\Users\\jianglijie\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\2.1.1\\microsoft.extensions.logging.abstractions.2.1.1.nupkg.sha512",
+    "C:\\Users\\jianglijie\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
-using My.XXX.Infra;
 using My.XXX.Service.Interfaces;
+using My.XXX.Shared;
 using System;
 using System.Linq;
 
@@ -13,16 +13,16 @@ namespace My.XXX.APIs.Common
     public class Permissions : IAuthorizationFilter
     {
         private readonly PermissionWhitelist _permissionWhitelist;
-        private readonly IMenuService _menuService;
+        private readonly IPermissionQuery _permissions;
         private readonly IUserService _userService;
 
         public Permissions(
             IOptionsMonitor<PermissionWhitelist> permissionWhitelist,
-            IMenuService menuService,
+            IPermissionQuery permissions,
             IUserService userService)
         {
             _permissionWhitelist = permissionWhitelist.CurrentValue;
-            _menuService = menuService;
+            _permissions = permissions;
             _userService = userService;
         }
 
@@ -90,7 +90,7 @@ namespace My.XXX.APIs.Common
                 return true;
             }
 
-            var paths = _menuService.GetRoleMenuPaths(user.RoleIds, user.UserId);
+            var paths = _permissions.GetRoleMenuPaths(user.RoleIds, user.UserId);
             var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
             var currentPath = descriptor.ControllerName + "/" + descriptor.ActionName;
             var result = paths

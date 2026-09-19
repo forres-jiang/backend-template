@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using My.XXX.APIs.Common;
-using My.XXX.Infra;
-using My.XXX.Infra.Common;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
+using My.XXX.Shared;
+using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,6 @@ namespace My.XXX.APIs.Controllers
         private readonly IMailService _mailService;
         private readonly IMenuService _menuService;
         private readonly IDemoService _demoService;
-        private readonly IHttpService _httpService;
 
         public DemoController(
             IOptionsSnapshot<AppCenterConfig> appCenterConfig,
@@ -39,15 +38,13 @@ namespace My.XXX.APIs.Controllers
             IAppCenterService appCenterService,
             IDemoService demoService,
             IMenuService menuService,
-            IMailService mailService,
-            IHttpService httpService)
+            IMailService mailService)
         {
             _appCenterConfig = appCenterConfig.Value;
             _appCenterService = appCenterService;
             _demoService = demoService;
             _menuService = menuService;
             _mailService = mailService;
-            _httpService = httpService;
             _localizer = localizer;
         }
 
@@ -171,7 +168,7 @@ namespace My.XXX.APIs.Controllers
                 SENDDATE = DateTime.Now
             };
 
-            return _mailService.SendEmailWithFile(model, fileBytes, file.FileName, "application/zip");
+            return _mailService.SendEmailWithFile(model, fileBytes, file.FileName, "application/zip").IsSuccess;
         }
 
         [HttpGet("File/{id}")]

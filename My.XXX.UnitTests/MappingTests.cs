@@ -1,11 +1,11 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Data.PersistantObjects;
+using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Mapping;
 using Newtonsoft.Json;
 using System;
 
-namespace My.XXX.Tests;
+namespace My.XXX.UnitTests;
 
 [TestClass]
 public class MappingTests

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
+using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
 
@@ -63,19 +63,19 @@ namespace My.XXX.APIs.Controllers
         public MyResult RoleMenu(InputRoleMenu model)
         {
             var result = _menuService.RoleMenuRelation(model);
-            return result ? MyResult.Success() : MyResult.Fail("Data save failed.");
+            return result.IsSuccess ? MyResult.Success() : MyResult.Fail("Data save failed.");
         }
 
         [HttpPost("RoleMenus")]
         public bool RoleMenus(RoleMenuIds model)
         {
-            return _menuService.RoleMenus(model.RoleId, model.MenuIds, true);
+            return _menuService.RoleMenus(model.RoleId, model.MenuIds, true).IsSuccess;
         }
 
         [HttpPost("RoleMenuChecked")]
         public bool RoleMenuChecked(InputRoleMenus model)
         {
-            return _menuService.RoleMenusRelation(model);
+            return _menuService.RoleMenusRelation(model).IsSuccess;
         }
 
         [HttpPost("RemoveRoleMenu")]
@@ -116,7 +116,7 @@ namespace My.XXX.APIs.Controllers
         public MyResult UpdateSort(MenuSortModel model)
         {
             var result = _menuService.UpdateSort(model);
-            return result ? MyResult.Success() : MyResult.Fail("Failed to adjust menu order.");
+            return result.IsSuccess ? MyResult.Success() : MyResult.Fail("Failed to adjust menu order.");
         }
     }
 }

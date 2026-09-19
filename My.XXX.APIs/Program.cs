@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using My.XXX.APIs.Common.DI;
 using My.XXX.APIs.Common.Middleware;
-using My.XXX.Infra.Common;
+using My.XXX.Shared.Common;
 using Serilog;
 using System;
 using System.Globalization;
@@ -37,6 +37,7 @@ namespace My.XXX.APIs
 
         public static WebApplication CreateApplication(string[] args, Action<WebApplicationBuilder> configure = null)
         {
+            //Scrutor 依赖注入
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 Args = args,

@@ -1,4 +1,5 @@
 using FluentResults;
+using LinqToDB.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -8,14 +9,18 @@ using Microsoft.Extensions.Localization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs;
 using My.XXX.APIs.Common;
-using My.XXX.Infra;
+using My.XXX.Persistence.Common;
+using My.XXX.Persistence.PersistantObjects;
+using My.XXX.Service.Mapping;
+using My.XXX.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace My.XXX.Tests;
+namespace My.XXX.UnitTests;
 
 [TestClass]
 public class ResultMigrationTests
@@ -81,6 +86,32 @@ public class ResultMigrationTests
         await ApplyFilter(response);
         Assert.AreEqual(201, response.StatusCode);
         Assert.AreEqual("created", ((MyResult)response.Value).Data);
+    }
+
+    [TestMethod]
+    public void PersistenceIndependentDtosPreserveSerializedFields()
+    {
+        var batch = new BulkCopyRowsCopied { RowsCopied = 8, Abort = false };
+        AssertJson(batch, batch.ToSummary());
+        var menu = new Menus { Id = 7, DisplayName = "Menu", DisplayNames = "{}", ParentId = 0 };
+        AssertJson(menu, new ApplicationMapper().ToMenuBases(new[] { menu }).Single());
+    }
+
+    [TestMethod]
+    public async Task RuntimeWrappingHandlesOkObjectResultAndNullData()
+    {
+        var response = new OkObjectResult(new { Id = 7 });
+        await ApplyFilter(response);
+        Assert.AreEqual(1, ((MyResult)response.Value).StatusCode);
+        var empty = new ObjectResult(null);
+        await ApplyFilter(empty);
+        Assert.IsNull(((MyResult)empty.Value).Data);
+    }
+
+    [TestMethod]
+    public async Task UnconvertedBusinessFailuresAreNeverWrappedAsSuccess()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ApplyFilter(new ObjectResult(Result.Fail("failed"))));
     }
 
     private static void AssertJson(object expected, object actual) =>

@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Options;
-using My.XXX.Infra;
-using My.XXX.Infra.Common;
 using My.XXX.Service.Interfaces;
+using My.XXX.Shared;
+using My.XXX.Shared.Common;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,16 +24,16 @@ namespace My.XXX.APIs.Common
     public class PermissionsHandler : AuthorizationHandler<PermissionsRequirement>
     {
         private readonly PermissionWhitelist _permissionWhitelist;
-        private readonly IMenuService _menuService;
+        private readonly IPermissionQuery _permissions;
         private readonly IUserService _userService;
 
         public PermissionsHandler(
             IOptionsMonitor<PermissionWhitelist> permissionWhitelist,
-            IMenuService menuService,
+            IPermissionQuery permissions,
             IUserService userService)
         {
             _permissionWhitelist = permissionWhitelist.CurrentValue;
-            _menuService = menuService;
+            _permissions = permissions;
             _userService = userService;
         }
 
@@ -102,7 +102,7 @@ namespace My.XXX.APIs.Common
             }
 
             bool flag = false;
-            var paths = _menuService.GetRoleMenuPaths(user.RoleIds, user.UserId);
+            var paths = _permissions.GetRoleMenuPaths(user.RoleIds, user.UserId);
 
             if (requirement.Name == PolicyType.Default)
             {

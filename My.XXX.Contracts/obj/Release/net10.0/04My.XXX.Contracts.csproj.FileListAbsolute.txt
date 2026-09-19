@@ -1,0 +1,16 @@
+D:\NewCode\backend-template\My.XXX.Contracts\bin\Release\net10.0\My.XXX.Contracts.deps.json
+D:\NewCode\backend-template\My.XXX.Contracts\bin\Release\net10.0\My.XXX.Contracts.dll
+D:\NewCode\backend-template\My.XXX.Contracts\bin\Release\net10.0\My.XXX.Contracts.pdb
+D:\NewCode\backend-template\My.XXX.Contracts\bin\Release\net10.0\My.XXX.Shared.dll
+D:\NewCode\backend-template\My.XXX.Contracts\bin\Release\net10.0\My.XXX.Shared.pdb
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.csproj.AssemblyReference.cache
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.AssemblyInfoInputs.cache
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.AssemblyInfo.cs
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.csproj.CoreCompileInputs.cache
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.Contracts.sourcelink.json
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\04My.XXX.CFDC4ECE.Up2Date
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\My.XXX.Contracts.dll
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\refint\My.XXX.Contracts.dll
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\My.XXX.Contracts.pdb
+D:\NewCode\backend-template\My.XXX.Contracts\obj\Release\net10.0\ref\My.XXX.Contracts.dll

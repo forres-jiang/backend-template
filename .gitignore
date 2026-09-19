@@ -1,16 +1,20 @@
-﻿################################################################################
+################################################################################
 # 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
 ################################################################################
 
 /.vs
 /My.XXX.API/bin
 /My.XXX.API/obj
-/My.XXX.Data/bin
-/My.XXX.Data/obj
-/My.XXX.Infra/obj
-/My.XXX.Infra/bin
-/My.XXX.Tests/bin
-/My.XXX.Tests/obj
+/My.XXX.Persistence/bin
+/My.XXX.Persistence/obj
+/My.XXX.Shared/obj
+/My.XXX.Shared/bin
+/My.XXX.UnitTests/bin
+/My.XXX.UnitTests/obj
+/My.XXX.IntegrationTests/bin
+/My.XXX.IntegrationTests/obj
+/My.XXX.UnitTests/TestResults
+/My.XXX.IntegrationTests/TestResults
 /My.XXX.Services/obj
 /My.XXX.Services/bin
 /My.XXX.API/logs

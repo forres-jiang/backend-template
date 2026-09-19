@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Data;
-using My.XXX.Service.Common;
+using My.XXX.Infrastructure;
+using My.XXX.Persistence;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Validators;
 using Swashbuckle.AspNetCore.Swagger;
@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace My.XXX.Tests;
+namespace My.XXX.IntegrationTests;
 
 [TestClass]
 public class ComponentCompatibilityTests

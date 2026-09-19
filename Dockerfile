@@ -7,8 +7,11 @@ COPY ["Directory.Packages.props", "."]
 
 COPY ["My.XXX.APIs/01My.XXX.APIs.csproj", "My.XXX.APIs/"]
 COPY ["My.XXX.Service/02My.XXX.Service.csproj", "My.XXX.Service/"]
-COPY ["My.XXX.Data/03My.XXX.Data.csproj", "My.XXX.Data/"]
-COPY ["My.XXX.Infra/04My.XXX.Infra.csproj", "My.XXX.Infra/"]
+COPY ["My.XXX.Persistence/03My.XXX.Persistence.csproj", "My.XXX.Persistence/"]
+COPY ["My.XXX.Shared/05My.XXX.Shared.csproj", "My.XXX.Shared/"]
+
+COPY ["My.XXX.Contracts/04My.XXX.Contracts.csproj", "My.XXX.Contracts/"]
+COPY ["My.XXX.Infrastructure/06My.XXX.Infrastructure.csproj", "My.XXX.Infrastructure/"]
 
 RUN dotnet restore "My.XXX.APIs/01My.XXX.APIs.csproj"
 

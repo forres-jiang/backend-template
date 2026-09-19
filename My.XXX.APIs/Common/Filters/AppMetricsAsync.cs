@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using My.XXX.Infra;
-using My.XXX.Infra.Common;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
+using My.XXX.Shared;
+using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;

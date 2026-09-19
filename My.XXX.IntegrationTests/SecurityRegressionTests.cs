@@ -1,26 +1,18 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs;
 using My.XXX.APIs.Common.JWT;
 using My.XXX.APIs.Common.Middleware;
-using My.XXX.Data;
-using My.XXX.Infra;
-using My.XXX.Infra.Common;
-using My.XXX.Service;
-using My.XXX.Service.Common;
+using My.XXX.Persistence;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
-using My.XXX.Service.Mapping;
+using My.XXX.Shared;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,10 +22,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace My.XXX.Tests;
+namespace My.XXX.IntegrationTests;
 
 [TestClass]
 [DoNotParallelize]
@@ -85,6 +76,7 @@ public class SecurityRegressionTests
                 {
                     builder.Configuration.Sources.Clear();
                     builder.Configuration.AddInMemoryCollection(settings);
+                    builder.Services.AddControllers().AddApplicationPart(typeof(BoundaryProbeController).Assembly);
                     builder.WebHost.UseSetting("urls", "http://127.0.0.1:0");
                 });
             await app.StartAsync();
@@ -92,6 +84,23 @@ public class SecurityRegressionTests
             {
                 using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/healthy")).StatusCode);
+                var success = JObject.Parse(await client.GetStringAsync("/__test/boundary/success"));
+                Assert.AreEqual(1, (int)success["statusCode"]);
+                Assert.AreEqual(7, (int)success["data"]["id"]);
+                var failure = JObject.Parse(await client.GetStringAsync("/__test/boundary/failure"));
+                Assert.AreEqual(0, (int)failure["statusCode"]);
+                var invalid = await client.PostAsync("/__test/boundary/validate", new StringContent("{}", Encoding.UTF8, "application/json"));
+                Assert.AreEqual(HttpStatusCode.BadRequest, invalid.StatusCode);
+                Assert.AreEqual(0, (int)JObject.Parse(await invalid.Content.ReadAsStringAsync())["statusCode"]);
+                var exception = await client.GetAsync("/__test/boundary/exception");
+                Assert.AreEqual(HttpStatusCode.InternalServerError, exception.StatusCode);
+                var exceptionJson = JObject.Parse(await exception.Content.ReadAsStringAsync());
+                Assert.AreEqual("0", (string)exceptionJson["state"]);
+                Assert.IsNotNull(exceptionJson["requestId"]);
+                Assert.IsFalse(exceptionJson.ToString().Contains("private database detail"));
+                var raw = JObject.Parse(await client.GetStringAsync("/__test/boundary/raw"));
+                Assert.AreEqual(7, (int)raw["id"]);
+                Assert.IsNull(raw["statusCode"]);
                 Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/ready")).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized,
                     (await client.PostAsync("/api/Operation/list", new StringContent("{}", Encoding.UTF8, "application/json"))).StatusCode);
@@ -116,6 +125,10 @@ public class SecurityRegressionTests
                 using (var second = app.Services.CreateScope())
                 {
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IMenuService>());
+                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IMailService>());
+                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IAuthenticationService>());
+                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IPermissionQuery>());
+                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IAppCenterService>());
                     Assert.AreNotSame(first.ServiceProvider.GetRequiredService<ExceptionHandlingMiddleware>(),
                         second.ServiceProvider.GetRequiredService<ExceptionHandlingMiddleware>());
                     Assert.AreNotSame(first.ServiceProvider.GetRequiredService<DBContext>(),
@@ -170,155 +183,5 @@ public class SecurityRegressionTests
             Assert.AreEqual("from-command-line", builder.Configuration["JwtConfig:Audience"]);
         }
         finally { Environment.SetEnvironmentVariable(variable, previous); }
-    }
-
-    [TestMethod]
-    public void EncryptionUsesRandomNoncesAndRejectsTamperingAndMissingKeys()
-    {
-        var previous = Environment.GetEnvironmentVariable("APP_ENCRYPTION_KEY");
-        try
-        {
-            Environment.SetEnvironmentVariable("APP_ENCRYPTION_KEY", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
-            var first = AESHelper.Encrypt("secret-value");
-            var second = AESHelper.Encrypt("secret-value");
-            Assert.AreNotEqual(first, second);
-            Assert.AreEqual("secret-value", AESHelper.Decrypt(first));
-            var payload = Convert.FromBase64String(first.Substring(7));
-            payload[^1] ^= 1;
-            Assert.ThrowsExactly<AuthenticationTagMismatchException>(() => AESHelper.Decrypt("enc:v1:" + Convert.ToBase64String(payload)));
-            Environment.SetEnvironmentVariable("APP_ENCRYPTION_KEY", null);
-            Assert.ThrowsExactly<InvalidOperationException>(() => AESHelper.Encrypt("value"));
-        }
-        finally { Environment.SetEnvironmentVariable("APP_ENCRYPTION_KEY", previous); }
-    }
-
-    [TestMethod]
-    public void RoleMenuAssignmentIncludesDistinctMenuAndActionIds()
-    {
-        var model = new RoleMenuActionModel
-        {
-            RoleId = Guid.NewGuid(),
-            Menus = new List<MenuAction>
-            {
-                new() { MenuId = 1, ActionIds = new List<int> { 2, 3, 3 } },
-                new() { MenuId = 4, ActionIds = null }
-            }
-        };
-        var relations = RoleMenuRelations.Build(model, "user", DateTime.UtcNow);
-        CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4 }, relations.Select(relation => relation.MenuId).ToArray());
-        Assert.IsTrue(relations.All(relation => relation.RoleId == model.RoleId && relation.CreatedBy == "user"));
-        model.Menus[0].ActionIds.Add(-1);
-        Assert.ThrowsExactly<ArgumentException>(() => RoleMenuRelations.Build(model, "user", DateTime.UtcNow));
-    }
-
-    [TestMethod]
-    public void MenuLocalizationAppliesNonEmptyTranslations()
-    {
-        var context = new DefaultHttpContext();
-        context.Features.Set<IRequestCultureFeature>(new RequestCultureFeature(new RequestCulture("zh-CN"), null));
-        var service = new MenuService(new TestCurrentRequest("zh-CN"), null,
-            new Monitor<AppConfig>(new()), new Monitor<JwtConfig>(Jwt), null, NullLogger<MenuService>.Instance,
-            null, null, new ApplicationMapper());
-        var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
-        service.SetMenuLanguage(menus);
-        Assert.AreEqual("菜单", menus[0].DisplayName);
-    }
-
-    [TestMethod]
-    [DataRow("[]")]
-    [DataRow("{invalid")]
-    public async Task MalformedBodiesAndLoggingFailuresDoNotBreakExceptionResponses(string body)
-    {
-        var logger = new RecordingLogger<ExceptionHandlingMiddleware>();
-        var middleware = new ExceptionHandlingMiddleware(new Monitor<AppCenterConfig>(new() { AppCode = "test" }), logger,
-            new Monitor<AppConfig>(new() { EnableRequestLog = true, ExceptionStorageType = StorageTypeEnum.SQL }),
-            new FailingOperations(), null);
-        var context = new DefaultHttpContext();
-        context.Request.ContentType = "application/json";
-        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
-        context.Response.Body = new MemoryStream();
-        await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("sensitive-database-detail"));
-        Assert.AreEqual(500, context.Response.StatusCode);
-        context.Response.Body.Position = 0;
-        var response = await new StreamReader(context.Response.Body).ReadToEndAsync();
-        StringAssert.Contains(response, "requestId");
-        Assert.IsFalse(response.Contains("sensitive-database-detail"));
-        Assert.AreEqual(0L, context.Request.Body.Position);
-        Assert.IsFalse(string.Join(" ", logger.Messages).Contains("sensitive-database-detail"));
-    }
-
-    [TestMethod]
-    public async Task LoggingFailurePreservesSuccessfulResponse()
-    {
-        var middleware = new ExceptionHandlingMiddleware(new Monitor<AppCenterConfig>(new()), NullLogger<ExceptionHandlingMiddleware>.Instance,
-            new Monitor<AppConfig>(new() { EnableRequestLog = true, RequestLogStorageType = StorageTypeEnum.SQL }),
-            new FailingOperations(), null);
-        var context = new DefaultHttpContext();
-        await middleware.InvokeAsync(context, ctx => { ctx.Response.StatusCode = 201; return Task.CompletedTask; });
-        Assert.AreEqual(201, context.Response.StatusCode);
-    }
-
-    [TestMethod]
-    [DataRow(200)]
-    [DataRow(201)]
-    [DataRow(204)]
-    public async Task EmptyPutKeepsMethodAndAcceptsAllSuccessfulStatusCodes(int status)
-    {
-        var handler = new RecordingHandler((HttpStatusCode)status);
-        var logger = new RecordingLogger<HttpService>();
-        var service = new HttpService(new Factory(handler), logger);
-        var result = await service.Put<string>(new RequestModel { Url = "https://example.invalid/?secret=hidden", Token = "Bearer hidden" });
-        Assert.AreEqual(HttpMethod.Put, handler.Method);
-        Assert.AreEqual(1, result.Status);
-        Assert.AreEqual((HttpStatusCode)status, result.HttpStatusCode);
-        Assert.IsFalse(string.Join(" ", logger.Messages).Contains("hidden"));
-    }
-
-    private sealed class Monitor<T>(T value) : IOptionsMonitor<T>
-    {
-        public T CurrentValue => value;
-        public T Get(string name) => value;
-        public IDisposable OnChange(Action<T, string> listener) => null;
-    }
-
-    private sealed class TestCurrentRequest(string cultureName) : ICurrentRequest
-    {
-        public System.Security.Claims.ClaimsPrincipal Principal => new();
-        public UserInfo User => null;
-        public DateTime TokenExpirationTime => DateTime.MinValue;
-        public string CultureName => cultureName;
-    }
-
-    private sealed class FailingOperations : IOperationService
-    {
-        public Task Save(MetricsInfo request) => throw new InvalidOperationException("storage unavailable");
-        public Task<Paged<OperationDto>> GetRequestLogs(OperationQeury query) => throw new NotSupportedException();
-    }
-
-    private sealed class Factory(HttpMessageHandler handler) : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
-    }
-
-    private sealed class RecordingHandler(HttpStatusCode status) : HttpMessageHandler
-    {
-        public HttpMethod Method { get; private set; }
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Method = request.Method;
-            return Task.FromResult(new HttpResponseMessage(status)
-            {
-                Content = new StringContent(status == HttpStatusCode.NoContent ? "" : "{\"Status\":1,\"Data\":\"hidden\"}")
-            });
-        }
-    }
-
-    private sealed class RecordingLogger<T> : ILogger<T>
-    {
-        public List<string> Messages { get; } = new();
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(LogLevel logLevel) => true;
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            => Messages.Add(formatter(state, exception));
     }
 }

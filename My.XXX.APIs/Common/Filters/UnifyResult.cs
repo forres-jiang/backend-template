@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Localization;
-using My.XXX.Infra;
+using My.XXX.Shared;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,12 +24,21 @@ namespace My.XXX.APIs.Common
             if (context.Result is ObjectResult)
             {
                 var objectResult = context.Result as ObjectResult;
-                if (objectResult.Value is BaseResult || objectResult.DeclaredType == null)
-                {
-                    return;
-                }
-                objectResult.Value = MyResult.Success(objectResult.Value);
-                objectResult.DeclaredType = objectResult.Value.GetType();
+                ResponseNormalizer.Normalize(objectResult);
+            }
+        }
+    }
+
+    internal static class ResponseNormalizer
+    {
+        internal static void Normalize(ObjectResult response)
+        {
+            if (response.Value is FluentResults.ResultBase)
+                throw new System.InvalidOperationException("Convert business results with ToApiResult before returning them from a controller.");
+            if (response.Value is not BaseResult)
+            {
+                response.Value = MyResult.Success(response.Value);
+                response.DeclaredType = response.Value.GetType();
             }
         }
     }
@@ -60,30 +69,8 @@ namespace My.XXX.APIs.Common
             if (context.Result is ObjectResult)
             {
                 var objectResult = context.Result as ObjectResult;
-                var declaredType = objectResult?.DeclaredType;
-                if (declaredType == null && objectResult.Value is not BaseResult)
-                {
-                    await next();
-                    return;
-                }
-
-                if (objectResult.Value is BaseResult)
-                {
-                    SetLocalization(objectResult);
-
-                    await next();
-                    return;
-                }
-
-                var result = MyResult.Success(objectResult?.Value);
-                var message = _resultLocalization[result.Message];
-                if (!message.ResourceNotFound)
-                {
-                    result.Localization(message.Value);
-                }
-
-                objectResult.Value = result;
-                objectResult.DeclaredType = result.GetType();
+                ResponseNormalizer.Normalize(objectResult);
+                SetLocalization(objectResult);
             }
 
             await next();

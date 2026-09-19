@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
-using My.XXX.Infra;
+using My.XXX.Shared;
 using System;
 using System.Text;
 using System.Threading.Tasks;
