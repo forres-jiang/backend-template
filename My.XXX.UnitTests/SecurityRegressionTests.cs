@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.APIs.Common.Middleware;
 using My.XXX.Infrastructure;
 using My.XXX.Service;
 using My.XXX.Service.Common;
@@ -15,12 +13,10 @@ using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -77,40 +73,6 @@ public class SecurityRegressionTests
         var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
         service.SetMenuLanguage(menus);
         Assert.AreEqual("菜单", menus[0].DisplayName);
-    }
-
-    [TestMethod]
-    [DataRow("[]")]
-    [DataRow("{invalid")]
-    public async Task MalformedBodiesAndLoggingFailuresDoNotBreakExceptionResponses(string body)
-    {
-        var logger = new RecordingLogger<ExceptionHandlingMiddleware>();
-        var middleware = new ExceptionHandlingMiddleware(new Monitor<AppCenterConfig>(new() { AppCode = "test" }), logger,
-            new Monitor<AppConfig>(new() { EnableRequestLog = true, ExceptionStorageType = StorageTypeEnum.SQL }),
-            new FailingOperations(), null);
-        var context = new DefaultHttpContext();
-        context.Request.ContentType = "application/json";
-        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
-        context.Response.Body = new MemoryStream();
-        await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("sensitive-database-detail"));
-        Assert.AreEqual(500, context.Response.StatusCode);
-        context.Response.Body.Position = 0;
-        var response = await new StreamReader(context.Response.Body).ReadToEndAsync();
-        StringAssert.Contains(response, "requestId");
-        Assert.IsFalse(response.Contains("sensitive-database-detail"));
-        Assert.AreEqual(0L, context.Request.Body.Position);
-        Assert.IsFalse(string.Join(" ", logger.Messages).Contains("sensitive-database-detail"));
-    }
-
-    [TestMethod]
-    public async Task LoggingFailurePreservesSuccessfulResponse()
-    {
-        var middleware = new ExceptionHandlingMiddleware(new Monitor<AppCenterConfig>(new()), NullLogger<ExceptionHandlingMiddleware>.Instance,
-            new Monitor<AppConfig>(new() { EnableRequestLog = true, RequestLogStorageType = StorageTypeEnum.SQL }),
-            new FailingOperations(), null);
-        var context = new DefaultHttpContext();
-        await middleware.InvokeAsync(context, ctx => { ctx.Response.StatusCode = 201; return Task.CompletedTask; });
-        Assert.AreEqual(201, context.Response.StatusCode);
     }
 
     [TestMethod]

@@ -13,7 +13,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DocumentationFile>My.XXX.Services.xml</DocumentationFile>
-		<NoWarn>1701;1702;1591;CA1822;IDE0290</NoWarn>
+		<NoWarn>$(NoWarn);1591</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -40,23 +40,10 @@ namespace Microsoft.Extensions.DependencyInjection
             services.Configure<AppConfig>(configuration.GetSection("AppConfig"));
             //ConnStrings
             services.Configure<ConnectionStrings>(configuration.GetSection("ConnectionStrings"));
-            //AppCenter
-            services.Configure<AppCenterConfig>(configuration.GetSection("AppCenterConfig"));
             //JWT
             services.Configure<JwtConfig>(configuration.GetSection("JwtConfig"));
             //Permissions
             services.Configure<PermissionWhitelist>(configuration.GetSection("PermissionWhitelist"));
-
-            var appCenter = configuration.GetSection("AppCenterConfig").Get<AppCenterConfig>();
-            if (string.IsNullOrEmpty(appCenter?.LoginUrl))
-            {
-                throw new NotImplementedException("Loginurl not configured.");
-            }
-
-            if (string.IsNullOrEmpty(appCenter.AppCode))
-            {
-                throw new NotImplementedException("Appcode not configured.");
-            }
         }
 
         public static void AddDefaultService(this IServiceCollection services, IConfiguration configuration)

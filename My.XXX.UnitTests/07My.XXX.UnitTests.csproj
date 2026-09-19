@@ -10,14 +10,6 @@
 		<RootNamespace>My.XXX.UnitTests</RootNamespace>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<NoWarn>1701;1702;CA1822;IDE0290</NoWarn>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<NoWarn>1701;1702;CA1822;IDE0290</NoWarn>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" />
 		<PackageReference Include="MSTest.TestAdapter" />

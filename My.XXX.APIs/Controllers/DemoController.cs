@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Options;
 using My.XXX.APIs.Common;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
@@ -27,20 +26,17 @@ namespace My.XXX.APIs.Controllers
     {
         private readonly IStringLocalizer<DemoController> _localizer;
         private readonly IAppCenterService _appCenterService;
-        private readonly AppCenterConfig _appCenterConfig;
         private readonly IMailService _mailService;
         private readonly IMenuService _menuService;
         private readonly IDemoService _demoService;
 
         public DemoController(
-            IOptionsSnapshot<AppCenterConfig> appCenterConfig,
             IStringLocalizer<DemoController> localizer,
             IAppCenterService appCenterService,
             IDemoService demoService,
             IMenuService menuService,
             IMailService mailService)
         {
-            _appCenterConfig = appCenterConfig.Value;
             _appCenterService = appCenterService;
             _demoService = demoService;
             _menuService = menuService;
@@ -66,14 +62,12 @@ namespace My.XXX.APIs.Controllers
 
             return MyResult.Success(new
             {
-                _appCenterConfig.AppCode,
                 Environment = environment,
                 LocalIp = localIp,
                 HostName = Dns.GetHostName(),
                 Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 Localization = _localizer["test"].Value,
-                cache = DateTime.Now.Month,
-                Url = _appCenterConfig.LoginUrl
+                cache = DateTime.Now.Month
             });
         }
 

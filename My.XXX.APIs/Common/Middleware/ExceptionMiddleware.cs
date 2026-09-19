@@ -19,9 +19,8 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
     private readonly IOperationService _operations;
     private readonly IMailService _mail;
     private readonly AppConfig _config;
-    private readonly AppCenterConfig _appCenter;
 
-    public ExceptionHandlingMiddleware(IOptionsMonitor<AppCenterConfig> appCenter,
+    public ExceptionHandlingMiddleware(
         ILogger<ExceptionHandlingMiddleware> logger, IOptionsMonitor<AppConfig> config,
         IOperationService operationService, IMailService mailService)
     {
@@ -29,7 +28,6 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
         _operations = operationService;
         _mail = mailService;
         _config = config.CurrentValue;
-        _appCenter = appCenter.CurrentValue;
     }
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -81,7 +79,6 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
             var record = new MetricsInfo
             {
                 RequestId = requestId,
-                AppCode = _appCenter.AppCode,
                 HostName = Environment.MachineName,
                 CreateTime = DateTime.UtcNow,
                 ControllerName = context.Request.RouteValues["controller"]?.ToString() ?? "",
@@ -104,7 +101,6 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
                     MFROM = _config.ExceptionEmail?.MailFrom,
                     MTO = _config.ExceptionEmail?.MailTo,
                     SENDDATE = DateTime.UtcNow,
-                    SUBJECT = $"{_appCenter.AppCode} exception",
                     CONTENT = $"Request {requestId} failed. Check the application logs."
                 });
             if (exception == null)

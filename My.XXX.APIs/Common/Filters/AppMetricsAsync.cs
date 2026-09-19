@@ -25,12 +25,10 @@ namespace My.XXX.APIs.Common
     {
         private readonly IOperationService _operationService;
         private readonly ILogger<AppMetricsAsync> _logger;
-        private readonly AppCenterConfig _appCenter;
         private readonly AppConfig _appSettings;
         private readonly IWebHelper _webHelper;
 
         public AppMetricsAsync(
-            IOptionsMonitor<AppCenterConfig> appCenter,
             IOptionsMonitor<AppConfig> settings,
             IOperationService operationService,
             ILogger<AppMetricsAsync> logger,
@@ -38,7 +36,6 @@ namespace My.XXX.APIs.Common
         {
             _appSettings = settings.CurrentValue;
             _operationService = operationService;
-            _appCenter = appCenter.CurrentValue;
             _webHelper = webHelper;
             _logger = logger;
         }
@@ -86,7 +83,6 @@ namespace My.XXX.APIs.Common
                 record.UserName = user.Identity.Name;
             }
 
-            record.AppCode = _appCenter.AppCode;
             record.TotalTime = watch.ElapsedMilliseconds;
             record.ClientIP = _webHelper.GetCurrentIpAddress();
             record.RequestType = context.HttpContext.Request.Method;

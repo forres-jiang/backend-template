@@ -1,6 +1,5 @@
 using FluentResults;
 using FluentValidation;
-using Microsoft.Extensions.Options;
 using My.XXX.Persistence.Interfaces;
 using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
@@ -15,18 +14,16 @@ namespace My.XXX.Service
 {
     public class MailService : IMailService, IScopeDependency
     {
-        private readonly AppCenterConfig _appCenterConfig;
+
         private readonly IValidator<Mail> _validator;
         private readonly IMailRepository _mailRepository;
         private readonly ApplicationMapper _mapper;
 
         public MailService(
-            IOptionsMonitor<AppCenterConfig> appConfig,
             IValidator<Mail> validator,
             IMailRepository mailRepository,
             ApplicationMapper mapper)
         {
-            _appCenterConfig = appConfig.CurrentValue;
             _mailRepository = mailRepository;
             _validator = validator;
             _mapper = mapper;
@@ -43,7 +40,6 @@ namespace My.XXX.Service
             }
             var date = DateTime.Now;
             var model = _mapper.ToMailQueue(mail);
-            model.APPCODE = _appCenterConfig.AppCode;
             model.REPLYTO = "DO NOT REPLY";
             model.ORGANISATION = "xxx";
             model.POSTEDFLAG = 'N';
@@ -73,7 +69,6 @@ namespace My.XXX.Service
                     SUBMITBY = "Test" + DateTime.Now.ToString("yyMMddHHmmssfff"),
                     CONTENT = "Test" + DateTime.Now.ToString("yyMMddHHmmssfff"),
                     SENDDATE = DateTime.Now,
-                    APPCODE = _appCenterConfig.AppCode,
                     REPLYTO = "DO NOT REPLY",
                     ORGANISATION = "xxx",
                     POSTEDFLAG = ' ',
@@ -93,7 +88,6 @@ namespace My.XXX.Service
             var currnetDate = DateTime.Now;
             var data = new MailQueue()
             {
-                APPCODE = _appCenterConfig.AppCode,
                 MTO = mail.MTO,
                 CC = mail.CC,
                 BCC = string.Empty,
