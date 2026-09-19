@@ -21,8 +21,11 @@ public static class RoleMenuRelations
             .Distinct()
             .Select(id => new RoleMenu
             {
-                RoleId = model.RoleId, MenuId = id, CreatedBy = userId,
-                CreatedTime = timestamp, IsDeleted = false
+                RoleId = model.RoleId,
+                MenuId = id,
+                CreatedBy = userId,
+                CreatedTime = timestamp,
+                IsDeleted = false
             }).ToList();
     }
 }

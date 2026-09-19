@@ -1,6 +1,5 @@
-using LinqToDB.Data;
 using FluentResults;
-using My.XXX.Infra;
+using LinqToDB.Data;
 using My.XXX.Service.DTOs;
 using System.Collections.Generic;
 

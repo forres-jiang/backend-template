@@ -5,14 +5,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi;
-using Newtonsoft.Json;
-using Polly;
 using My.XXX.APIs;
 using My.XXX.APIs.Common;
 using My.XXX.APIs.Common.Middleware;
@@ -20,15 +15,12 @@ using My.XXX.Data;
 using My.XXX.Infra;
 using My.XXX.Infra.Common;
 using My.XXX.Service.Mapping;
-using Serilog;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

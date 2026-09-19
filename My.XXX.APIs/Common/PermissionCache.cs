@@ -1,4 +1,3 @@
-using My.XXX.Infra.Common;
 using My.XXX.Service.Interfaces;
 using System;
 using System.Collections.Generic;

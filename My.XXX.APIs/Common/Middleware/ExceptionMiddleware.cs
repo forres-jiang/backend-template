@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using My.XXX.Infra;
 using My.XXX.Infra.Common;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
+using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -57,7 +57,9 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 await context.Response.WriteAsJsonAsync(new
                 {
-                    state = "0", message = "An internal error occurred.", requestId
+                    state = "0",
+                    message = "An internal error occurred.",
+                    requestId
                 }, context.RequestAborted);
             }
         }

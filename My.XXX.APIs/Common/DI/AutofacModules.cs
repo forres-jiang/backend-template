@@ -5,7 +5,6 @@ using My.XXX.Service;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Service.Validators;
-using System;
 using System.Linq;
 
 namespace My.XXX.APIs.Common.DI

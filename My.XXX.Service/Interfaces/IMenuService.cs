@@ -1,6 +1,6 @@
-using My.XXX.Data.PersistantObjects;
-using LinqToDB.Data;
 using FluentResults;
+using LinqToDB.Data;
+using My.XXX.Data.PersistantObjects;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using System;

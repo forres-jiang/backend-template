@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using My.XXX.Data.PersistantObjects;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;

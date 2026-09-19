@@ -1,7 +1,7 @@
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;

@@ -1,7 +1,7 @@
 #nullable enable
-using Newtonsoft.Json;
 using My.XXX.Data.PersistantObjects;
 using My.XXX.Service.DTOs;
+using Newtonsoft.Json;
 using Riok.Mapperly.Abstractions;
 using System.Collections.Generic;
 

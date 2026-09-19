@@ -1,6 +1,6 @@
-using My.XXX.APIs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using My.XXX.APIs.Common;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;

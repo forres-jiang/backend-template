@@ -1,5 +1,3 @@
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +6,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -45,8 +42,10 @@ public class SecurityRegressionTests
     private static readonly JwtConfig Jwt = new()
     {
         Secret = "local-regression-test-signing-key-at-least-32-bytes",
-        Issuer = "regression", Audience = "regression",
-        ExpiryInMinutes = 5, RefreshExpiryInMinutes = 60
+        Issuer = "regression",
+        Audience = "regression",
+        ExpiryInMinutes = 5,
+        RefreshExpiryInMinutes = 60
     };
 
     private static string Root()
@@ -125,8 +124,11 @@ public class SecurityRegressionTests
 
                 var tokens = JwtTokenBuilder.CreateTokens(Jwt, new UserInfo
                 {
-                    UserId = "test-user", UserName = "Test", Email = "test@example.invalid",
-                    Roles = new List<string>(), RoleIds = new List<Guid>()
+                    UserId = "test-user",
+                    UserName = "Test",
+                    Email = "test@example.invalid",
+                    Roles = new List<string>(),
+                    RoleIds = new List<Guid>()
                 });
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
@@ -159,7 +161,8 @@ public class SecurityRegressionTests
             Environment.SetEnvironmentVariable(variable, "from-environment");
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
-                ContentRootPath = Path.Combine(Root(), "My.XXX.APIs"), EnvironmentName = "Production"
+                ContentRootPath = Path.Combine(Root(), "My.XXX.APIs"),
+                EnvironmentName = "Production"
             });
             Program.ConfigureSources(builder, Array.Empty<string>());
             Assert.AreEqual("from-environment", builder.Configuration["JwtConfig:Audience"]);

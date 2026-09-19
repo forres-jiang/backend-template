@@ -1,7 +1,6 @@
 using LinqToDB;
 using LinqToDB.Async;
 using My.XXX.Data.Interfaces;
-using My.XXX.Data.PersistantObjects;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;

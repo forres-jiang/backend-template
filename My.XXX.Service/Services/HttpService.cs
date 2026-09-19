@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using My.XXX.Infra;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
