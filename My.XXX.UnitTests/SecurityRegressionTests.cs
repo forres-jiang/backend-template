@@ -57,11 +57,10 @@ public class SecurityRegressionTests
                 new() { MenuId = 4, ActionIds = null }
             }
         };
-        var relations = RoleMenuRelations.Build(model, "user", DateTime.UtcNow);
-        CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4 }, relations.Select(relation => relation.MenuId).ToArray());
-        Assert.IsTrue(relations.All(relation => relation.RoleId == model.RoleId && relation.CreatedBy == "user"));
+        var relations = RoleMenuRelations.Build(model);
+        CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4 }, relations.ToArray());
         model.Menus[0].ActionIds.Add(-1);
-        Assert.ThrowsExactly<ArgumentException>(() => RoleMenuRelations.Build(model, "user", DateTime.UtcNow));
+        Assert.ThrowsExactly<ArgumentException>(() => RoleMenuRelations.Build(model));
     }
 
     [TestMethod]
@@ -69,7 +68,7 @@ public class SecurityRegressionTests
     {
         var context = new DefaultHttpContext();
         context.Features.Set<IRequestCultureFeature>(new RequestCultureFeature(new RequestCulture("zh-CN"), null));
-        var service = new MenuService(new TestCurrentRequest("zh-CN"), null, null, new ApplicationMapper());
+        var service = new MenuQueryService(null, new TestCurrentRequest("zh-CN"), new ApplicationMapper());
         var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
         service.SetMenuLanguage(menus);
         Assert.AreEqual("菜单", menus[0].DisplayName);

@@ -4,6 +4,9 @@
         <name>My.XXX.Service</name>
     </assembly>
     <members>
+        <member name="T:My.XXX.Service.Common.MenuOrder">
+            <summary>Pure ordering policy. The repository supplies a snapshot under its write lock.</summary>
+        </member>
         <member name="T:My.XXX.Service.Interfaces.ICurrentRequest">
             <summary>Framework-neutral view of the current request and authenticated user.</summary>
         </member>
@@ -14,121 +17,14 @@
              <param name="input"></param>
              <returns></returns>
         </member>
-        <member name="M:My.XXX.Service.MenuService.Add(My.XXX.Service.DTOs.SaveMenu)">
-            <summary>
-            添加菜单或按钮
-            </summary>
-            <param name="menu"></param>
-            <returns></returns>
+        <member name="T:My.XXX.Service.Interfaces.IPermissionCache">
+            <summary>Stores permission projections by an opaque application-owned cache key.</summary>
         </member>
-        <member name="M:My.XXX.Service.MenuService.Remove(System.Collections.Generic.List{System.Int32})">
-            <summary>
-            删除菜单或按钮
-            </summary>
-            <param name="ids"></param>
-            <returns></returns>
+        <member name="T:My.XXX.Service.MenuService">
+            <summary>Compatibility facade for existing HTTP contracts.</summary>
         </member>
-        <member name="M:My.XXX.Service.MenuService.Update(My.XXX.Service.DTOs.EditMenu)">
-            <summary>
-            更新菜单或按钮
-            </summary>
-            <param name="menu"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.Get(System.Int32)">
-            <summary>
-            根据Id获取菜单或按钮
-            </summary>
-            <param name="menuId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.RoleMenus(System.Guid,System.Collections.Generic.List{System.Int32},System.Boolean)">
-            <summary>
-            角色菜单关联
-            </summary>
-            <param name="roleId">角色Id</param>
-            <param name="menuIds">多个菜单Id</param>
-            <param name="isFull">是否保存整个树选中的节点</param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.RemoveRoleMenu(System.Guid,System.Int32)">
-            <summary>
-            删除角色菜单关联
-            </summary>
-            <param name="roleId"></param>
-            <param name="menuId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.RoleMenuAction(My.XXX.Service.DTOs.RoleMenuActionModel)">
-            <summary>
-            角色菜单按钮关联
-            </summary>
-            <param name="model"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.GetMenuByRoles(My.XXX.Service.DTOs.RoleMenuQuery)">
-            <summary>
-            根据多个角色获取的菜单树
-            </summary>
-            <param name="query"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.GetMenuTreeCheckedByRoles(System.Collections.Generic.List{System.Guid})">
-            <summary>
-            根据多个角色获取菜单树，并且选中已经配置的节点
-            </summary>
-            <param name="roleIds">角色ID</param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.GetMenus">
-            <summary>
-            获取所有菜单
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.GetTreeMenus(System.Nullable{System.Boolean})">
-            <summary>
-            获取所有菜单，以树形结构显示
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.SetMenuLanguage``1(System.Collections.Generic.List{``0})">
-            <summary>
-            设置语言
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="list"></param>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.BulidMenusTree(System.Collections.Generic.List{My.XXX.Service.DTOs.MenuDto},System.Collections.Generic.List{My.XXX.Service.DTOs.MenuDto},System.Int32)">
-             <summary>
-            递归构建菜单树结构
-             </summary>
-             <param name="treeNodes"></param>
-             <param name="resps"></param>
-             <param name="parentId"></param>
-             <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.UpdateSort(My.XXX.Service.DTOs.MenuSortModel)">
-            <summary>
-            更新菜单排序
-            </summary>
-            <param name="model"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.BuildDisplayNames(System.String,System.String)">
-            <summary>
-            构建菜单多语言值对象
-            </summary>
-            <param name="oldName"></param>
-            <param name="newName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.Service.MenuService.GetMenuNameByCulture(System.String)">
-            <summary>
-            根据Culture获取菜单名称
-            </summary>
-            <param name="menuName"></param>
-            <returns></returns>
+        <member name="M:My.XXX.Service.MenuService.#ctor(My.XXX.Service.MenuCommandService,My.XXX.Service.MenuQueryService,My.XXX.Service.RolePermissionService)">
+            <summary>Compatibility facade for existing HTTP contracts.</summary>
         </member>
     </members>
 </doc>

@@ -1,6 +1,3 @@
-using LinqToDB;
-using LinqToDB.Extensions.DependencyInjection;
-using LinqToDB.Extensions.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -14,11 +11,9 @@ using My.XXX.APIs.Common.Middleware;
 using My.XXX.Infrastructure;
 using My.XXX.Persistence;
 using My.XXX.Service.Interfaces;
-using My.XXX.Service.Mapping;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
-using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,6 +40,11 @@ namespace Microsoft.Extensions.DependencyInjection
             services.Configure<ConnectionStrings>(configuration.GetSection("ConnectionStrings"));
             //JWT
             services.Configure<JwtConfig>(configuration.GetSection("JwtConfig"));
+            services.AddOptions<My.XXX.Service.Common.PermissionCacheOptions>()
+                .Bind(configuration.GetSection("PermissionCache"))
+                .Validate(o => o.ExpiryInMinutes > 0 && !string.IsNullOrWhiteSpace(o.KeyPrefix),
+                    "PermissionCache needs a positive expiry and a key prefix.")
+                .ValidateOnStart();
             //Permissions
             services.Configure<PermissionWhitelist>(configuration.GetSection("PermissionWhitelist"));
         }
@@ -142,13 +142,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 });
             });
 
-            services.AddSingleton<ApplicationMapper>();
 
-            // Mutating calls must not be automatically retried without an idempotency contract.
-            services.AddHttpClient("External", client => client.Timeout = TimeSpan.FromSeconds(30))
-                .RemoveAllLoggers();
-
-            services.AddMemoryCache();
 
             services.AddScoped<ExceptionHandlingMiddleware>();
 
@@ -207,19 +201,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //DB
             var defaultConnection = ResolveConnectionString(connStrings?.Default, "Default");
-            services.AddLinqToDBContext<DBContext>((provider, options) =>
-            {
-                return DatabaseConfiguration.Configure(options, defaultConnection, defaultProvider)
-                .UseDefaultLogging(provider);
-            });
-
-            //MailMaster
             var mailMasterConnection = ResolveConnectionString(connStrings?.MailMaster, "MailMaster");
-            services.AddLinqToDBContext<MailContext>((provider, options) =>
-            {
-                return DatabaseConfiguration.Configure(options, mailMasterConnection, mailProvider)
-                .UseDefaultLogging(provider);
-            });
+            services.AddPersistenceDatabases(defaultConnection, defaultProvider, mailMasterConnection, mailProvider);
 
             services.AddHealthChecks()
                 .AddCheck("database", new My.XXX.APIs.Common.Health.SqlHealthCheck(defaultConnection, defaultProvider),
@@ -227,26 +210,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddCheck("mail-database", new My.XXX.APIs.Common.Health.SqlHealthCheck(mailMasterConnection, mailProvider),
                     tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
 
+            services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.PermissionSchemaHealthCheck>(
+                "permission-schema", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
+
             //Redis
             var redisConfig = configuration.GetSection("RedisConfig").Get<RedisConfig>();
-            if (redisConfig != null && !string.IsNullOrWhiteSpace(redisConfig.ConnectionString))
-            {
-                var options = ConfigurationOptions.Parse(ResolveConnectionString(redisConfig.ConnectionString, "Redis"));
-                options.AbortOnConnectFail = false;
-                // Do not queue permission writes while disconnected; a delayed write could restore stale permissions.
-                options.BacklogPolicy = BacklogPolicy.FailFast;
-                // The container owns and disposes the single shared connection.
-                services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(options));
-                services.AddSingleton<IPermissionCache, PermissionCache>();
+            var redisConnection = string.IsNullOrWhiteSpace(redisConfig?.ConnectionString) ? null
+                : ResolveConnectionString(redisConfig.ConnectionString, "Redis");
+            services.AddPermissionCaching(redisConnection,
+                configuration.GetValue<PermissionDataCache>("AppConfig:PermissionDataCache") == PermissionDataCache.Redis);
+            if (redisConnection != null)
                 services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.RedisHealthCheck>(
                     "redis", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
-            }
-            else
-            {
-                if (configuration.GetValue<PermissionDataCache>("AppConfig:PermissionDataCache") == PermissionDataCache.Redis)
-                    throw new InvalidOperationException("Redis permission caching requires RedisConfig:ConnectionString.");
-                services.AddSingleton<IPermissionCache, NullPermissionCache>();
-            }
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Service.Interfaces;
 
+/// <summary>Stores permission projections by an opaque application-owned cache key.</summary>
 public interface IPermissionCache
 {
     Task<List<string>> GetAsync(string userId, CancellationToken cancellationToken = default);

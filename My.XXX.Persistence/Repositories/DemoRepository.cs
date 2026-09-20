@@ -1,9 +1,11 @@
 using LinqToDB;
 using LinqToDB.Data;
 using My.XXX.Persistence.Common;
-using My.XXX.Persistence.Interfaces;
+using My.XXX.Service.Ports;
 using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Shared;
+using My.XXX.Service.DTOs;
+using My.XXX.Persistence.Mapping;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,8 +21,11 @@ namespace My.XXX.Persistence.Repositories
             _dbContext = dbContext;
         }
 
-        public bool Add(Demo demo, List<DemoDetail> details) => AtomicWrite.Execute(_dbContext, () =>
+        public bool Add(DemoModel model) => AtomicWrite.Execute(_dbContext, () =>
         {
+            var mapper = new PersistenceMapper();
+            var demo = mapper.ToDemo(model);
+            var details = mapper.ToDemoDetails(model.Details);
             var demoId = _dbContext.InsertWithInt32Identity(demo);
             if (demoId <= 0) return false;
             foreach (var item in details)
@@ -31,8 +36,9 @@ namespace My.XXX.Persistence.Repositories
             return true;
         }, success => success);
 
-        public int Upate(Demo demo)
+        public int Update(DemoModel model)
         {
+            var demo = new PersistenceMapper().ToDemo(model);
             var value = _dbContext.Demo.Where(m => m.Id == demo.Id)
                   .Set(m => m.DemoString, demo.DemoString)
                   .Set(m => m.DemoDecimal, demo.DemoDecimal)

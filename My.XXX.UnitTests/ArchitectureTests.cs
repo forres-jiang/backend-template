@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Controllers;
-using My.XXX.Persistence.Interfaces;
+using My.XXX.Service.Ports;
 using My.XXX.Service.Common;
 using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
@@ -68,7 +68,7 @@ public class ArchitectureTests
         foreach (var controller in typeof(UserController).Assembly.GetTypes()
             .Where(t => typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t)))
             foreach (var parameter in controller.GetConstructors().SelectMany(c => c.GetParameters()))
-                Assert.IsFalse((parameter.ParameterType.Namespace ?? "").StartsWith("My.XXX.Persistence"), controller.Name);
+                Assert.IsFalse((parameter.ParameterType.Namespace ?? "").StartsWith("My.XXX.Persistence") || parameter.ParameterType.Namespace == "My.XXX.Service.Ports", controller.Name);
     }
 
     [TestMethod]
@@ -83,7 +83,7 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationAssemblyDoesNotReferenceTechnicalImplementations()
     {
-        var forbidden = new[] { "linq2db", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs" };
+        var forbidden = new[] { "linq2db", "Npgsql", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs", "My.XXX.Persistence" };
         foreach (var reference in typeof(IMenuService).Assembly.GetReferencedAssemblies())
             Assert.IsFalse(forbidden.Contains(reference.Name), reference.Name);
     }
@@ -95,8 +95,8 @@ public class ArchitectureTests
         {
             ["My.XXX.Shared"] = Array.Empty<string>(),
             ["My.XXX.Contracts"] = new[] { "My.XXX.Shared" },
-            ["My.XXX.Persistence"] = new[] { "My.XXX.Shared", "My.XXX.Contracts" },
-            ["My.XXX.Service"] = new[] { "My.XXX.Shared", "My.XXX.Contracts", "My.XXX.Persistence" },
+            ["My.XXX.Persistence"] = new[] { "My.XXX.Shared", "My.XXX.Contracts", "My.XXX.Service" },
+            ["My.XXX.Service"] = new[] { "My.XXX.Shared", "My.XXX.Contracts" },
             ["My.XXX.Infrastructure"] = new[] { "My.XXX.Service" }
         };
         foreach (var (project, dependencies) in allowed)
@@ -109,6 +109,67 @@ public class ArchitectureTests
                 Assert.IsTrue(dependencies.Contains(name), $"{project} must not depend on {name}");
             }
         }
+    }
+
+    [TestMethod]
+    public void ApplicationPortsAndTheirModelsAreIndependentOfStorage()
+    {
+        var visited = new HashSet<Type>();
+        void Check(Type type)
+        {
+            foreach (var part in Flatten(type))
+            {
+                var ns = part.Namespace ?? "";
+                Assert.IsFalse(ns.StartsWith("My.XXX.Persistence") || ns.StartsWith("LinqToDB") || ns.StartsWith("Microsoft.AspNetCore"), part.FullName);
+                if (ns.StartsWith("My.XXX") && visited.Add(part))
+                    foreach (var property in part.GetProperties()) Check(property.PropertyType);
+            }
+        }
+        foreach (var port in typeof(IMenuRepository).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace == typeof(IMenuRepository).Namespace))
+            foreach (var method in port.GetMethods())
+            {
+                Check(method.ReturnType);
+                foreach (var parameter in method.GetParameters()) Check(parameter.ParameterType);
+            }
+    }
+
+    [TestMethod]
+    public void ActiveControllerMethodBodiesDoNotUseStorageOrCacheImplementations()
+    {
+        var codes = typeof(System.Reflection.Emit.OpCodes).GetFields()
+            .Where(f => f.FieldType == typeof(System.Reflection.Emit.OpCode))
+            .Select(f => (System.Reflection.Emit.OpCode)f.GetValue(null)).ToDictionary(c => unchecked((ushort)c.Value));
+        var controllers = typeof(UserController).Assembly.GetTypes().Where(t =>
+            typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t) &&
+            !Attribute.IsDefined(t, typeof(Microsoft.AspNetCore.Mvc.NonControllerAttribute)));
+        foreach (var controller in controllers)
+            foreach (var type in new[] { controller }.Concat(controller.GetNestedTypes(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)))
+                foreach (var method in type.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly))
+                {
+                    var il = method.GetMethodBody()?.GetILAsByteArray();
+                    if (il == null) continue;
+                    for (var offset = 0; offset < il.Length;)
+                    {
+                        ushort value = il[offset++];
+                        if (value == 0xfe) value = (ushort)(0xfe00 | il[offset++]);
+                        var operand = codes[value].OperandType;
+                        if (operand is System.Reflection.Emit.OperandType.InlineMethod or System.Reflection.Emit.OperandType.InlineField or System.Reflection.Emit.OperandType.InlineType or System.Reflection.Emit.OperandType.InlineTok)
+                        {
+                            var member = method.Module.ResolveMember(BitConverter.ToInt32(il, offset), type.GetGenericArguments(), method.IsGenericMethod ? method.GetGenericArguments() : null);
+                            var ns = (member as Type)?.Namespace ?? member.DeclaringType?.Namespace ?? "";
+                            Assert.IsFalse(ns.StartsWith("My.XXX.Persistence") || ns.StartsWith("LinqToDB") || ns.StartsWith("StackExchange.Redis") || ns.StartsWith("My.XXX.Infrastructure") || ns == "My.XXX.Service.Ports", $"{controller.Name}.{method.Name}: {member}");
+                        }
+                        offset += operand switch
+                        {
+                            System.Reflection.Emit.OperandType.InlineNone => 0,
+                            System.Reflection.Emit.OperandType.ShortInlineBrTarget or System.Reflection.Emit.OperandType.ShortInlineI or System.Reflection.Emit.OperandType.ShortInlineVar => 1,
+                            System.Reflection.Emit.OperandType.InlineVar => 2,
+                            System.Reflection.Emit.OperandType.InlineI8 or System.Reflection.Emit.OperandType.InlineR => 8,
+                            System.Reflection.Emit.OperandType.InlineSwitch => 4 + 4 * BitConverter.ToInt32(il, offset),
+                            _ => 4
+                        };
+                    }
+                }
     }
 
     private static IEnumerable<Type> Flatten(Type type)

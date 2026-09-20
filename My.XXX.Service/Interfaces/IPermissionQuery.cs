@@ -7,6 +7,7 @@ namespace My.XXX.Service.Interfaces;
 
 public interface IPermissionQuery
 {
+    Task RemoveCachedPermissionsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default);
     List<string> GetRoleMenuPaths(List<Guid> roleIds);
     Task<List<string>> GetRoleMenuPathsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default);
 }

@@ -40,7 +40,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\My.XXX.Persistence\03My.XXX.Persistence.csproj" />
 	  <ProjectReference Include="..\My.XXX.Shared\05My.XXX.Shared.csproj" />
 	</ItemGroup>
 

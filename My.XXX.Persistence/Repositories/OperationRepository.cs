@@ -1,9 +1,10 @@
 using LinqToDB;
 using LinqToDB.Async;
-using My.XXX.Persistence.Interfaces;
+using My.XXX.Service.Ports;
 using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
 using My.XXX.Shared;
+using My.XXX.Persistence.Mapping;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,11 +17,11 @@ namespace My.XXX.Persistence.Repositories
         {
             _dbContext = dbContext;
         }
-        public async Task Save(Operation rlog)
+        public async Task Save(MetricsInfo rlog)
         {
-            await _dbContext.InsertAsync(rlog);
+            await _dbContext.InsertAsync(new PersistenceMapper().ToOperation(rlog));
         }
-        public async Task<Paged<Operation>> Search(OperationQeury query)
+        public async Task<Paged<OperationDto>> Search(OperationQeury query)
         {
             var rl = _dbContext.Operations.Where(m => m.UserId != null);
             if (!string.IsNullOrEmpty(query.Controller))
@@ -44,7 +45,7 @@ namespace My.XXX.Persistence.Repositories
                 .Skip(query.PageIndex * query.PageSize)
                 .Take(query.PageSize).ToListAsync();
 
-            return Paged<Operation>.Create(list, total);
+            return Paged<OperationDto>.Create(new PersistenceMapper().ToOperationDtos(list), total);
         }
     }
 }

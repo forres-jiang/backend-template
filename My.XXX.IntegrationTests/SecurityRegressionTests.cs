@@ -105,7 +105,7 @@ public class SecurityRegressionTests
                 Assert.AreEqual(HttpStatusCode.Unauthorized,
                     (await client.PostAsync("/api/Operation/list", new StringContent("{}", Encoding.UTF8, "application/json"))).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized,
-                    (await client.PostAsync("/api/Role/List", null)).StatusCode);
+                    (await client.PostAsync("/api/Menu/Tree", null)).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/Logout", null)).StatusCode);
 
@@ -148,7 +148,7 @@ public class SecurityRegressionTests
                 Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/swagger/v1/swagger.json")).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Forbidden,
                     (await client.PostAsync("/api/Operation/list", new StringContent("{}", Encoding.UTF8, "application/json"))).StatusCode);
-                Assert.AreEqual(HttpStatusCode.Forbidden, (await client.PostAsync("/api/Role/List", null)).StatusCode);
+                Assert.AreEqual(HttpStatusCode.Forbidden, (await client.PostAsync("/api/Menu/Tree", null)).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/RefreshToken", null)).StatusCode);
 
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokens.RefreshToken);

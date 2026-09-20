@@ -116,6 +116,9 @@ namespace My.XXX.Service.DTOs
 
     public class EditMenu : BaseInputMenu
     {
+        // Null/omitted values retain old data. These names explicitly clear nullable strings.
+        public List<string> ClearFields { get; set; }
+
         public int Id { get; set; }
 
         public int? Number { get; set; }

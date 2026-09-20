@@ -2,60 +2,84 @@
 
 ## Architecture
 
-The solution uses traditional layered architecture with explicit application and infrastructure boundaries:
-
-Project display names and project files are numbered by architectural responsibility: `01 APIs`, `02 Service`, `03 Persistence`, `04 Contracts`, `05 Shared`, `06 Infrastructure`. Infrastructure adapters are listed after the application and shared projects. These numbers control display order, not dependency direction; the dependency graph below remains authoritative. `07 Tests` is a separate verification project. Directory names, assembly names and namespaces do not include these ordering prefixes.
+The application owns its ports; persistence and external adapters implement them. Numbered project filenames control solution display order, not dependency direction.
 
 ```text
-APIs -> Service -> Persistence -> Contracts -> Shared
+APIs -> Service -> Contracts -> Shared
+APIs -> Persistence -> Service / Contracts / Shared
 APIs -> Infrastructure -> Service
-Service -> Contracts / Shared
-Persistence -> Shared
 ```
 
 | Project | Responsibility |
 | --- | --- |
-| APIs | HTTP endpoints, response DTOs, localization, JWT adapter, authentication/authorization and dependency composition |
-| Service | Application use cases, business validation, mapping, application ports; no SQL execution |
-| Persistence | Repository interfaces and implementations, persistence models, SQL queries, transaction execution |
-| Contracts | Application DTOs shared with persistence and external adapters |
-| Infrastructure | External HTTP clients, Redis permission cache and Excel export |
-| Shared | Small shared types, configuration objects, business errors and paging; no web, database or Redis packages |
+| APIs | HTTP endpoints, response envelopes, JWT/request adapters, authorization, localization and composition root |
+| Service | Use cases, business policies, repository ports, application DTO mapping; no persistence/ORM/Redis implementation references |
+| Persistence | Repository implementations, database entities, entity mappings, SQL, transactions and database registration |
+| Contracts | Application inputs/read DTOs and provider-independent batch results |
+| Infrastructure | Redis permission cache, external HTTP clients, Excel export and adapter registration |
+| Shared | Shared primitives, configuration and business errors |
 
-DTO namespaces remain `My.XXX.Service.DTOs` for source compatibility. Shared types use `My.XXX.Shared` (renamed from the former Infra project). Response types also use the `My.XXX.Shared` namespace but belong to the APIs assembly; DTOs belong to Contracts. This is intentionally a traditional layered design: Service still references Persistence for repositories and internal persistence mappings. It is not a domain-independent Clean Architecture model.
+`Service/Ports` owns repository interfaces. Their signatures and model properties contain no storage entities. `PersistenceMapper` maps database entities inside Persistence; `ApplicationMapper` only maps application models. Mail queue flags and storage defaults are adapter details.
 
-Rules enforced by architecture tests:
+`MenuCommandService`, `MenuQueryService` and `RolePermissionService` separate maintenance, presentation queries and authorization changes. `MenuService` is a compatibility facade retaining the existing controller contracts. `MenuOrder`, `MenuHierarchy`, `MenuTree` and `MenuDisplayNames` hold testable policies independent of database execution.
 
-- Service code must not reference ASP.NET request types.
-- Service code must not call the static Redis client; caching is accessed through `IPermissionCache`.
-- HTTP claims and culture are exposed to Service through `ICurrentRequest`.
-- Database operations belong behind repository interfaces; new Service code must not introduce direct contexts.
-- Application interfaces must not expose persistence models, ORM result types or API response envelopes.
-- Repository interfaces return materialized results, not `IQueryable`; paged queries execute in Persistence.
-- Controllers must not depend on database contexts or repositories.
-- Project references follow the allowed dependency graph; Service must not reference ORM, Redis, Excel or infrastructure implementations in its compiled assembly.
+APIs calls `AddBusinessServices`, `AddRepositories`, `AddPersistenceDatabases`, `AddExternalAdapters` and `AddPermissionCaching`. Registrations are explicit and owned by their project; framework request/JWT adapters remain at the composition root. No assembly scanning is needed for these services. Existing marker interfaces are retained for source compatibility.
 
-`My.XXX.APIs` is the composition root. Framework-specific implementations are registered there.
+DTO namespaces remain `My.XXX.Service.DTOs` for compatibility, although the types live in Contracts. API response classes retain the `My.XXX.Shared` namespace and live in APIs. New storage adapters must depend on application ports, not move storage models into Contracts.
 
-## Use cases and transactions
+Architecture tests enforce project directions, application assembly dependencies, recursive port model boundaries, materialized repository results and active controller method bodies. The `[NonController]` demo is an example and is excluded from active endpoint rules.
 
-`AuthenticationService` coordinates login, role mapping, refresh and logout through `IAppCenterService`, `ITokenIssuer`, `ICurrentRequest` and `IPermissionCache`. The controller maps the session to the existing login response, including top-level token fields. JWT mechanics stay in APIs. `PermissionQuery` owns permission-path lookup and caching, independently of menu maintenance.
+## Transactions and permission consistency
 
-Application commands return FluentResults. Ordinary DTO queries remain ordinary queries. API controllers explicitly call `ToApiResult` or `ToLoginResult`; existing boolean command endpoints project `IsSuccess` to preserve their wire contract. `BatchWriteSummary` preserves the former batch response fields without exposing an ORM type.
+All menu and role-menu mutations first update the singleton `PermissionRevision` row inside their transaction. This serializes administrative writers across processes before they read and calculate their changes. Role replacements, parent validation, localized-name changes and ordering therefore use a snapshot protected by the same write lock. The data and revision commit together; unsuccessful operations and exceptions roll both back. An active `(RoleId, MenuId)` unique index additionally prevents duplicate grants.
 
-Application services choose an atomic repository operation. Persistence executes its SQL through `AtomicWrite`: successful operations commit, unsuccessful outcomes roll back, and unexpected exceptions roll back and propagate to the HTTP exception middleware. Menu ordering, role replacement, demo/detail insertion and mail/attachment insertion are atomic. Do not compose multiple independently committing repository methods when a new use case requires a single transaction: add one atomic operation covering that use case instead.
+The global revision intentionally favors simple correctness for low-volume administrative writes. It serializes unrelated menu/role edits and invalidates all permission projections when any menu changes. If this becomes a measured bottleneck, migrate to per-role revisions and a separate menu-structure lock.
 
-Both response filters share runtime normalization and preserve HTTP status. Explicitly returning an unconverted FluentResults value is rejected instead of silently wrapping a failure as success. `NonUnifyResult` opts out. Validation and unexpected-exception envelopes retain their existing distinct formats for client compatibility.
+Authorization in Redis mode reads the revision from the primary business database, then addresses a cache key containing the configured prefix, revision and a hash of the user ID plus canonical role IDs. It rechecks the revision after reading cached/database permissions and retries if it changed. A slow writer can only populate an obsolete versioned key, which subsequent requests cannot use. After three concurrent changes it falls back to a direct permission query. Requests already in progress may complete against the state read during that request; this is not cancellation of in-flight requests.
+
+This removes the database-commit/Redis-delete failure window without a distributed transaction or Outbox. Every cache hit still costs two small primary-database revision reads; the cached projection avoids the role/menu join. Redis and database failures propagate rather than granting access from unchecked stale data. Do not route revision reads to lagging replicas. Every writer, including maintenance SQL, must take the same row lock and increment the revision in its data transaction. Old application instances do not follow this protocol and must not run alongside the upgraded version.
+
+Database mode reads permission paths directly and does not use Redis. Menu writes still require the revision table in both modes. Permission membership still comes from authenticated role claims; changing user role claims or revoking issued JWTs is a separate concern. Logout clears current versioned and legacy cache keys; it does not implement token revocation.
+
+Other multi-row operations use `AtomicWrite`, which commits successful results, rolls back unsuccessful results and propagates unexpected exceptions. Avoid composing independently committing repository methods for one atomic use case.
+
+## Database upgrade before deployment
+
+1. Stop old instances that can write menus or role assignments.
+2. Back up the business database and check for duplicate active role-menu assignments. The unique index deliberately fails if duplicates exist; resolve them according to the intended assignments instead of silently deleting data.
+3. Run the matching script against **Default** (not MailMaster):
+   - `My.XXX.Persistence/Migrations/001_permission_revision.sqlserver.sql`
+   - `My.XXX.Persistence/Migrations/001_permission_revision.postgresql.sql`
+4. Configure a distinct `PermissionCache:KeyPrefix` per application/environment sharing Redis, deploy all upgraded instances, and check readiness including `permission-schema`.
+
+Both upgrade scripts are transactional and repeatable. They create a singleton version table and a filtered/partial unique index; they do not create the existing business tables or auto-run at startup. After a database restore or rollback to older writers, change the cache prefix before resuming the versioned protocol so historical revision numbers cannot reuse old Redis entries.
+
+## API compatibility and partial updates
+
+Application commands return FluentResults. Controllers retain their existing response envelopes and boolean command projections. Validation and unexpected-exception envelopes remain distinct for wire compatibility; response filters reject unconverted FluentResults failures.
+
+Menu updates use an explicit allowlist instead of reflection over matching database column names. Omitted/null values retain existing values. To clear a nullable string explicitly, provide `ClearFields`, for example:
+
+```json
+{ "Id": 7, "ClearFields": ["Description", "Icon"] }
+```
+
+Allowed names are `Description`, `Icon`, `Url`, `Component`, `ControllerName`, `ActionName` and `LinkTarget` (case insensitive). Explicit clearing takes precedence over a supplied value. Invalid names reject the update; identifiers/audit fields cannot be cleared. Parent changes that create cycles, reference missing parents or place children under action nodes are rejected. Empty full role selections now remove all assignments.
 
 ## Redis configuration
 
-Redis uses StackExchange.Redis with one container-owned `IConnectionMultiplexer` per application instance. Permission cache operations, authorization and logout use asynchronous calls; connection recovery is handled by the multiplexer. Disconnected commands fail promptly rather than being queued and replayed as potentially stale permission writes. Redis failures propagate; failed invalidation must not be reported as successful logout.
+Configure `RedisConfig__ConnectionString` through environment variables or a secret provider, for example `localhost:6379,defaultDatabase=0,connectTimeout=5000,asyncTimeout=5000`. StackExchange.Redis uses one container-owned multiplexer. Disconnected commands fail promptly instead of queuing stale permission writes. Existing `enc:v1:` encryption remains supported; decrypted strings must use StackExchange.Redis syntax.
 
-Provide `RedisConfig__ConnectionString` through environment variables or a secret provider, for example `localhost:6379,defaultDatabase=0,connectTimeout=5000,asyncTimeout=5000`. Authentication and TLS options include `user=...`, `password=...` and `ssl=true`. Existing `enc:v1:` encrypted connection strings remain supported, but their decrypted contents must use StackExchange.Redis syntax: keep `defaultDatabase`, remove pooling options such as `poolsize`/`preheat`, and move any CSRedis `prefix` into an explicit application key strategy before migrating. Unknown options are rejected rather than silently ignored.
+Set `AppConfig:PermissionDataCache` to `1` for Redis caching, which requires a Redis connection string. With `0` and no connection string, no Redis connection or Redis readiness check is registered.
 
-Set `AppConfig:PermissionDataCache` to `1` to enable Redis permission caching; this requires a connection string. With database mode (`0`) and no Redis connection string, no Redis connection or readiness check is registered. When configured, the Redis readiness check pings the selected database.
+```json
+"PermissionCache": {
+  "KeyPrefix": "your-app:production:permissions:v2",
+  "ExpiryInMinutes": 5
+}
+```
 
-Existing user-id keys and JSON string arrays are retained; reads distinguish a missing key from an empty permission list. Writes set the value and positive TTL in one command. Keep the same database and key namespace when migrating existing deployments. Request cancellation stops waiting for an operation; it cannot retract a Redis command already sent. Connection settings are read at startup; restart the application after changing them.
+Expiry is independent of JWT lifetime and must be positive. JSON string arrays and the distinction between missing and empty permissions are preserved. Old user-ID-only entries are ignored by authorization and expire naturally; no global Redis flush is needed. Values and expiry are set atomically. Cancellation stops waiting but cannot retract commands already sent. Restart after changing connection/prefix settings.
 
 ## Verification
 
@@ -64,7 +88,14 @@ dotnet test MyXXXSolution.sln
 dotnet publish My.XXX.APIs/01My.XXX.APIs.csproj -c Release
 ```
 
-Tests cover dependency rules, transaction commit/rollback through an instrumented ADO.NET connection, login orchestration, DTO serialization, DI resolution and real HTTP success, failure, validation, authorization and exception paths. SQL Server write semantics and rollback against a real database still require integration validation in an environment with disposable databases. No database migrations are introduced by this refactor.
+Unit tests cover architecture boundaries, mapping/serialization, cache revision races, menu policies and transaction outcomes. HTTP integration tests cover host composition and response/authentication/authorization boundaries.
+
+Real database concurrency tests require explicit disposable-server connections with CREATE/DROP DATABASE privileges:
+
+- `ARCH_TEST_POSTGRES`: PostgreSQL administrative connection string.
+- `ARCH_TEST_SQLSERVER`: SQL Server administrative connection string.
+
+Each case creates and removes its own randomly named database and runs the matching upgrade script twice. Tests exercise concurrent grants/replacements/sorting, invalid-write rollback, injected database exceptions and explicit field clearing. Unconfigured providers are reported as skipped, not as validated. Do not point these variables at a production server.
 
 ## Database providers
 

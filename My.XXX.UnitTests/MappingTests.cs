@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Mapping;
+using My.XXX.Persistence.Mapping;
 using Newtonsoft.Json;
 using System;
 
@@ -10,7 +10,7 @@ namespace My.XXX.UnitTests;
 [TestClass]
 public class MappingTests
 {
-    private readonly ApplicationMapper mapper = new();
+    private readonly PersistenceMapper mapper = new();
 
     [TestMethod]
     public void ObjectMappingsPreserveMatchingPropertiesIncludingInheritedMembers()

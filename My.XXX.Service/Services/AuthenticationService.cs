@@ -13,14 +13,14 @@ public sealed class AuthenticationService : IAuthenticationService, IScopeDepend
 {
     private readonly ICurrentRequest _current;
     private readonly ITokenIssuer _tokens;
-    private readonly IPermissionCache _cache;
+    private readonly IPermissionQuery _permissions;
     private readonly AppConfig _config;
 
     public AuthenticationService(ICurrentRequest current, ITokenIssuer tokens,
-        IPermissionCache cache, IOptionsMonitor<AppConfig> config)
+        IPermissionQuery permissions, IOptionsMonitor<AppConfig> config)
     {
         _current = current;
-        _tokens = tokens; _cache = cache; _config = config.CurrentValue;
+        _tokens = tokens; _permissions = permissions; _config = config.CurrentValue;
     }
 
     public Result<AuthenticationSession> Refresh()
@@ -33,6 +33,6 @@ public sealed class AuthenticationService : IAuthenticationService, IScopeDepend
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         if (_config.PermissionDataCache == PermissionDataCache.Redis && _current.User != null)
-            await _cache.RemoveAsync(_current.User.UserId, cancellationToken);
+            await _permissions.RemoveCachedPermissionsAsync(_current.User.RoleIds, _current.User.UserId, cancellationToken);
     }
 }

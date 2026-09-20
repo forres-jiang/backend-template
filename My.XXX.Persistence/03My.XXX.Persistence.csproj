@@ -44,7 +44,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="linq2db.Extensions" />
+		<PackageReference Include="Riok.Mapperly" PrivateAssets="all" />
+        <ProjectReference Include="../My.XXX.Service/02My.XXX.Service.csproj" />
+        <PackageReference Include="linq2db.Extensions" />
 		<PackageReference Include="linq2db.SqlServer" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<PackageReference Include="Npgsql" />
