@@ -1,8 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Controllers;
-using My.XXX.Service.Ports;
 using My.XXX.Service.Common;
 using My.XXX.Service.Interfaces;
+using My.XXX.Service.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
@@ -74,8 +74,8 @@ public class ArchitectureTests
     [TestMethod]
     public void RepositoriesDoNotReturnDeferredQueries()
     {
-        foreach (var contract in typeof(IMenuRepository).Assembly.GetTypes()
-            .Where(t => t.IsInterface && t.Namespace == typeof(IMenuRepository).Namespace))
+        foreach (var contract in typeof(IMenuReadRepository).Assembly.GetTypes()
+            .Where(t => t.IsInterface && t.Namespace == typeof(IMenuReadRepository).Namespace))
             foreach (var method in contract.GetMethods())
                 Assert.IsFalse(Flatten(method.ReturnType).Any(t => typeof(IQueryable).IsAssignableFrom(t)), method.Name);
     }
@@ -125,7 +125,7 @@ public class ArchitectureTests
                     foreach (var property in part.GetProperties()) Check(property.PropertyType);
             }
         }
-        foreach (var port in typeof(IMenuRepository).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace == typeof(IMenuRepository).Namespace))
+        foreach (var port in typeof(IMenuReadRepository).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace == typeof(IMenuReadRepository).Namespace))
             foreach (var method in port.GetMethods())
             {
                 Check(method.ReturnType);
@@ -170,6 +170,54 @@ public class ArchitectureTests
                         };
                     }
                 }
+    }
+
+    [TestMethod]
+    public void MenuPortsDoNotReuseWireModelsAndEndpointsDoNotExposeInternalState()
+    {
+        var contractsAssembly = typeof(My.XXX.Service.DTOs.MenuDto).Assembly;
+        foreach (var port in new[] { typeof(IMenuReadRepository), typeof(IMenuTransaction), typeof(IMenuWriteSession), typeof(IPermissionStore) })
+            foreach (var method in port.GetMethods())
+                foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
+                    Assert.AreNotEqual(contractsAssembly, type.Assembly, $"{port.Name}.{method.Name} reuses a wire model.");
+
+        var visited = new HashSet<Type>();
+        void Check(Type type)
+        {
+            foreach (var part in Flatten(type))
+            {
+                Assert.IsFalse((part.Namespace ?? "").StartsWith("My.XXX.Service.Models"), part.FullName);
+                if (part.Assembly == contractsAssembly && visited.Add(part))
+                    foreach (var property in part.GetProperties()) Check(property.PropertyType);
+            }
+        }
+        foreach (var method in typeof(MenuController).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
+        {
+            Check(method.ReturnType);
+            foreach (var parameter in method.GetParameters()) Check(parameter.ParameterType);
+        }
+    }
+
+    [TestMethod]
+    public void ApplicationUsesNarrowContextsAndTelemetryCannotCarryFrameworkObjects()
+    {
+        var constructors = new[] { typeof(My.XXX.Service.MenuCommandService), typeof(My.XXX.Service.MenuQueryService),
+            typeof(My.XXX.Service.RolePermissionService), typeof(My.XXX.Service.AuthenticationService) }
+            .SelectMany(t => t.GetConstructors()).SelectMany(c => c.GetParameters());
+        Assert.IsFalse(constructors.Any(p => p.ParameterType == typeof(ICurrentRequest)));
+        foreach (var property in typeof(My.XXX.Service.DTOs.MetricsInfo).GetProperties())
+            Assert.AreNotEqual(typeof(object), property.PropertyType, property.Name);
+        var shared = typeof(Paged<>).Assembly;
+        Assert.AreNotEqual(shared, typeof(AppConfig).Assembly);
+        Assert.AreNotEqual(shared, typeof(JwtConfig).Assembly);
+        Assert.AreNotEqual(shared, typeof(RedisConfig).Assembly);
+        Assert.IsFalse(shared.GetTypes().SelectMany(t => t.GetProperties()).Any(p => p.PropertyType == typeof(System.Net.HttpStatusCode)));
+        var menuWireTypes = new[] { typeof(My.XXX.Service.DTOs.MenuBase), typeof(My.XXX.Service.DTOs.MenuBaseDto),
+            typeof(My.XXX.Service.DTOs.MenuDto), typeof(My.XXX.Service.DTOs.MenuSearchPickerDto),
+            typeof(My.XXX.Service.DTOs.SaveMenu), typeof(My.XXX.Service.DTOs.EditMenu) };
+        foreach (var method in typeof(My.XXX.Persistence.Mapping.PersistenceMapper).GetMethods())
+            foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
+                Assert.IsFalse(menuWireTypes.Contains(type), $"Persistence mapper exposes {type.Name}");
     }
 
     private static IEnumerable<Type> Flatten(Type type)

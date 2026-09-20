@@ -20,6 +20,30 @@
         <member name="T:My.XXX.Service.Interfaces.IPermissionCache">
             <summary>Stores permission projections by an opaque application-owned cache key.</summary>
         </member>
+        <member name="T:My.XXX.Service.Interfaces.IRequestLogWriter">
+            <summary>Best-effort operational logging. Not a durable business audit contract.</summary>
+        </member>
+        <member name="T:My.XXX.Service.Models.MenuSearch">
+            <summary>Normalized query criteria. PageIndex is zero-based, independent of HTTP binding.</summary>
+        </member>
+        <member name="M:My.XXX.Service.Models.MenuSearch.#ctor(System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Int32},System.Int32,System.Int32)">
+            <summary>Normalized query criteria. PageIndex is zero-based, independent of HTTP binding.</summary>
+        </member>
+        <member name="T:My.XXX.Service.Models.MenuState">
+            <summary>Application state used by menu policies; never returned directly by HTTP endpoints.</summary>
+        </member>
+        <member name="M:My.XXX.Service.Ports.IMenuTransaction.Execute(System.Func{My.XXX.Service.Ports.IMenuWriteSession,FluentResults.Result})">
+            <summary>Locks the permission revision before invoking the use case. Failure results and exceptions roll back all writes.</summary>
+        </member>
+        <member name="T:My.XXX.Service.Ports.IMenuWriteSession">
+            <summary>Available only inside Execute. Contains persistence primitives, not business commands.</summary>
+        </member>
+        <member name="T:My.XXX.Service.MenuMutations">
+            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
+        </member>
+        <member name="M:My.XXX.Service.MenuMutations.#ctor(My.XXX.Service.Ports.IMenuTransaction,System.TimeProvider)">
+            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
+        </member>
         <member name="T:My.XXX.Service.MenuService">
             <summary>Compatibility facade for existing HTTP contracts.</summary>
         </member>

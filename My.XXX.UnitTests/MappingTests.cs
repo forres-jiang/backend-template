@@ -1,7 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using My.XXX.Persistence.Mapping;
 using My.XXX.Persistence.PersistantObjects;
 using My.XXX.Service.DTOs;
-using My.XXX.Persistence.Mapping;
+using My.XXX.Service.Mapping;
+using My.XXX.Service.Models;
 using Newtonsoft.Json;
 using System;
 
@@ -11,6 +13,7 @@ namespace My.XXX.UnitTests;
 public class MappingTests
 {
     private readonly PersistenceMapper mapper = new();
+    private readonly ApplicationMapper application = new();
 
     [TestMethod]
     public void ObjectMappingsPreserveMatchingPropertiesIncludingInheritedMembers()
@@ -19,20 +22,16 @@ public class MappingTests
         AssertMatchingProperties(demo, mapper.ToDemo(demo));
         var detail = Populate<DemoDetailModel>();
         AssertMatchingProperties(detail, mapper.ToDemoDetail(detail));
-        var mail = Populate<Mail>();
-        AssertMatchingProperties(mail, mapper.ToMailQueue(mail));
-        var saveMenu = Populate<SaveMenu>();
-        AssertMatchingProperties(saveMenu, mapper.ToMenu(saveMenu));
+
         var menu = Populate<Menus>();
-        AssertMatchingProperties(menu, mapper.ToSaveMenu(menu));
-        AssertMatchingProperties(menu, mapper.ToMenuDto(menu));
-        AssertMatchingProperties(menu, mapper.ToMenuBaseDto(menu));
-        var picker = mapper.ToMenuSearchPickerDto(menu);
-        AssertMatchingProperties(menu, picker);
-        Assert.AreEqual(menu.Id, picker.Value);
-        var baseDto = mapper.ToMenuBaseDto(menu);
-        AssertMatchingProperties(baseDto, mapper.ToMenuSearchPickerFromBase(baseDto));
-        Assert.AreEqual(menu.Id, mapper.ToMenuSearchPickersFromBase(new[] { baseDto })[0].Value);
+        var state = mapper.ToMenuState(menu);
+        AssertMatchingProperties(menu, state);
+        AssertMatchingProperties(menu, mapper.ToMenuEntity(state));
+        AssertMatchingProperties(menu, application.ToMenuDto(state));
+        AssertMatchingProperties(menu, application.ToMenuBaseDto(state));
+        var baseDto = application.ToMenuBaseDto(state);
+        AssertMatchingProperties(baseDto, application.ToMenuSearchPickerFromBase(baseDto));
+        Assert.AreEqual(menu.Id, application.ToMenuSearchPickersFromBase(new[] { baseDto })[0].Value);
         var metrics = Populate<MetricsInfo>();
         AssertMatchingProperties(metrics, mapper.ToOperation(metrics), "Inputs", "ReturnValue");
     }
@@ -42,46 +41,46 @@ public class MappingTests
     {
         Assert.IsNull(mapper.ToDemo(null));
         Assert.IsNull(mapper.ToDemoDetail(null));
-        Assert.IsNull(mapper.ToMailQueue(null));
-        Assert.IsNull(mapper.ToMenu(null));
-        Assert.IsNull(mapper.ToSaveMenu(null));
-        Assert.IsNull(mapper.ToMenuDto(null));
-        Assert.IsNull(mapper.ToMenuBaseDto(null));
-        Assert.IsNull(mapper.ToMenuSearchPickerDto(null));
+        Assert.IsNull(mapper.ToMenuState(null));
+        Assert.IsNull(mapper.ToMenuEntity(null));
+        Assert.IsNull(application.ToMenuDto(null));
+        Assert.IsNull(application.ToMenuBaseDto(null));
+        Assert.IsNull(application.ToMenuSearchPickerFromBase(null));
         Assert.IsNull(mapper.ToOperation(null));
         Assert.AreEqual(0, mapper.ToDemoDetails(null).Count);
-        Assert.AreEqual(0, mapper.ToMenuDtos(null).Count);
-        Assert.AreEqual(0, mapper.ToMenuBaseDtos(null).Count);
-        Assert.AreEqual(0, mapper.ToMenuSearchPickerDtos(null).Count);
-        Assert.AreEqual(0, mapper.ToMenuSearchPickersFromBase(null).Count);
+        Assert.AreEqual(0, mapper.ToMenuStates(null).Count);
+        Assert.AreEqual(0, application.ToMenuDtos(null).Count);
+        Assert.AreEqual(0, application.ToMenuBaseDtos(null).Count);
+        Assert.AreEqual(0, application.ToMenuSearchPickersFromBase(null).Count);
     }
 
     [TestMethod]
     public void ListsPreserveOrderAndCreateNewObjects()
     {
         var menus = new[] { new Menus { Id = 9 }, new Menus { Id = 2 } };
-        var dtos = mapper.ToMenuDtos(menus);
+        var states = mapper.ToMenuStates(menus);
+        var dtos = application.ToMenuDtos(states);
         Assert.AreEqual(9, dtos[0].Id);
         Assert.AreEqual(2, dtos[1].Id);
         dtos[0].DisplayName = "changed";
         Assert.IsNull(menus[0].DisplayName);
-        Assert.AreEqual(2, mapper.ToMenuBaseDtos(menus)[1].Id);
-        Assert.AreEqual(9, mapper.ToMenuSearchPickerDtos(menus)[0].Value);
+        Assert.AreEqual(2, application.ToMenuBaseDtos(states)[1].Id);
+        Assert.AreEqual(9, application.ToMenuSearchPickersFromBase(application.ToMenuBaseDtos(states))[0].Value);
         var details = mapper.ToDemoDetails(new[] { new DemoDetailModel { DemoId = 7, DemoString = "detail" } });
         Assert.AreEqual(7, details[0].DemoId);
         Assert.AreEqual("detail", details[0].DemoString);
-        Assert.AreEqual(0, mapper.ToMenuDtos(Array.Empty<Menus>()).Count);
+        Assert.AreEqual(0, application.ToMenuDtos(Array.Empty<MenuState>()).Count);
     }
 
     [TestMethod]
-    public void UnmappedFieldsAndNullableBooleanKeepTheirDefaults()
+    public void UnmappedFieldsKeepTheirDefaults()
     {
-        var menu = mapper.ToMenu(new SaveMenu { IsAction = null });
+        var menu = mapper.ToMenuEntity(new MenuState());
         Assert.IsFalse(menu.IsAction);
         Assert.AreEqual(0, menu.Id);
         Assert.AreEqual(default(DateTime), menu.CreatedTime);
         Assert.IsNull(menu.DisplayName);
-        var dto = mapper.ToMenuDto(new Menus());
+        var dto = application.ToMenuDto(new MenuState());
         Assert.IsFalse(dto.Checked);
         Assert.IsNull(dto.Actions);
         Assert.IsNull(dto.Children);
@@ -90,15 +89,15 @@ public class MappingTests
     }
 
     [TestMethod]
-    public void MetricsKeepNewtonsoftJsonSerializationForObjectsStringsAndNulls()
+    public void MetricsPreserveSerializedPayloadsWithoutDoubleEncoding()
     {
         var metrics = new MetricsInfo
         {
-            Inputs = new { Name = "中文", Values = new[] { 1, 2 } },
-            ReturnValue = "quoted\"value"
+            Inputs = JsonConvert.SerializeObject(new { Name = "中文", Values = new[] { 1, 2 } }),
+            ReturnValue = JsonConvert.SerializeObject("quoted\"value")
         };
         var operation = mapper.ToOperation(metrics);
-        Assert.AreEqual(JsonConvert.SerializeObject(metrics.Inputs), operation.Inputs);
+        Assert.AreEqual(metrics.Inputs, operation.Inputs);
         Assert.AreEqual("\"quoted\\\"value\"", operation.ReturnValue);
         operation = mapper.ToOperation(new MetricsInfo());
         Assert.AreEqual("null", operation.Inputs);

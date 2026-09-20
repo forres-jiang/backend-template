@@ -48,19 +48,8 @@
             <param name="encryptedElement">An encrypted XML element.</param>
             <returns>The decrypted form of <paramref name="encryptedElement"/>.</returns>
         </member>
-        <member name="M:My.XXX.APIs.Common.AppMetricsAsync.IsMetrics(Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor)">
-            <summary>
-            是否忽略当前过滤器
-            </summary>
-            <param name="context"></param>
-            <returns></returns>
-        </member>
-        <member name="M:My.XXX.APIs.Common.AppMetricsAsync.GetRawUrl(Microsoft.AspNetCore.Http.HttpRequest)">
-            <summary>
-            获取Url
-            </summary>
-            <param name="request"></param>
-            <returns></returns>
+        <member name="T:My.XXX.APIs.Common.IgnoreMetrics">
+            <summary>Skip ordinary request telemetry; failures are still logged by the exception middleware.</summary>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.GetUrlReferrer">
             <summary>
@@ -203,6 +192,16 @@
             </summary>
             <param name="str"></param>
             <returns></returns>
+        </member>
+        <member name="P:My.XXX.Shared.JwtConfig.ExpiryInMinutes">
+            <summary>
+            Access token在多少分钟过期
+            </summary>
+        </member>
+        <member name="P:My.XXX.Shared.JwtConfig.RefreshExpiryInMinutes">
+            <summary>
+            Refresh token在多少分钟过期
+            </summary>
         </member>
     </members>
 </doc>

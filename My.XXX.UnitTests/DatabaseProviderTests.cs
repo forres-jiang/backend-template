@@ -33,16 +33,14 @@ public class DatabaseProviderTests
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DBContext>();
-        var mails = scope.ServiceProvider.GetRequiredService<MailContext>();
+
         var schema = primary == "PostgreSQL" ? "public." : "[dbo].";
         StringAssert.Contains(db.Menus.Where(x => !x.IsDeleted).Skip(2).Take(5).ToSqlQuery().Sql, schema);
         StringAssert.Contains(db.RoleMenu.ToSqlQuery().Sql, schema);
         StringAssert.Contains(db.Operations.ToSqlQuery().Sql, schema);
         StringAssert.Contains(db.Demo.ToSqlQuery().Sql, "Demo");
         StringAssert.Contains(db.GetTable<DemoDetail>().ToSqlQuery().Sql, "DemoDetail");
-        StringAssert.Contains(mails.MailQueues.ToSqlQuery().Sql, mail == "PostgreSQL" ? "public." : "[dbo].");
-        StringAssert.Contains(mails.Attachments.ToSqlQuery().Sql, "Attachment");
-        StringAssert.Contains(mails.AttachmentMappings.ToSqlQuery().Sql, "AttachmentMapping");
+
         using var connection = DatabaseConfiguration.CreateConnection(ConnectionString(mail), DatabaseConfiguration.ParseProvider(mail));
         Assert.AreEqual(mail == "PostgreSQL" ? "NpgsqlConnection" : "SqlConnection", connection.GetType().Name);
     }

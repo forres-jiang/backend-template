@@ -1,10 +1,9 @@
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using My.XXX.Infrastructure.Caching;
 using My.XXX.Service;
-using My.XXX.Service.Common;
 using My.XXX.Service.Interfaces;
 using My.XXX.Service.Ports;
-using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using System;
 using System.Collections.Generic;
@@ -24,8 +23,8 @@ public class PermissionConsistencyTests
         var allowed = new List<string> { "Menu/Edit" };
         var repository = Repository((method, _) => method.Name switch
         {
-            nameof(IMenuRepository.GetPermissionRevisionAsync) => Task.FromResult(revision),
-            nameof(IMenuRepository.GetPermissionPathsAsync) => Read(),
+            nameof(IPermissionStore.GetPermissionRevisionAsync) => Task.FromResult(revision),
+            nameof(IPermissionStore.GetPermissionPathsAsync) => Read(),
             _ => throw new NotSupportedException(method.Name)
         });
         Task<List<string>> Read() { reads++; return Task.FromResult(new List<string>(allowed)); }
@@ -51,7 +50,7 @@ public class PermissionConsistencyTests
         var reads = 0;
         var repository = Repository((method, _) =>
         {
-            if (method.Name == nameof(IMenuRepository.GetPermissionRevisionAsync)) return Task.FromResult(revision);
+            if (method.Name == nameof(IPermissionStore.GetPermissionRevisionAsync)) return Task.FromResult(revision);
             reads++;
             if (reads == 1) { revision++; return Task.FromResult(new List<string> { "old/grant" }); }
             return Task.FromResult(new List<string>());
@@ -72,7 +71,7 @@ public class PermissionConsistencyTests
         var cache = new MemoryCache();
         cache.Values[PermissionCacheKey.Create("test", "user", roles, 1)] = new() { "old/grant" };
         cache.OnGet = () => revision = 2;
-        var repository = Repository((method, _) => method.Name == nameof(IMenuRepository.GetPermissionRevisionAsync)
+        var repository = Repository((method, _) => method.Name == nameof(IPermissionStore.GetPermissionRevisionAsync)
             ? Task.FromResult(revision) : Task.FromResult(new List<string>()));
         Assert.HasCount(0, await Query(repository, cache).GetRoleMenuPathsAsync(roles, "user"));
     }
@@ -82,7 +81,7 @@ public class PermissionConsistencyTests
     {
         var repository = Repository((method, args) =>
         {
-            Assert.AreEqual(nameof(IMenuRepository.GetPermissionPathsAsync), method.Name);
+            Assert.AreEqual(nameof(IPermissionStore.GetPermissionPathsAsync), method.Name);
             return Task.FromResult(new List<string> { "current/grant" });
         });
         var cache = new MemoryCache { OnGet = () => throw new AssertFailedException("Redis must not be read.") };
@@ -123,12 +122,12 @@ public class PermissionConsistencyTests
         Assert.AreNotEqual(key, PermissionCacheKey.Create("test", "another", new[] { first, second }, 1));
     }
 
-    private static PermissionQuery Query(IMenuRepository repository, MemoryCache cache, PermissionDataCache mode = PermissionDataCache.Redis) =>
-        new(repository, cache, new Monitor<AppConfig>(new() { PermissionDataCache = mode }),
+    private static IPermissionQuery Query(IPermissionStore repository, MemoryCache cache, PermissionDataCache mode = PermissionDataCache.Redis) =>
+        mode == PermissionDataCache.None ? new PermissionQuery(repository) : new CachedPermissionQuery(repository, cache,
             Options.Create(new PermissionCacheOptions { KeyPrefix = "test", ExpiryInMinutes = 2 }));
-    private static IMenuRepository Repository(Func<MethodInfo, object[], object> handler)
+    private static IPermissionStore Repository(Func<MethodInfo, object[], object> handler)
     {
-        var repository = DispatchProxy.Create<IMenuRepository, RepositoryProxy>();
+        var repository = DispatchProxy.Create<IPermissionStore, RepositoryProxy>();
         ((RepositoryProxy)repository).Handler = handler;
         return repository;
     }

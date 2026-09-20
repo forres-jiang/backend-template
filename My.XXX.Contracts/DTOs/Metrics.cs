@@ -15,9 +15,10 @@ namespace My.XXX.Service.DTOs
         public string ClientIP { get; set; }
         public string UserId { get; set; }
         public string UserName { get; set; }
-        public object Inputs { get; set; }
+        // Already serialized data only; framework objects cannot cross this boundary.
+        public string Inputs { get; set; } = "null";
         public string Url { get; set; }
-        public object ReturnValue { get; set; }
+        public string ReturnValue { get; set; } = "null";
         public string RequestType { get; set; }
         public bool IsException { get; set; }
         public string Message { get; set; }

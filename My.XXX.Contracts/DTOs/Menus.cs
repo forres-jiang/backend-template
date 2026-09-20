@@ -5,7 +5,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace My.XXX.Service.DTOs
 {
-    public class MenuBase
+    public interface ILocalizedMenuDto
+    {
+        string DisplayName { get; set; }
+        string DisplayNames { get; set; }
+    }
+
+    // Legacy response shape. Internal menu state lives in Service.Models.
+    public class MenuBase : ILocalizedMenuDto
     {
         public int Id { get; set; }
         public string DisplayName { get; set; }
@@ -53,15 +60,17 @@ namespace My.XXX.Service.DTOs
     /// <summary>
     /// 用于前台菜单和用户登录成功
     /// </summary>
-    public class MenuDto : MenuBase
+    public class MenuDto : MenuBaseDto, ILocalizedMenuDto
     {
+        public string DisplayNames { get; set; }
         public bool Checked { get; set; }
         public List<MenuDto> Actions { get; set; }
         public List<MenuDto> Children { get; set; }
     }
 
-    public class MenuSearchPickerDto : MenuBase
+    public class MenuSearchPickerDto : MenuBaseDto, ILocalizedMenuDto
     {
+        public string DisplayNames { get; set; }
         public int Value => Id;
     }
 

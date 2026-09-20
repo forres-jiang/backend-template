@@ -13,23 +13,33 @@ APIs -> Infrastructure -> Service
 | Project | Responsibility |
 | --- | --- |
 | APIs | HTTP endpoints, response envelopes, JWT/request adapters, authorization, localization and composition root |
-| Service | Use cases, business policies, repository ports, application DTO mapping; no persistence/ORM/Redis implementation references |
+| Service | Use cases, menu state and policies, transaction/read ports, application DTO mapping; no persistence/ORM/Redis implementation references |
 | Persistence | Repository implementations, database entities, entity mappings, SQL, transactions and database registration |
 | Contracts | Application inputs/read DTOs and provider-independent batch results |
-| Infrastructure | Redis permission cache, external HTTP clients, Excel export and adapter registration |
-| Shared | Shared primitives, configuration and business errors |
+| Infrastructure | Versioned permission cache, operational log sinks, external HTTP clients, Excel export and adapter registration |
+| Shared | Shared primitives and business errors |
 
-`Service/Ports` owns repository interfaces. Their signatures and model properties contain no storage entities. `PersistenceMapper` maps database entities inside Persistence; `ApplicationMapper` only maps application models. Mail queue flags and storage defaults are adapter details.
+`Service/Ports` owns repository interfaces. Their signatures and model properties contain no storage entities. Menu reads, permissions and transactional writes use separate `IMenuReadRepository`, `IPermissionStore` and `IMenuTransaction` ports. Menu persistence maps entities to `Service/Models/MenuState`; only `ApplicationMapper` creates menu response DTOs. `MenuSearch` carries normalized query criteria without reusing HTTP-bound pagination inputs.
 
-`MenuCommandService`, `MenuQueryService` and `RolePermissionService` separate maintenance, presentation queries and authorization changes. `MenuService` is a compatibility facade retaining the existing controller contracts. `MenuOrder`, `MenuHierarchy`, `MenuTree` and `MenuDisplayNames` hold testable policies independent of database execution.
+`MenuCommandService`, `MenuQueryService` and `RolePermissionService` separate maintenance, presentation queries and authorization changes. `MenuService` is a compatibility facade retaining the existing controller contracts. `MenuMutations` owns hierarchy checks, partial updates, ordering and role-selection changes. It runs state-dependent rules through `IMenuTransaction.Execute`; the adapter locks the revision before exposing `IMenuWriteSession` and invalidates that session after the transaction. Failed results and exceptions roll back data and revision together. Compose persistence primitives inside one session; do not nest transactions or compose independently committing use cases when atomicity is required.
+
+Menu and role services depend only on `ICurrentUser` and/or `ICurrentCulture`; authentication uses `IAuthenticationSession`. The legacy principal-bearing `ICurrentRequest` remains for compatibility at the HTTP/user adapter boundary. `TimeProvider` supplies menu audit timestamps and can be replaced in tests.
 
 APIs calls `AddBusinessServices`, `AddRepositories`, `AddPersistenceDatabases`, `AddExternalAdapters` and `AddPermissionCaching`. Registrations are explicit and owned by their project; framework request/JWT adapters remain at the composition root. No assembly scanning is needed for these services. Existing marker interfaces are retained for source compatibility.
 
-DTO namespaces remain `My.XXX.Service.DTOs` for compatibility, although the types live in Contracts. API response classes retain the `My.XXX.Shared` namespace and live in APIs. New storage adapters must depend on application ports, not move storage models into Contracts.
+DTO namespaces remain `My.XXX.Service.DTOs` for compatibility, although the types live in Contracts. Existing menu JSON fields remain available, but internal menu state no longer inherits from or doubles as a response DTO. API response classes, legacy HTTP validation types and host/JWT configuration retain the `My.XXX.Shared` namespace and live in APIs; Redis configuration lives in Infrastructure. New storage adapters must depend on application ports, not move storage models into Contracts.
 
-Architecture tests enforce project directions, application assembly dependencies, recursive port model boundaries, materialized repository results and active controller method bodies. The `[NonController]` demo is an example and is excluded from active endpoint rules.
+Architecture tests enforce project directions, application assembly dependencies, recursive port model boundaries, materialized repository results, narrow contexts, typed telemetry and active controller method bodies. Menu ports and persistence mappings must not expose menu wire models, and menu endpoints must not expose internal state. The `[NonController]` demo is an example and is excluded from active endpoint rules.
+
+## Operational logging
+
+`ExceptionHandlingMiddleware` is the sole request-log collector; the old `AppMetricsAsync` filter is removed. It records metadata only and respects `IgnoreMetrics` for ordinary requests while still recording failures. `IRequestLogWriter` delegates sink selection and failure isolation to Infrastructure, using the existing `AppConfig:RequestLogStorageType` and `ExceptionStorageType` keys. A failed SQL sink does not replace the HTTP outcome or prevent the text sink in `TextAndSQL` mode. Legacy email modes fall back to text; the removed mail module is not restored.
+
+`MetricsInfo` accepts serialized strings instead of arbitrary objects for legacy payload columns; persistence does not double-encode them. The HTTP collector never captures payloads. Operational logging remains awaited and best-effort, not a durable audit mechanism; no unbounded background task or implicit delivery guarantee is introduced.
 
 ## Transactions and permission consistency
+
+`AddPermissionCaching` selects the direct `PermissionQuery` or the Infrastructure `CachedPermissionQuery` at composition time. Cache keys, TTL and revision retry mechanics live entirely in Infrastructure; application services do not switch on Redis configuration. Registration works before or after business services. Restart to change cache mode.
 
 All menu and role-menu mutations first update the singleton `PermissionRevision` row inside their transaction. This serializes administrative writers across processes before they read and calculate their changes. Role replacements, parent validation, localized-name changes and ordering therefore use a snapshot protected by the same write lock. The data and revision commit together; unsuccessful operations and exceptions roll both back. An active `(RoleId, MenuId)` unique index additionally prevents duplicate grants.
 
@@ -57,6 +67,8 @@ Both upgrade scripts are transactional and repeatable. They create a singleton v
 ## API compatibility and partial updates
 
 Application commands return FluentResults. Controllers retain their existing response envelopes and boolean command projections. Validation and unexpected-exception envelopes remain distinct for wire compatibility; response filters reject unconverted FluentResults failures.
+
+Menu failures carry stable internal `BusinessError.Code` values (`Menu.NotFound`, `Menu.InvalidParent`, `Menu.InvalidInput`, `Menu.InvalidSelection`, `Menu.InvalidOrder`, `Menu.WriteFailed`). Envelope endpoints preserve their specific public messages through the common converter. Legacy boolean endpoints retain their boolean projections; no new error fields or HTTP status changes are introduced.
 
 Menu updates use an explicit allowlist instead of reflection over matching database column names. Omitted/null values retain existing values. To clear a nullable string explicitly, provide `ClearFields`, for example:
 

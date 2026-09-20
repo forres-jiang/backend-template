@@ -1,16 +1,18 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Service.Common;
 using My.XXX.Service.DTOs;
+using My.XXX.Service.Models;
 using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.UnitTests;
+
 [TestClass]
 public class MenuPolicyTests
 {
     [TestMethod]
     public void RejectsCyclesMissingParentsAndChildrenUnderActions()
     {
-        var menus = new List<MenuBase>
+        var menus = new List<MenuState>
         {
             new() { Id = 1 }, new() { Id = 2, ParentId = 1 }, new() { Id = 3, ParentId = 2 },
             new() { Id = 4, ParentId = 1, IsAction = true }

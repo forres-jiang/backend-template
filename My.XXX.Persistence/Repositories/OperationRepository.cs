@@ -1,10 +1,9 @@
 using LinqToDB;
 using LinqToDB.Async;
-using My.XXX.Service.Ports;
-using My.XXX.Persistence.PersistantObjects;
-using My.XXX.Service.DTOs;
-using My.XXX.Shared;
 using My.XXX.Persistence.Mapping;
+using My.XXX.Service.DTOs;
+using My.XXX.Service.Ports;
+using My.XXX.Shared;
 using System.Linq;
 using System.Threading.Tasks;
 

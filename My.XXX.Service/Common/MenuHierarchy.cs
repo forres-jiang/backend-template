@@ -1,10 +1,11 @@
-using My.XXX.Service.DTOs;
+using My.XXX.Service.Models;
 using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.Service.Common;
+
 public static class MenuHierarchy
 {
-    public static bool CanPlace(List<MenuBase> menus, int id, int parentId, bool isAction)
+    public static bool CanPlace(List<MenuState> menus, int id, int parentId, bool isAction)
     {
         if (isAction && menus.Any(m => m.ParentId == id && id != 0)) return false;
         if (parentId == 0) return !isAction;

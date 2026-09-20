@@ -125,7 +125,7 @@ public class SecurityRegressionTests
                 using (var second = app.Services.CreateScope())
                 {
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IMenuService>());
-                    Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IMailService>());
+
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IAuthenticationService>());
                     Assert.IsNotNull(first.ServiceProvider.GetRequiredService<IPermissionQuery>());
                     Assert.AreNotSame(first.ServiceProvider.GetRequiredService<ExceptionHandlingMiddleware>(),

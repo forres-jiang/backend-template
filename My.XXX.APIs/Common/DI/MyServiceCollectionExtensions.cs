@@ -10,7 +10,6 @@ using My.XXX.APIs.Common;
 using My.XXX.APIs.Common.Middleware;
 using My.XXX.Infrastructure;
 using My.XXX.Persistence;
-using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
@@ -36,11 +35,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //AppConfig
             services.Configure<AppConfig>(configuration.GetSection("AppConfig"));
+            services.Configure<My.XXX.Infrastructure.Logging.RequestLogOptions>(configuration.GetSection("AppConfig"));
             //ConnStrings
             services.Configure<ConnectionStrings>(configuration.GetSection("ConnectionStrings"));
             //JWT
             services.Configure<JwtConfig>(configuration.GetSection("JwtConfig"));
-            services.AddOptions<My.XXX.Service.Common.PermissionCacheOptions>()
+            services.AddOptions<My.XXX.Infrastructure.Caching.PermissionCacheOptions>()
                 .Bind(configuration.GetSection("PermissionCache"))
                 .Validate(o => o.ExpiryInMinutes > 0 && !string.IsNullOrWhiteSpace(o.KeyPrefix),
                     "PermissionCache needs a positive expiry and a key prefix.")
@@ -56,8 +56,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services
                 .AddControllers(filter =>
                 {
-                    //请求日志
-                    //filter.Filters.Add<AppMetricsAsync>();
                     //接口统一数据封装
                     filter.Filters.Add<UnifyResultAsync>();
                 })

@@ -63,7 +63,7 @@ namespace My.XXX.APIs.Controllers
         public MyResult RoleMenu(InputRoleMenu model)
         {
             var result = _menuService.RoleMenuRelation(model);
-            return result.IsSuccess ? MyResult.Success() : MyResult.Fail("Data save failed.");
+            return result.ToApiResult();
         }
 
         [HttpPost("RoleMenus")]
@@ -116,7 +116,7 @@ namespace My.XXX.APIs.Controllers
         public MyResult UpdateSort(MenuSortModel model)
         {
             var result = _menuService.UpdateSort(model);
-            return result.IsSuccess ? MyResult.Success() : MyResult.Fail("Failed to adjust menu order.");
+            return result.ToApiResult();
         }
     }
 }

@@ -1,14 +1,10 @@
-using My.XXX.Service.DTOs;
-using System;
 using System.Security.Claims;
 
 namespace My.XXX.Service.Interfaces;
 
 /// <summary>Framework-neutral view of the current request and authenticated user.</summary>
-public interface ICurrentRequest
+public interface ICurrentRequest : IAuthenticationSession, ICurrentCulture
 {
     ClaimsPrincipal Principal { get; }
-    UserInfo User { get; }
-    DateTime TokenExpirationTime { get; }
-    string CultureName { get; }
+    bool IAuthenticationSession.IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 }

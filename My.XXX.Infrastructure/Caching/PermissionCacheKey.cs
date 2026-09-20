@@ -4,7 +4,8 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-namespace My.XXX.Service.Common;
+namespace My.XXX.Infrastructure.Caching;
+
 public static class PermissionCacheKey
 {
     public static string Create(string prefix, string userId, IEnumerable<Guid> roleIds, long revision)
@@ -15,3 +16,4 @@ public static class PermissionCacheKey
         return prefix + ":" + revision.ToString(CultureInfo.InvariantCulture) + ":" + identity;
     }
 }
+

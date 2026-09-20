@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using My.XXX.APIs.Common;
@@ -11,7 +10,6 @@ using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -26,7 +24,6 @@ namespace My.XXX.APIs.Controllers
     public class DemoController : ControllerBase
     {
         private readonly IStringLocalizer<DemoController> _localizer;
-        private readonly IMailService _mailService;
         private readonly IMenuService _menuService;
         private readonly IDemoService _demoService;
         private readonly IConnectionMultiplexer _redis;
@@ -35,13 +32,11 @@ namespace My.XXX.APIs.Controllers
             IStringLocalizer<DemoController> localizer,
             IDemoService demoService,
             IMenuService menuService,
-            IMailService mailService,
             IConnectionMultiplexer redis)
         {
             _redis = redis;
             _demoService = demoService;
             _menuService = menuService;
-            _mailService = mailService;
             _localizer = localizer;
         }
 
@@ -121,70 +116,6 @@ namespace My.XXX.APIs.Controllers
         public MyResult Update(DemoModel model)
         {
             return _demoService.Update(model).ToApiResult();
-        }
-
-        [HttpGet("SendEmail")]
-        public MyResult SendEmail()
-        {
-            var sc = "Test" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            var model = new Mail
-            {
-                MFROM = "CNHK GTS SDC Support",
-                MTO = "Forres Jiang/CN/GTS",
-                SUBJECT = sc,
-                CONTENT = sc,
-                SENDDATE = DateTime.Now
-            };
-            return _mailService.SendEmail(model).ToApiResult();
-        }
-
-        [AllowAnonymous]
-        [HttpPost("SendEmailWithAttachment")]
-        public bool SendEmailWithAttachment(List<IFormFile> files)
-        {
-            if (files.Count == 0)
-                return false;
-
-            var file = files.First();
-            byte[] fileBytes;
-            using (var ms = new MemoryStream())
-            {
-                file.CopyTo(ms);
-                fileBytes = ms.ToArray();
-            }
-
-            var sc = "Test" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            var model = new Mail
-            {
-                MFROM = "CNHK GTS SDC Support",
-                MTO = "Forres Jiang/CN/GTS",
-                SUBJECT = sc,
-                CONTENT = sc,
-                SENDDATE = DateTime.Now
-            };
-
-            return _mailService.SendEmailWithFile(model, fileBytes, file.FileName, "application/zip").IsSuccess;
-        }
-
-        [HttpGet("File/{id}")]
-        public IActionResult GetFile(int id)
-        {
-            var result = _mailService.GetAttachment(id);
-            Stream stream = new MemoryStream(result.AttachmentContent);
-            var fileResult = new FileStreamResult(stream, result.AttachmentMimeType)
-            {
-                FileDownloadName = result.AttachmentFileName
-            };
-            return fileResult;
-        }
-
-        [AllowAnonymous]
-        [HttpGet("BulkCopy")]
-        public async Task<MyResult> BulkCopy()
-        {
-            string key = DateTime.Now.ToString("HHssmmfff");
-            await _redis.GetDatabase().StringSetAsync("XXX" + key, key, TimeSpan.FromHours(1));
-            return _mailService.BatchInsertEmail().ToApiResult();
         }
 
         [HttpPost("RoleMenuAction")]

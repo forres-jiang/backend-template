@@ -4,7 +4,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 namespace My.XXX.APIs.Common.Health;
-public sealed class PermissionSchemaHealthCheck(IMenuRepository repository) : IHealthCheck
+
+public sealed class PermissionSchemaHealthCheck(IPermissionStore repository) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {

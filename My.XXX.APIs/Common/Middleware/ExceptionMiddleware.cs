@@ -4,8 +4,6 @@ using Microsoft.Extensions.Options;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
 using My.XXX.Shared;
-using My.XXX.Shared.Common;
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -16,17 +14,15 @@ namespace My.XXX.APIs.Common.Middleware;
 public sealed class ExceptionHandlingMiddleware : IMiddleware
 {
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-    private readonly IOperationService _operations;
-    private readonly IMailService _mail;
+    private readonly IRequestLogWriter _logs;
     private readonly AppConfig _config;
 
     public ExceptionHandlingMiddleware(
         ILogger<ExceptionHandlingMiddleware> logger, IOptionsMonitor<AppConfig> config,
-        IOperationService operationService, IMailService mailService)
+        IRequestLogWriter logs)
     {
         _logger = logger;
-        _operations = operationService;
-        _mail = mailService;
+        _logs = logs;
         _config = config.CurrentValue;
     }
 
@@ -65,6 +61,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
         {
             timer.Stop();
             if (failure != null || (_config.EnableRequestLog &&
+                context.GetEndpoint()?.Metadata.GetMetadata<IgnoreMetrics>() == null &&
                 !context.Request.Path.StartsWithSegments("/healthy") &&
                 !context.Request.Path.StartsWithSegments("/ready")))
                 await TrySaveLogs(context, requestId, timer.ElapsedMilliseconds, failure);
@@ -92,22 +89,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
                 StackTrace = exception?.StackTrace ?? "",
                 IsException = exception != null
             };
-            var storage = exception == null ? _config.RequestLogStorageType : _config.ExceptionStorageType;
-            if (storage == StorageTypeEnum.SQL || storage == StorageTypeEnum.TextAndSQL)
-                await _operations.Save(record);
-            if (exception != null && (storage == StorageTypeEnum.Email || storage == StorageTypeEnum.TextAndEmail))
-                _mail.SendEmail(new Mail
-                {
-                    MFROM = _config.ExceptionEmail?.MailFrom,
-                    MTO = _config.ExceptionEmail?.MailTo,
-                    SENDDATE = DateTime.UtcNow,
-                    CONTENT = $"Request {requestId} failed. Check the application logs."
-                });
-            if (exception == null)
-                _logger.LogInformation("Request {RequestId} completed in {ElapsedMs} ms with status {StatusCode}",
-                    requestId, elapsed, context.Response.StatusCode);
-            else
-                _logger.LogError("Request failed: {Metadata}", JsonConvert.SerializeObject(record));
+            await _logs.WriteAsync(record);
         }
         catch (Exception loggingException)
         {

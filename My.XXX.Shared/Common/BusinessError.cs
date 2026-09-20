@@ -6,9 +6,11 @@ namespace My.XXX.Shared;
 public sealed class BusinessError : Error
 {
     public int StatusCode { get; }
+    public string Code { get; }
 
-    public BusinessError(string message, int statusCode = 0) : base(message)
+    public BusinessError(string message, int statusCode = 0, string code = null) : base(message)
     {
         StatusCode = statusCode;
+        Code = code;
     }
 }

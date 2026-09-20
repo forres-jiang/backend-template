@@ -6,6 +6,7 @@ using My.XXX.Service.Ports;
 using My.XXX.Shared;
 using System.Linq;
 namespace My.XXX.Service;
+
 public sealed class DemoService(IValidator<DemoModel> validator, IDemoRepository repository) : IDemoService, IScopeDependency
 {
     public Result Save(DemoModel model)

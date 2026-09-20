@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.Service.Common;
+
 public static class MenuUpdateFields
 {
     private static readonly HashSet<string> Allowed = new(StringComparer.OrdinalIgnoreCase)
