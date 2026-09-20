@@ -2,3 +2,5 @@ root = true
 
 [*.cs]
 dotnet_diagnostic.IDE0290.severity = none
+end_of_line = lf
+charset = utf-8
