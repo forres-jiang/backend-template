@@ -3,6 +3,7 @@ using My.XXX.Service.Interfaces;
 using StackExchange.Redis;
 using System;
 namespace My.XXX.Infrastructure;
+
 public static class InfrastructureRegistration
 {
     public static IServiceCollection AddExternalAdapters(this IServiceCollection services)
