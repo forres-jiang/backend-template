@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using FluentResults;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common;
@@ -16,12 +18,12 @@ namespace My.XXX.UnitTests;
 public class MenuUseCaseTests
 {
     [TestMethod]
-    public void InvalidParentAndMissingMenuKeepDistinctErrorsAndNeverWrite()
+    public async Task InvalidParentAndMissingMenuKeepDistinctErrorsAndNeverWrite()
     {
         var store = Store();
         var useCase = new MenuMutations(store, TimeProvider.System);
-        var missing = useCase.Update(new EditMenu { Id = 99 }, "en-US", "editor");
-        var cycle = useCase.Update(new EditMenu { Id = 1, ParentId = 2 }, "en-US", "editor");
+        var missing = (await useCase.Update(new EditMenu { Id = 99 }, "en-US", "editor"));
+        var cycle = (await useCase.Update(new EditMenu { Id = 1, ParentId = 2 }, "en-US", "editor"));
         Assert.AreEqual("Menu.NotFound", Code(missing));
         Assert.AreEqual("Menu.InvalidParent", Code(cycle));
         Assert.AreEqual("Invalid menu parent.", cycle.ToApiResult().Message);
@@ -31,13 +33,13 @@ public class MenuUseCaseTests
     }
 
     [TestMethod]
-    public void PartialUpdateClearsExplicitFieldsAndPreservesSnapshotAndOtherTranslations()
+    public async Task PartialUpdateClearsExplicitFieldsAndPreservesSnapshotAndOtherTranslations()
     {
         var store = Store();
         var before = store.Menus[0];
         var instant = new DateTimeOffset(2026, 9, 20, 8, 0, 0, TimeSpan.Zero);
         var useCase = new MenuMutations(store, new FixedClock(instant));
-        var result = useCase.Update(new EditMenu { Id = 1, DisplayName = " 中文 ", Description = "ignored", ClearFields = new() { "description" } }, "zh-CN", "editor");
+        var result = (await useCase.Update(new EditMenu { Id = 1, DisplayName = " 中文 ", Description = "ignored", ClearFields = new() { "description" } }, "zh-CN", "editor"));
         Assert.IsTrue(result.IsSuccess);
         var updated = store.Menus[0];
         Assert.IsNull(updated.Description);
@@ -51,35 +53,35 @@ public class MenuUseCaseTests
     }
 
     [TestMethod]
-    public void RoleReplacementRejectsUnknownMenusAndEmptyReplacementRemovesAll()
+    public async Task RoleReplacementRejectsUnknownMenusAndEmptyReplacementRemovesAll()
     {
         var store = Store();
         var role = Guid.NewGuid();
         store.Grants.Add(1);
         var useCase = new MenuMutations(store, TimeProvider.System);
-        Assert.AreEqual("Menu.InvalidSelection", Code(useCase.SetRoleMenus(role, new() { 99 }, RoleMenuChange.Replace, "editor")));
+        Assert.AreEqual("Menu.InvalidSelection", Code((await useCase.SetRoleMenus(role, new() { 99 }, RoleMenuChange.Replace, "editor"))));
         CollectionAssert.AreEqual(new[] { 1 }, store.Grants);
-        Assert.IsTrue(useCase.SetRoleMenus(role, new() { 2, 2, 3 }, RoleMenuChange.Replace, "editor").IsSuccess);
+        Assert.IsTrue((await useCase.SetRoleMenus(role, new() { 2, 2, 3 }, RoleMenuChange.Replace, "editor")).IsSuccess);
         CollectionAssert.AreEquivalent(new[] { 2, 3 }, store.Grants);
-        Assert.IsTrue(useCase.SetRoleMenus(role, new(), RoleMenuChange.Replace, "editor").IsSuccess);
+        Assert.IsTrue((await useCase.SetRoleMenus(role, new(), RoleMenuChange.Replace, "editor")).IsSuccess);
         Assert.HasCount(0, store.Grants);
         Assert.AreEqual(2L, store.Revision);
     }
 
     [TestMethod]
-    public void RejectedOrThrowingMultiRowWritesRollBackEarlierChangesAndRevision()
+    public async Task RejectedOrThrowingMultiRowWritesRollBackEarlierChangesAndRevision()
     {
         var store = Store();
         store.Menus[1].ParentId = 0;
         store.FailOnWrite = 2;
         var useCase = new MenuMutations(store, TimeProvider.System);
-        var result = useCase.Move(new MenuSortModel { CurrentId = 1, PrevId = 3 }, "editor");
+        var result = (await useCase.Move(new MenuSortModel { CurrentId = 1, PrevId = 3 }, "editor"));
         Assert.AreEqual("Menu.WriteFailed", Code(result));
         CollectionAssert.AreEqual(new[] { 0, 1, 2 }, store.Menus.Select(m => m.Number).ToArray());
         Assert.AreEqual(0L, store.Revision);
         store.Writes = 0;
         store.ThrowOnFailure = true;
-        Assert.Throws<InvalidOperationException>(() => useCase.Move(new MenuSortModel { CurrentId = 1, PrevId = 3 }, "editor"));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => { await useCase.Move(new MenuSortModel { CurrentId = 1, PrevId = 3 }, "editor"); });
         CollectionAssert.AreEqual(new[] { 0, 1, 2 }, store.Menus.Select(m => m.Number).ToArray());
         Assert.AreEqual(0L, store.Revision);
     }
@@ -107,7 +109,7 @@ public class MenuUseCaseTests
         public int Writes, Transactions, FailOnWrite;
         public bool ThrowOnFailure;
         private bool active;
-        public Result Execute(Func<IMenuWriteSession, Result> action)
+        public async Task<Result> Execute(Func<IMenuWriteSession, Task<Result>> action, CancellationToken cancellationToken = default)
         {
             Assert.IsFalse(active);
             Transactions++;
@@ -117,7 +119,9 @@ public class MenuUseCaseTests
             var committed = false;
             try
             {
-                var result = action(this);
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = await action(this);
+                cancellationToken.ThrowIfCancellationRequested();
                 committed = result.IsSuccess;
                 if (committed) Revision++;
                 return result;
@@ -128,10 +132,10 @@ public class MenuUseCaseTests
                 active = false;
             }
         }
-        public List<MenuState> LoadMenus() { Assert.IsTrue(active); return Menus.Select(m => m.Copy()).ToList(); }
-        public List<int> LoadRoleMenus(Guid roleId) { Assert.IsTrue(active); return Grants.ToList(); }
-        public int Insert(MenuState menu) { Assert.IsTrue(active); Writes++; Menus.Add(menu.Copy()); return 1; }
-        public int Update(MenuState menu)
+        public async Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Menus.Select(m => m.Copy()).ToList(); }
+        public async Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Grants.ToList(); }
+        public async Task<int> Insert(MenuState menu, CancellationToken cancellationToken = default) { Assert.IsTrue(active); Writes++; Menus.Add(menu.Copy()); return 1; }
+        public async Task<int> Update(MenuState menu, CancellationToken cancellationToken = default)
         {
             Assert.IsTrue(active);
             if (++Writes == FailOnWrite)
@@ -142,8 +146,8 @@ public class MenuUseCaseTests
             Menus[Menus.FindIndex(m => m.Id == menu.Id)] = menu.Copy();
             return 1;
         }
-        public int Remove(List<int> ids, string userId, DateTime timestamp) { Assert.IsTrue(active); Writes++; return Menus.RemoveAll(m => ids.Contains(m.Id)); }
-        public bool ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp)
+        public async Task<int> Remove(List<int> ids, string userId, DateTime timestamp, CancellationToken cancellationToken = default) { Assert.IsTrue(active); Writes++; return Menus.RemoveAll(m => ids.Contains(m.Id)); }
+        public async Task<bool> ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp, CancellationToken cancellationToken = default)
         {
             Assert.IsTrue(active);
             Writes++;

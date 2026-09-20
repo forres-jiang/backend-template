@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using FluentResults;
 using My.XXX.Service.DTOs;
 using My.XXX.Shared;
@@ -8,35 +10,35 @@ namespace My.XXX.Service.Interfaces
 {
     public interface IMenuService
     {
-        Result Add(SaveMenu menu);
+        Task<Result> Add(SaveMenu menu, CancellationToken cancellationToken = default);
 
-        public Result Remove(List<int> ids);
+        public Task<Result> Remove(List<int> ids, CancellationToken cancellationToken = default);
 
-        public Result Update(EditMenu menu);
+        public Task<Result> Update(EditMenu menu, CancellationToken cancellationToken = default);
 
-        public MenuBaseDto Get(int menuId);
+        public Task<MenuBaseDto> Get(int menuId, CancellationToken cancellationToken = default);
 
-        public Result RoleMenus(Guid roleId, List<int> menuIds, bool isFull);
+        public Task<Result> RoleMenus(Guid roleId, List<int> menuIds, bool isFull, CancellationToken cancellationToken = default);
 
-        public Result RemoveRoleMenu(Guid roleId, int menuId);
+        public Task<Result> RemoveRoleMenu(Guid roleId, int menuId, CancellationToken cancellationToken = default);
 
-        public Result<BatchWriteSummary> RoleMenuAction(RoleMenuActionModel model);
+        public Task<Result<BatchWriteSummary>> RoleMenuAction(RoleMenuActionModel model, CancellationToken cancellationToken = default);
 
-        public Result<List<MenuBase>> GetMenus();
+        public Task<Result<List<MenuBase>>> GetMenus(CancellationToken cancellationToken = default);
 
-        public Paged<MenuBaseDto> GetMenus(QueryMenu query);
+        public Task<Paged<MenuBaseDto>> GetMenus(QueryMenu query, CancellationToken cancellationToken = default);
 
-        public Result UpdateSort(MenuSortModel model);
+        public Task<Result> UpdateSort(MenuSortModel model, CancellationToken cancellationToken = default);
 
-        public List<MenuDto> GetMenuByRoles(RoleMenuQuery query);
+        public Task<List<MenuDto>> GetMenuByRoles(RoleMenuQuery query, CancellationToken cancellationToken = default);
 
-        public List<MenuDto> GetMenuTreeCheckedByRoles(List<Guid> roleIds);
+        public Task<List<MenuDto>> GetMenuTreeCheckedByRoles(List<Guid> roleIds, CancellationToken cancellationToken = default);
 
-        public List<MenuDto> GetTreeMenus(bool? isDisplay);
+        public Task<List<MenuDto>> GetTreeMenus(bool? isDisplay, CancellationToken cancellationToken = default);
 
-        public Result RoleMenuRelation(InputRoleMenu input);
+        public Task<Result> RoleMenuRelation(InputRoleMenu input, CancellationToken cancellationToken = default);
 
-        public Paged<MenuSearchPickerDto> SearchMenus(QueryMenu query);
+        public Task<Paged<MenuSearchPickerDto>> SearchMenus(QueryMenu query, CancellationToken cancellationToken = default);
 
 
 
@@ -44,7 +46,8 @@ namespace My.XXX.Service.Interfaces
         ///
         /// </summary>
         /// <param name="input"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public Result RoleMenusRelation(InputRoleMenus input);
+        public Task<Result> RoleMenusRelation(InputRoleMenus input, CancellationToken cancellationToken = default);
     }
 }

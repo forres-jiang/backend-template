@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Service;
 using My.XXX.Service.DTOs;
@@ -15,12 +17,12 @@ namespace My.XXX.UnitTests;
 public class MenuQueryBoundaryTests
 {
     [TestMethod]
-    public void PickerNormalizesCriteriaWithoutMutatingInputOrRepositoryState()
+    public async Task PickerNormalizesCriteriaWithoutMutatingInputOrRepositoryState()
     {
         var repository = new ReadRepository();
         var service = new MenuQueryService(repository, new Culture(), new ApplicationMapper());
         var input = new QueryMenu { PageIndex = 2, PageSize = 20, IsAction = true, IsDisplay = false };
-        var result = service.SearchMenus(input);
+        var result = await service.SearchMenus(input);
         Assert.IsFalse(repository.Criteria.IsAction.Value);
         Assert.IsTrue(repository.Criteria.IsDisplay);
         Assert.AreEqual(1, repository.Criteria.PageIndex);
@@ -37,9 +39,9 @@ public class MenuQueryBoundaryTests
     {
         public MenuSearch Criteria;
         public MenuState State = new() { Id = 7, DisplayName = "English", DisplayNames = "{\"zh-CN\":\"中文\"}" };
-        public Paged<MenuState> Search(MenuSearch criteria) { Criteria = criteria; return Paged<MenuState>.Create(new() { State }, 1); }
-        public MenuState Get(int id) => State;
-        public List<MenuState> GetMenus(int? parentId = null, List<int> ids = null, bool? isDisplay = null) => new() { State };
-        public List<MenuState> GetRoleMenuByRoles(List<Guid> roleIds) => new() { State };
+        public async Task<Paged<MenuState>> Search(MenuSearch criteria, CancellationToken cancellationToken = default) { Criteria = criteria; return Paged<MenuState>.Create(new() { State }, 1); }
+        public async Task<MenuState> Get(int id, CancellationToken cancellationToken = default) => State;
+        public async Task<List<MenuState>> GetMenus(int? parentId = null, List<int> ids = null, bool? isDisplay = null, CancellationToken cancellationToken = default) => new() { State };
+        public async Task<List<MenuState>> GetRoleMenuByRoles(List<Guid> roleIds, CancellationToken cancellationToken = default) => new() { State };
     }
 }

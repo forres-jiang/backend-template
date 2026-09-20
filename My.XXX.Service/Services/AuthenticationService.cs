@@ -1,35 +1,28 @@
 using FluentResults;
 using My.XXX.Service.DTOs;
 using My.XXX.Service.Interfaces;
-using My.XXX.Shared;
+using My.XXX.Service.Ports;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-
 namespace My.XXX.Service;
 
-public sealed class AuthenticationService : IAuthenticationService, IScopeDependency
+public sealed class AuthenticationService(IAuthenticationSession current, ITokenIssuer tokens,
+    IAuthenticationStore store, TimeProvider clock) : IAuthenticationService
 {
-    private readonly IAuthenticationSession _current;
-    private readonly ITokenIssuer _tokens;
-    private readonly IPermissionQuery _permissions;
-
-    public AuthenticationService(IAuthenticationSession current, ITokenIssuer tokens,
-        IPermissionQuery permissions)
+    public async Task<Result<AuthenticationSession>> RefreshAsync(CancellationToken cancellationToken = default)
     {
-        _current = current;
-        _tokens = tokens; _permissions = permissions;
-    }
-
-    public Result<AuthenticationSession> Refresh()
-    {
-        if (!_current.IsAuthenticated || _current.User == null)
+        if (!current.IsAuthenticated || string.IsNullOrEmpty(current.SessionId) || string.IsNullOrEmpty(current.TokenId))
             return Result.Fail<AuthenticationSession>("Token invalid.");
-        return Result.Ok(new AuthenticationSession { Tokens = _tokens.Refresh(_current.User, _current.TokenExpirationTime) });
+        var active = await store.GetActiveSessionAsync(current.SessionId, clock.GetUtcNow().UtcDateTime, cancellationToken);
+        if (active == null || active.User.UserId != current.User?.UserId)
+            return Result.Fail<AuthenticationSession>("Token invalid.");
+        var nextId = Guid.NewGuid().ToString("N");
+        var pair = tokens.Create(active.User, current.SessionId, nextId, active.Session.ExpiresUtc);
+        if (!await store.RotateAsync(current.SessionId, current.TokenId, nextId, clock.GetUtcNow().UtcDateTime, cancellationToken))
+            return Result.Fail<AuthenticationSession>("Refresh token has already been used or revoked.");
+        return Result.Ok(new AuthenticationSession { Tokens = pair });
     }
-
-    public async Task LogoutAsync(CancellationToken cancellationToken = default)
-    {
-        if (_current.User != null)
-            await _permissions.RemoveCachedPermissionsAsync(_current.User.RoleIds, _current.User.UserId, cancellationToken);
-    }
+    public Task LogoutAsync(CancellationToken cancellationToken = default) => string.IsNullOrEmpty(current.SessionId)
+        ? Task.CompletedTask : store.RevokeAsync(current.SessionId, cancellationToken);
 }

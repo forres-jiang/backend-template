@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using FluentResults;
 using My.XXX.Service.Common;
 using My.XXX.Service.DTOs;
@@ -12,13 +14,13 @@ namespace My.XXX.Service;
 /// <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
 public sealed class MenuMutations(IMenuTransaction transaction, TimeProvider clock)
 {
-    public Result Add(SaveMenu input, string culture, string userId)
+    public async Task<Result> Add(SaveMenu input, string culture, string userId, CancellationToken cancellationToken = default)
     {
         if (input == null || string.IsNullOrWhiteSpace(input.DisplayName) || !input.IsAction.HasValue || input.ParentId < 0 || input.Number < 0)
             return Result.Fail(MenuErrors.InvalidInput());
-        return transaction.Execute(session =>
+        return (await transaction.Execute(async session =>
         {
-            if (!MenuHierarchy.CanPlace(session.LoadMenus(), 0, input.ParentId, input.IsAction.Value))
+            if (!MenuHierarchy.CanPlace((await session.LoadMenus(cancellationToken)), 0, input.ParentId, input.IsAction.Value))
                 return Result.Fail(MenuErrors.InvalidParent());
             var now = clock.GetLocalNow().DateTime;
             var menu = new MenuState
@@ -41,17 +43,17 @@ public sealed class MenuMutations(IMenuTransaction transaction, TimeProvider clo
                 CreatedTime = now,
                 UpdatedTime = now
             };
-            return Result.OkIf(session.Insert(menu) == 1, MenuErrors.WriteFailed());
-        });
+            return Result.OkIf((await session.Insert(menu, cancellationToken)) == 1, MenuErrors.WriteFailed());
+        }, cancellationToken));
     }
 
-    public Result Update(EditMenu input, string culture, string userId)
+    public async Task<Result> Update(EditMenu input, string culture, string userId, CancellationToken cancellationToken = default)
     {
         if (input == null || input.Id <= 0 || input.ParentId < 0 || input.Number < 0 || !MenuUpdateFields.Valid(input.ClearFields))
             return Result.Fail(MenuErrors.InvalidInput());
-        return transaction.Execute(session =>
+        return (await transaction.Execute(async session =>
         {
-            var menus = session.LoadMenus();
+            var menus = (await session.LoadMenus(cancellationToken));
             var menu = menus.FirstOrDefault(m => m.Id == input.Id)?.Copy();
             if (menu == null) return Result.Fail(MenuErrors.NotFound());
             menu.ParentId = input.ParentId ?? menu.ParentId;
@@ -74,19 +76,27 @@ public sealed class MenuMutations(IMenuTransaction transaction, TimeProvider clo
             menu.Number = input.Number ?? menu.Number;
             menu.IsDisplay = input.IsDisplay ?? menu.IsDisplay;
             Stamp(menu, userId);
-            return Result.OkIf(session.Update(menu) == 1, MenuErrors.WriteFailed());
-        });
+            return Result.OkIf((await session.Update(menu, cancellationToken)) == 1, MenuErrors.WriteFailed());
+        }, cancellationToken));
     }
 
-    public Result Remove(List<int> ids, string userId)
+    public async Task<Result> Remove(List<int> ids, string userId, CancellationToken cancellationToken = default)
     {
         if (ids == null || ids.Count == 0 || ids.Any(id => id <= 0)) return Result.Fail(MenuErrors.InvalidInput());
-        return transaction.Execute(session => Result.OkIf(session.Remove(ids.Distinct().ToList(), userId, clock.GetLocalNow().DateTime) > 0, MenuErrors.NotFound()));
+        return (await transaction.Execute(async session =>
+        {
+            var selected = ids.Distinct().ToList();
+            var menus = (await session.LoadMenus(cancellationToken));
+            if (selected.Except(menus.Select(m => m.Id)).Any()) return Result.Fail(MenuErrors.NotFound());
+            if (menus.Any(m => selected.Contains(m.ParentId) && !selected.Contains(m.Id)))
+                return Result.Fail(MenuErrors.HasChildren());
+            return Result.OkIf((await session.Remove(selected, userId, clock.GetLocalNow().DateTime, cancellationToken)) == selected.Count, MenuErrors.WriteFailed());
+        }, cancellationToken));
     }
 
-    public Result Move(MenuSortModel input, string userId) => transaction.Execute(session =>
+    public async Task<Result> Move(MenuSortModel input, string userId, CancellationToken cancellationToken = default) => (await transaction.Execute(async session =>
     {
-        var menus = session.LoadMenus();
+        var menus = (await session.LoadMenus(cancellationToken));
         var order = MenuOrder.Build(menus, input);
         if (order == null) return Result.Fail(MenuErrors.InvalidOrder());
         var current = order.First(m => m.Id == input.CurrentId);
@@ -96,26 +106,26 @@ public sealed class MenuMutations(IMenuTransaction transaction, TimeProvider clo
             var menu = order[index];
             menu.Number = index;
             Stamp(menu, userId);
-            if (session.Update(menu) != 1) return Result.Fail(MenuErrors.WriteFailed());
+            if ((await session.Update(menu, cancellationToken)) != 1) return Result.Fail(MenuErrors.WriteFailed());
         }
         return Result.Ok();
-    });
+    }, cancellationToken));
 
-    public Result SetRoleMenus(Guid roleId, List<int> ids, RoleMenuChange change, string userId)
+    public async Task<Result> SetRoleMenus(Guid roleId, List<int> ids, RoleMenuChange change, string userId, CancellationToken cancellationToken = default)
     {
         if (roleId == Guid.Empty || ids == null || ids.Any(id => id <= 0) || !Enum.IsDefined(change))
             return Result.Fail(MenuErrors.InvalidSelection());
         var selected = ids.Distinct().ToList();
-        return transaction.Execute(session =>
+        return (await transaction.Execute(async session =>
         {
-            if (change != RoleMenuChange.Remove && selected.Except(session.LoadMenus().Select(m => m.Id)).Any())
+            if (change != RoleMenuChange.Remove && selected.Except((await session.LoadMenus(cancellationToken)).Select(m => m.Id)).Any())
                 return Result.Fail(MenuErrors.InvalidSelection());
-            var existing = session.LoadRoleMenus(roleId);
+            var existing = (await session.LoadRoleMenus(roleId, cancellationToken));
             var removals = change == RoleMenuChange.Replace ? existing.Except(selected).ToList()
                 : change == RoleMenuChange.Remove ? existing.Intersect(selected).ToList() : new();
             var additions = change == RoleMenuChange.Remove ? new List<int>() : selected.Except(existing).ToList();
-            return Result.OkIf(session.ApplyRoleChanges(roleId, additions, removals, userId, clock.GetLocalNow().DateTime), MenuErrors.WriteFailed());
-        });
+            return Result.OkIf((await session.ApplyRoleChanges(roleId, additions, removals, userId, clock.GetLocalNow().DateTime, cancellationToken)), MenuErrors.WriteFailed());
+        }, cancellationToken));
     }
 
     private void Stamp(MenuState menu, string userId)

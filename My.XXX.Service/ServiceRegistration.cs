@@ -23,6 +23,7 @@ public static class ServiceRegistration
         services.TryAddSingleton(System.TimeProvider.System);
         services.AddScoped<MenuQueryService>();
         services.AddScoped<RolePermissionService>();
+        services.AddScoped<IPermissionAdministration, PermissionAdministration>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.TryAddScoped<IPermissionQuery, PermissionQuery>();
         return services;

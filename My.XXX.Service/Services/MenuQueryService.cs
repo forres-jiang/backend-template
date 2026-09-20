@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using FluentResults;
 using My.XXX.Service.Common;
 using My.XXX.Service.DTOs;
@@ -13,9 +15,9 @@ namespace My.XXX.Service;
 
 public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurrentCulture _currentRequest, ApplicationMapper _mapper)
 {
-    public MenuBaseDto Get(int menuId)
+    public async Task<MenuBaseDto> Get(int menuId, CancellationToken cancellationToken = default)
     {
-        var menu = _menuRepository.Get(menuId);
+        var menu = (await _menuRepository.Get(menuId, cancellationToken));
         if (menu != null)
         {
             var menuDto = _mapper.ToMenuBaseDto(menu);
@@ -28,9 +30,9 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
         }
     }
 
-    public List<MenuDto> GetMenuByRoles(RoleMenuQuery query)
+    public async Task<List<MenuDto>> GetMenuByRoles(RoleMenuQuery query, CancellationToken cancellationToken = default)
     {
-        var dbMenuAction = _menuRepository.GetRoleMenuByRoles(query.RoleIds)
+        var dbMenuAction = (await _menuRepository.GetRoleMenuByRoles(query.RoleIds, cancellationToken))
             .Where(m => m.IsDisplay).ToList();
 
         var dtoList = _mapper.ToMenuDtos(dbMenuAction);
@@ -53,14 +55,14 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
         return tree;
     }
 
-    public List<MenuDto> GetMenuTreeCheckedByRoles(List<Guid> roleIds)
+    public async Task<List<MenuDto>> GetMenuTreeCheckedByRoles(List<Guid> roleIds, CancellationToken cancellationToken = default)
     {
-        var menus = _menuRepository.GetMenus();
+        var menus = (await _menuRepository.GetMenus(cancellationToken: cancellationToken));
         var list = _mapper.ToMenuDtos(menus);
 
         SetMenuLanguage(list);
 
-        var roleMenus = _menuRepository.GetRoleMenuByRoles(roleIds).Select(m => m.Id).Distinct().ToList();
+        var roleMenus = (await _menuRepository.GetRoleMenuByRoles(roleIds, cancellationToken)).Select(m => m.Id).Distinct().ToList();
 
         foreach (var item in roleMenus)
         {
@@ -75,32 +77,32 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
         return tree;
     }
 
-    public List<MenuDto> GetTreeMenus(bool? isDisplay)
+    public async Task<List<MenuDto>> GetTreeMenus(bool? isDisplay, CancellationToken cancellationToken = default)
     {
-        var list = _mapper.ToMenuDtos(_menuRepository.GetMenus(isDisplay: isDisplay));
+        var list = _mapper.ToMenuDtos((await _menuRepository.GetMenus(isDisplay: isDisplay, cancellationToken: cancellationToken)));
         SetMenuLanguage(list);
         return MenuTree.Build(list);
     }
 
-    public Paged<MenuSearchPickerDto> SearchMenus(QueryMenu query)
+    public async Task<Paged<MenuSearchPickerDto>> SearchMenus(QueryMenu query, CancellationToken cancellationToken = default)
     {
-        var result = Search(query, picker: true);
+        var result = await Search(query, picker: true, cancellationToken);
         var dtoList = _mapper.ToMenuSearchPickersFromBase(result.List)
             .OrderBy(m => m.ParentId).ThenBy(m => m.Number).ToList();
 
         SetMenuLanguage(dtoList);
         return Paged<MenuSearchPickerDto>.Create(dtoList, result.Total);
     }
-    public Result<List<MenuBase>> GetMenus() => Result.Ok(_mapper.ToMenuBases(_menuRepository.GetMenus()));
-    public Paged<MenuBaseDto> GetMenus(QueryMenu query)
+    public async Task<Result<List<MenuBase>>> GetMenus(CancellationToken cancellationToken = default) => Result.Ok(_mapper.ToMenuBases((await _menuRepository.GetMenus(cancellationToken: cancellationToken))));
+    public async Task<Paged<MenuBaseDto>> GetMenus(QueryMenu query, CancellationToken cancellationToken = default)
     {
-        return Search(query, picker: false);
+        return await Search(query, picker: false, cancellationToken);
     }
-    private Paged<MenuBaseDto> Search(QueryMenu query, bool picker)
+    private async Task<Paged<MenuBaseDto>> Search(QueryMenu query, bool picker, CancellationToken cancellationToken = default)
     {
         var criteria = new MenuSearch(query.DisplayName, picker ? false : query.IsAction,
             picker || query.IsDisplay, query.ParentId, query.PageIndex, Math.Clamp(query.PageSize, 1, 100));
-        var page = _menuRepository.Search(criteria);
+        var page = (await _menuRepository.Search(criteria, cancellationToken));
         var result = page.List.Select(menu =>
         {
             var dto = _mapper.ToMenuBaseDto(menu);

@@ -30,8 +30,6 @@ namespace Microsoft.Extensions.DependencyInjection
             My.XXX.APIs.Common.JWT.TokenAuthentication.Configure(new JwtBearerOptions(), jwt, "access");
             if (jwt.ExpiryInMinutes <= 0 || jwt.RefreshExpiryInMinutes <= jwt.ExpiryInMinutes)
                 throw new InvalidOperationException("Refresh token lifetime must exceed the positive access token lifetime.");
-            if (string.IsNullOrWhiteSpace(configuration["AppCenterConfig:AppSecret"]))
-                throw new InvalidOperationException("Configure AppCenterConfig AppSecret through a secret provider.");
 
             //AppConfig
             services.Configure<AppConfig>(configuration.GetSection("AppConfig"));
@@ -194,22 +192,19 @@ namespace Microsoft.Extensions.DependencyInjection
         public static void AddDBs(this IServiceCollection services, IConfiguration configuration)
         {
             var defaultProvider = DatabaseConfiguration.ParseProvider(configuration["DatabaseProviders:Default"]);
-            var mailProvider = DatabaseConfiguration.ParseProvider(configuration["DatabaseProviders:MailMaster"]);
             var connStrings = configuration.GetSection("ConnectionStrings").Get<ConnectionStrings>();
 
             //DB
             var defaultConnection = ResolveConnectionString(connStrings?.Default, "Default");
-            var mailMasterConnection = ResolveConnectionString(connStrings?.MailMaster, "MailMaster");
-            services.AddPersistenceDatabases(defaultConnection, defaultProvider, mailMasterConnection, mailProvider);
-
+            services.AddPersistenceDatabases(defaultConnection, defaultProvider);
             services.AddHealthChecks()
                 .AddCheck("database", new My.XXX.APIs.Common.Health.SqlHealthCheck(defaultConnection, defaultProvider),
-                    tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5))
-                .AddCheck("mail-database", new My.XXX.APIs.Common.Health.SqlHealthCheck(mailMasterConnection, mailProvider),
                     tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
 
             services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.PermissionSchemaHealthCheck>(
                 "permission-schema", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
+            services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.AuthenticationSchemaHealthCheck>(
+                "authentication-schema", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
 
             //Redis
             var redisConfig = configuration.GetSection("RedisConfig").Get<RedisConfig>();

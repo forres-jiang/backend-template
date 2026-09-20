@@ -186,6 +186,9 @@
         <member name="T:My.XXX.APIs.Common.ResultResponseExtensions">
             <summary>Maps business results to the existing public response contract.</summary>
         </member>
+        <member name="M:My.XXX.APIs.Common.ResultResponseExtensions.ToHttpResult(FluentResults.Result)">
+            <summary>New endpoints use HTTP status as well as the explicit envelope; legacy endpoints retain their status contract.</summary>
+        </member>
         <member name="M:My.XXX.APIs.Controllers.DemoController.Encrypt(System.String)">
             <summary>
             加密字符串

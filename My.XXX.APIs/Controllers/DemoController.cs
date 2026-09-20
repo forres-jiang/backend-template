@@ -119,9 +119,9 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("RoleMenuAction")]
-        public MyResult RoleMenuAction(RoleMenuActionModel model)
+        public async Task<MyResult> RoleMenuAction(RoleMenuActionModel model)
         {
-            return _menuService.RoleMenuAction(model).ToApiResult();
+            return (await _menuService.RoleMenuAction(model, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [AllowAnonymous]

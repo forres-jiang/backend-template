@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using FluentResults;
 using My.XXX.Service.Models;
 using System;
@@ -8,16 +10,16 @@ namespace My.XXX.Service.Ports;
 public interface IMenuTransaction
 {
     /// <summary>Locks the permission revision before invoking the use case. Failure results and exceptions roll back all writes.</summary>
-    Result Execute(Func<IMenuWriteSession, Result> operation);
+    Task<Result> Execute(Func<IMenuWriteSession, Task<Result>> operation, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Available only inside Execute. Contains persistence primitives, not business commands.</summary>
 public interface IMenuWriteSession
 {
-    List<MenuState> LoadMenus();
-    List<int> LoadRoleMenus(Guid roleId);
-    int Insert(MenuState menu);
-    int Update(MenuState menu);
-    int Remove(List<int> ids, string userId, DateTime timestamp);
-    bool ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp);
+    Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default);
+    Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default);
+    Task<int> Insert(MenuState menu, CancellationToken cancellationToken = default);
+    Task<int> Update(MenuState menu, CancellationToken cancellationToken = default);
+    Task<int> Remove(List<int> ids, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
+    Task<bool> ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
 }

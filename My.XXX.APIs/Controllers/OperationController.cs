@@ -20,9 +20,10 @@ namespace My.XXX.APIs.Controllers
 
         [HttpPost]
         [Route("list")]
-        public async Task<Paged<OperationDto>> List(OperationQeury query)
+        [My.XXX.APIs.Common.RequiresPermission(My.XXX.Service.Common.PermissionCodes.OperationList)]
+        public async Task<MyResult<Paged<OperationDto>>> List(OperationQeury query)
         {
-            return await _requestLogService.GetRequestLogs(query);
+            return MyResult<Paged<OperationDto>>.Success(await _requestLogService.GetRequestLogs(query));
         }
     }
 }

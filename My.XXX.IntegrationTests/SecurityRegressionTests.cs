@@ -1,3 +1,4 @@
+using My.XXX.Service.Ports;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -54,6 +55,7 @@ public class SecurityRegressionTests
         Environment.SetEnvironmentVariable("APP_ENCRYPTION_KEY", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
         try
         {
+            var authority = new InMemoryAuthenticationStore();
             var settings = new Dictionary<string, string>
             {
                 ["JwtConfig:Secret"] = Jwt.Secret,
@@ -61,11 +63,7 @@ public class SecurityRegressionTests
                 ["JwtConfig:Audience"] = Jwt.Audience,
                 ["JwtConfig:ExpiryInMinutes"] = "5",
                 ["JwtConfig:RefreshExpiryInMinutes"] = "60",
-                ["AppCenterConfig:AppSecret"] = "local-test-only",
-                ["AppCenterConfig:AppCode"] = "test",
-                ["AppCenterConfig:LoginUrl"] = "https://example.invalid/login",
                 ["ConnectionStrings:Default"] = "Server=127.0.0.1,1;Database=test;User Id=test;Password=test;Connect Timeout=1;Encrypt=false;ConnectRetryCount=0",
-                ["ConnectionStrings:MailMaster"] = "Server=127.0.0.1,1;Database=test;User Id=test;Password=test;Connect Timeout=1;Encrypt=false;ConnectRetryCount=0",
                 ["AllowedHostArray:0"] = "https://localhost",
                 ["DataProtection:KeyPath"] = Path.Combine(Root(), ".test-artifacts", Guid.NewGuid().ToString("N")),
                 ["AppConfig:EnableRequestLog"] = "false"
@@ -76,6 +74,7 @@ public class SecurityRegressionTests
                 {
                     builder.Configuration.Sources.Clear();
                     builder.Configuration.AddInMemoryCollection(settings);
+                    builder.Services.AddSingleton<IAuthenticationStore>(authority);
                     builder.Services.AddControllers().AddApplicationPart(typeof(BoundaryProbeController).Assembly);
                     builder.WebHost.UseSetting("urls", "http://127.0.0.1:0");
                 });
@@ -107,7 +106,7 @@ public class SecurityRegressionTests
                 Assert.AreEqual(HttpStatusCode.Unauthorized,
                     (await client.PostAsync("/api/Menu/Tree", null)).StatusCode);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
-                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/Logout", null)).StatusCode);
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.DeleteAsync("/api/User/Session")).StatusCode);
 
                 var actions = app.Services.GetRequiredService<IActionDescriptorCollectionProvider>().ActionDescriptors.Items;
                 Assert.IsFalse(actions.OfType<ControllerActionDescriptor>().Any(action => action.ControllerName == "Demo"));
@@ -134,14 +133,18 @@ public class SecurityRegressionTests
                         second.ServiceProvider.GetRequiredService<DBContext>());
                 }
 
-                var tokens = JwtTokenBuilder.CreateTokens(Jwt, new UserInfo
+                var user = new UserInfo
                 {
                     UserId = "test-user",
                     UserName = "Test",
                     Email = "test@example.invalid",
                     Roles = new List<string>(),
                     RoleIds = new List<Guid>()
-                });
+                };
+                await authority.SetUserAsync(user, true);
+                using var tokenScope = app.Services.CreateScope();
+                var issuer = tokenScope.ServiceProvider.GetRequiredService<ITokenIssuer>();
+                var tokens = await issuer.IssueAsync(user.UserId);
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
                 Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/api/Demo/retry")).StatusCode);
@@ -157,6 +160,29 @@ public class SecurityRegressionTests
                 Assert.AreEqual(HttpStatusCode.OK, refresh.StatusCode);
                 var refreshed = await refresh.Content.ReadAsStringAsync();
                 StringAssert.Contains(refreshed, "eyJ");
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/RefreshToken", null)).StatusCode,
+                    "A refresh token must be consumed only once.");
+                var refreshedJson = JObject.Parse(refreshed);
+                var nextAccess = (string)refreshedJson["accessToken"];
+                var nextRefresh = (string)refreshedJson["refreshToken"];
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", nextAccess);
+                user.Roles = new() { "AppAdmin" };
+                await authority.SetUserAsync(user, true);
+                Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/v2/permissions/catalog")).StatusCode);
+                user.Roles.Clear();
+                await authority.SetUserAsync(user, true);
+                Assert.AreEqual(HttpStatusCode.Forbidden, (await client.GetAsync("/api/v2/permissions/catalog")).StatusCode,
+                    "An old access token must not preserve administrator access.");
+                await authority.SetUserAsync(user, false);
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
+                await authority.SetUserAsync(user, true);
+                Assert.AreEqual(HttpStatusCode.OK, (await client.DeleteAsync("/api/User/Session")).StatusCode);
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", nextRefresh);
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/RefreshToken", null)).StatusCode);
+                // A correctly signed legacy token still fails without a persisted session.
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTokenBuilder.CreateTokens(Jwt, user).AccessToken);
+                Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
             }
             finally { await app.StopAsync(); }
         }

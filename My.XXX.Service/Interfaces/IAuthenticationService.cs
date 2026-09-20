@@ -8,12 +8,12 @@ namespace My.XXX.Service.Interfaces;
 
 public interface IAuthenticationService
 {
-    Result<AuthenticationSession> Refresh();
+    Task<Result<AuthenticationSession>> RefreshAsync(CancellationToken cancellationToken = default);
     Task LogoutAsync(CancellationToken cancellationToken = default);
 }
 
 public interface ITokenIssuer
 {
-    TokenPair Issue(UserInfo user);
-    TokenPair Refresh(UserInfo user, System.DateTime refreshExpiration);
+    Task<TokenPair> IssueAsync(string userId, CancellationToken cancellationToken = default);
+    TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, System.DateTime refreshExpiration);
 }

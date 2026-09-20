@@ -78,8 +78,7 @@ public class RedisCacheTests
     {
         var settings = new Dictionary<string, string>
         {
-            ["ConnectionStrings:Default"] = "Server=localhost;Database=test;Integrated Security=true",
-            ["ConnectionStrings:MailMaster"] = "Server=localhost;Database=test;Integrated Security=true"
+            ["ConnectionStrings:Default"] = "Server=localhost;Database=test;Integrated Security=true"
         };
         var services = new ServiceCollection();
         services.AddDBs(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());

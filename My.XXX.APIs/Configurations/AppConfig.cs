@@ -20,6 +20,5 @@ namespace My.XXX.Shared
     public class ConnectionStrings
     {
         public string Default { get; set; }
-        public string MailMaster { get; set; }
     }
 }

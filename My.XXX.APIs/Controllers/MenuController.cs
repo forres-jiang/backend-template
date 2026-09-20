@@ -1,3 +1,6 @@
+using My.XXX.Service.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
@@ -22,100 +25,115 @@ namespace My.XXX.APIs.Controllers
         }
 
         [HttpPost("add")]
-        public MyResult Add(SaveMenu model)
+        [RequiresPermission(PermissionCodes.MenuAdd)]
+        public async Task<MyResult> Add(SaveMenu model)
         {
-            return _menuService.Add(model).ToApiResult();
+            return (await _menuService.Add(model, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [HttpDelete("remove")]
-        public MyResult Remove(InputRemoveMenu model)
+        [RequiresPermission(PermissionCodes.MenuRemove)]
+        public async Task<MyResult> Remove(InputRemoveMenu model)
         {
-            return _menuService.Remove(model.MenuIds).ToApiResult();
+            return (await _menuService.Remove(model.MenuIds, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [HttpPatch("edit")]
-        public MyResult Edit(EditMenu model)
+        [RequiresPermission(PermissionCodes.MenuEdit)]
+        public async Task<MyResult> Edit(EditMenu model)
         {
-            return _menuService.Update(model).ToApiResult();
+            return (await _menuService.Update(model, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [HttpGet("Get/{menuId}")]
-        public MenuBaseDto Get(int menuId)
+        [RequiresPermission(PermissionCodes.MenuGet)]
+        public async Task<MyResult<MenuBaseDto>> Get(int menuId)
         {
-            return _menuService.Get(menuId);
+            return MyResult<MenuBaseDto>.Success((await _menuService.Get(menuId, HttpContext.RequestAborted)));
         }
 
         [HttpPost("List")]
-        public MyResult List(QueryMenu query)
+        [RequiresPermission(PermissionCodes.MenuList)]
+        public async Task<MyResult<Paged<MenuBaseDto>>> List(QueryMenu query)
         {
-            var result = _menuService.GetMenus(query);
-            return MyResult.Success(result);
+            var result = (await _menuService.GetMenus(query, HttpContext.RequestAborted));
+            return MyResult<Paged<MenuBaseDto>>.Success(result);
         }
 
         [HttpPost("Search")]
-        public MyResult Search(QueryMenu query)
+        [RequiresPermission(PermissionCodes.MenuSearch)]
+        public async Task<MyResult<Paged<MenuSearchPickerDto>>> Search(QueryMenu query)
         {
-            var result = _menuService.SearchMenus(query);
-            return MyResult.Success(result);
+            var result = (await _menuService.SearchMenus(query, HttpContext.RequestAborted));
+            return MyResult<Paged<MenuSearchPickerDto>>.Success(result);
         }
 
         [HttpPost("RoleMenu")]
-        public MyResult RoleMenu(InputRoleMenu model)
+        [RequiresPermission(PermissionCodes.MenuRoleMenu)]
+        public async Task<MyResult> RoleMenu(InputRoleMenu model)
         {
-            var result = _menuService.RoleMenuRelation(model);
+            var result = (await _menuService.RoleMenuRelation(model, HttpContext.RequestAborted));
             return result.ToApiResult();
         }
 
         [HttpPost("RoleMenus")]
-        public bool RoleMenus(RoleMenuIds model)
+        [RequiresPermission(PermissionCodes.MenuRoleMenus)]
+        public async Task<MyResult<bool>> RoleMenus(RoleMenuIds model)
         {
-            return _menuService.RoleMenus(model.RoleId, model.MenuIds, true).IsSuccess;
+            return (await _menuService.RoleMenus(model.RoleId, model.MenuIds, true, HttpContext.RequestAborted)).ToBooleanApiResult();
         }
 
         [HttpPost("RoleMenuChecked")]
-        public bool RoleMenuChecked(InputRoleMenus model)
+        [RequiresPermission(PermissionCodes.MenuRoleMenuChecked)]
+        public async Task<MyResult<bool>> RoleMenuChecked(InputRoleMenus model)
         {
-            return _menuService.RoleMenusRelation(model).IsSuccess;
+            return (await _menuService.RoleMenusRelation(model, HttpContext.RequestAborted)).ToBooleanApiResult();
         }
 
         [HttpPost("RemoveRoleMenu")]
-        public MyResult RemoveRoleMenu(RemoveRoleMenu rrm)
+        [RequiresPermission(PermissionCodes.MenuRemoveRoleMenu)]
+        public async Task<MyResult> RemoveRoleMenu(RemoveRoleMenu rrm)
         {
-            return _menuService.RemoveRoleMenu(rrm.RoleId, rrm.MenuId).ToApiResult();
+            return (await _menuService.RemoveRoleMenu(rrm.RoleId, rrm.MenuId, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [HttpPost("Tree")]
-        public List<MenuDto> Tree()
+        [RequiresPermission(PermissionCodes.MenuTree)]
+        public async Task<MyResult<List<MenuDto>>> Tree()
         {
-            var result = _menuService.GetTreeMenus(null);
-            return result;
+            var result = (await _menuService.GetTreeMenus(null, HttpContext.RequestAborted));
+            return MyResult<List<MenuDto>>.Success(result);
         }
 
         [HttpPost("DisplayTree")]
-        public List<MenuDto> DisplayTree()
+        [RequiresPermission(PermissionCodes.MenuDisplayTree)]
+        public async Task<MyResult<List<MenuDto>>> DisplayTree()
         {
-            var result = _menuService.GetTreeMenus(true);
-            return result;
+            var result = (await _menuService.GetTreeMenus(true, HttpContext.RequestAborted));
+            return MyResult<List<MenuDto>>.Success(result);
         }
 
         [HttpPost("TreeByRoleId")]
-        public List<MenuDto> GetMenuTreeByRoleId(RoleMenuBase model)
+        [RequiresPermission(PermissionCodes.MenuTreeByRoleId)]
+        public async Task<MyResult<List<MenuDto>>> GetMenuTreeByRoleId(RoleMenuBase model)
         {
-            var result = _menuService.GetMenuTreeCheckedByRoles(new List<Guid> { model.RoleId });
-            return result;
+            var result = (await _menuService.GetMenuTreeCheckedByRoles(new List<Guid> { model.RoleId }, HttpContext.RequestAborted));
+            return MyResult<List<MenuDto>>.Success(result);
         }
 
         [HttpPost("TreeByRoleIds")]
-        public List<MenuDto> GetMenuTreeByRoleIds(RolesMenuModel model)
+        [RequiresPermission(PermissionCodes.MenuTreeByRoleIds)]
+        public async Task<MyResult<List<MenuDto>>> GetMenuTreeByRoleIds(RolesMenuModel model)
         {
-            var result = _menuService.GetMenuTreeCheckedByRoles(model.Ids);
-            return result;
+            var result = (await _menuService.GetMenuTreeCheckedByRoles(model.Ids, HttpContext.RequestAborted));
+            return MyResult<List<MenuDto>>.Success(result);
         }
 
         [HttpPatch("UpdateSort")]
-        public MyResult UpdateSort(MenuSortModel model)
+        [RequiresPermission(PermissionCodes.MenuUpdateSort)]
+        public async Task<MyResult> UpdateSort(MenuSortModel model)
         {
-            var result = _menuService.UpdateSort(model);
+            var result = (await _menuService.UpdateSort(model, HttpContext.RequestAborted));
             return result.ToApiResult();
         }
     }

@@ -27,25 +27,25 @@ public class MenuConcurrencyTests
         using var db = fixture.Open();
         var repository = new MenuTestDriver(db);
         var role = Guid.NewGuid();
-        var ids = repository.GetMenus().Select(m => m.Id).ToList();
-        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(() =>
+        var ids = (await repository.GetMenus()).Select(m => m.Id).ToList();
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(async () =>
         {
             using var writer = fixture.Open();
-            Assert.IsTrue(new MenuTestDriver(writer).SetRoleMenus(role, new() { ids[i % ids.Count] }, RoleMenuChange.Add, "test"));
+            Assert.IsTrue((await new MenuTestDriver(writer).SetRoleMenus(role, new() { ids[i % ids.Count] }, RoleMenuChange.Add, "test")));
         })));
         Assert.AreEqual(ids.Count, db.RoleMenu.Count(m => m.RoleId == role && !m.IsDeleted));
         Assert.AreEqual(8L, await repository.GetPermissionRevisionAsync());
         var before = await repository.GetPermissionRevisionAsync();
-        Assert.IsFalse(repository.SetRoleMenus(role, new() { int.MaxValue }, RoleMenuChange.Replace, "test"));
+        Assert.IsFalse((await repository.SetRoleMenus(role, new() { int.MaxValue }, RoleMenuChange.Replace, "test")));
         Assert.AreEqual(before, await repository.GetPermissionRevisionAsync(), "Rejected data must roll back the revision as well.");
         Assert.AreEqual(ids.Count, db.RoleMenu.Count(m => m.RoleId == role && !m.IsDeleted));
-        await Task.WhenAll(ids.Select(id => Task.Run(() =>
+        await Task.WhenAll(ids.Select(id => Task.Run(async () =>
         {
             using var writer = fixture.Open();
-            Assert.IsTrue(new MenuTestDriver(writer).SetRoleMenus(role, new() { id }, RoleMenuChange.Replace, "test"));
+            Assert.IsTrue((await new MenuTestDriver(writer).SetRoleMenus(role, new() { id }, RoleMenuChange.Replace, "test")));
         })));
         Assert.AreEqual(1, db.RoleMenu.Count(m => m.RoleId == role && !m.IsDeleted), "Concurrent replacement must not merge stale snapshots.");
-        Assert.IsTrue(repository.SetRoleMenus(role, new(), RoleMenuChange.Replace, "test"));
+        Assert.IsTrue((await repository.SetRoleMenus(role, new(), RoleMenuChange.Replace, "test")));
         Assert.AreEqual(0, db.RoleMenu.Count(m => m.RoleId == role && !m.IsDeleted));
     }
 
@@ -56,15 +56,15 @@ public class MenuConcurrencyTests
     {
         await using var fixture = await Fixture.Create(providerName);
         using var db = fixture.Open();
-        var ids = new MenuTestDriver(db).GetMenus().Select(m => m.Id).ToArray();
-        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(() =>
+        var ids = (await new MenuTestDriver(db).GetMenus()).Select(m => m.Id).ToArray();
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(async () =>
         {
             using var writer = fixture.Open();
             var command = i % 2 == 0 ? new MenuSortModel { CurrentId = ids[0], PrevId = ids[2] }
                 : new MenuSortModel { CurrentId = ids[2], NextId = ids[1] };
-            Assert.IsTrue(new MenuTestDriver(writer).Move(command, "test"));
+            Assert.IsTrue((await new MenuTestDriver(writer).Move(command, "test")));
         })));
-        var menus = new MenuTestDriver(db).GetMenus();
+        var menus = (await new MenuTestDriver(db).GetMenus());
         CollectionAssert.AreEquivalent(ids, menus.Select(m => m.Id).ToArray());
         CollectionAssert.AreEquivalent(new[] { 0, 1, 2 }, menus.Select(m => m.Number).ToArray());
         Assert.IsTrue(menus.All(m => m.ParentId == 0));
@@ -78,17 +78,17 @@ public class MenuConcurrencyTests
         await using var fixture = await Fixture.Create(providerName);
         using var db = fixture.Open();
         var repository = new MenuTestDriver(db);
-        var menu = repository.GetMenus().First();
-        Assert.AreEqual(1, repository.Update(new EditMenu { Id = menu.Id, DisplayName = "菜单", ClearFields = new() { "Description" } }, "zh-CN", "editor"));
-        var updated = repository.Get(menu.Id);
+        var menu = (await repository.GetMenus()).First();
+        Assert.AreEqual(1, (await repository.Update(new EditMenu { Id = menu.Id, DisplayName = "菜单", ClearFields = new() { "Description" } }, "zh-CN", "editor")));
+        var updated = (await repository.Get(menu.Id));
         Assert.IsNull(updated.Description);
         Assert.AreEqual(menu.Icon, updated.Icon);
         StringAssert.Contains(updated.DisplayNames, "English");
         StringAssert.Contains(updated.DisplayNames, "菜单");
         var revision = await repository.GetPermissionRevisionAsync();
-        Assert.AreEqual(0, repository.Update(new EditMenu { Id = menu.Id, ClearFields = new() { "CreatedBy" } }, "en-US", "editor"));
+        Assert.AreEqual(0, (await repository.Update(new EditMenu { Id = menu.Id, ClearFields = new() { "CreatedBy" } }, "en-US", "editor")));
         Assert.AreEqual(revision, await repository.GetPermissionRevisionAsync());
-        Assert.AreEqual(0, repository.Update(new EditMenu { Id = menu.Id, ParentId = menu.Id }, "en-US", "editor"));
+        Assert.AreEqual(0, (await repository.Update(new EditMenu { Id = menu.Id, ParentId = menu.Id }, "en-US", "editor")));
         Assert.AreEqual(revision, await repository.GetPermissionRevisionAsync());
     }
 
@@ -101,8 +101,8 @@ public class MenuConcurrencyTests
         using var db = fixture.Open();
         var repository = new MenuTestDriver(db);
         var role = Guid.NewGuid();
-        var ids = repository.GetMenus().Select(m => m.Id).ToArray();
-        Assert.IsTrue(repository.SetRoleMenus(role, new() { ids[0] }, RoleMenuChange.Replace, "test"));
+        var ids = (await repository.GetMenus()).Select(m => m.Id).ToArray();
+        Assert.IsTrue((await repository.SetRoleMenus(role, new() { ids[0] }, RoleMenuChange.Replace, "test")));
         var revision = await repository.GetPermissionRevisionAsync();
         if (providerName == "PostgreSQL")
             db.Execute("""
@@ -116,7 +116,7 @@ public class MenuConcurrencyTests
                 CREATE TRIGGER reject_test_insert ON dbo.RoleMenu AFTER INSERT AS
                 BEGIN THROW 51000, 'Injected write failure', 1; END
                 """);
-        Assert.Throws<DbException>(() => repository.SetRoleMenus(role, new() { ids[1] }, RoleMenuChange.Replace, "test"));
+        await Assert.ThrowsAsync<DbException>(async () => { await repository.SetRoleMenus(role, new() { ids[1] }, RoleMenuChange.Replace, "test"); });
         Assert.AreEqual(revision, await repository.GetPermissionRevisionAsync());
         CollectionAssert.AreEqual(new[] { ids[0] }, db.RoleMenu.Where(m => m.RoleId == role && !m.IsDeleted).Select(m => m.MenuId).ToArray());
     }
@@ -129,21 +129,21 @@ public class MenuConcurrencyTests
         await using var fixture = await Fixture.Create(providerName);
         using var db = fixture.Open();
         var repository = new MenuRepository(db);
-        var before = repository.GetMenus().First();
+        var before = (await repository.GetMenus()).First();
         IMenuWriteSession captured = null;
-        var result = repository.Execute(session =>
+        var result = (await repository.Execute(async session =>
         {
             captured = session;
-            var menu = session.LoadMenus().First(m => m.Id == before.Id);
+            var menu = (await session.LoadMenus()).First(m => m.Id == before.Id);
             menu.DisplayName = "must roll back";
-            Assert.AreEqual(1, session.Update(menu));
+            Assert.AreEqual(1, (await session.Update(menu)));
             return FluentResults.Result.Fail("application rejected subsequent operation");
-        });
+        }));
         Assert.IsTrue(result.IsFailed);
-        Assert.AreEqual(before.DisplayName, repository.Get(before.Id).DisplayName);
+        Assert.AreEqual(before.DisplayName, (await repository.Get(before.Id)).DisplayName);
         Assert.AreEqual(0L, await repository.GetPermissionRevisionAsync());
-        Assert.Throws<InvalidOperationException>(() => captured.LoadMenus());
-        Assert.Throws<InvalidOperationException>(() => repository.Execute(_ => repository.Execute(_ => FluentResults.Result.Ok())));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => { await captured.LoadMenus(); });
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => { await repository.Execute(_ => repository.Execute(_ => Task.FromResult(FluentResults.Result.Ok()))); });
         Assert.AreEqual(0L, await repository.GetPermissionRevisionAsync());
     }
 
@@ -152,13 +152,13 @@ public class MenuConcurrencyTests
     {
         private readonly MenuRepository reads = new(db);
         private readonly MenuMutations writes = new(new MenuRepository(db), TimeProvider.System);
-        public System.Collections.Generic.List<My.XXX.Service.Models.MenuState> GetMenus() => reads.GetMenus();
-        public My.XXX.Service.Models.MenuState Get(int id) => reads.Get(id);
+        public async Task<System.Collections.Generic.List<My.XXX.Service.Models.MenuState>> GetMenus() => (await reads.GetMenus());
+        public async Task<My.XXX.Service.Models.MenuState> Get(int id) => (await reads.Get(id));
         public Task<long> GetPermissionRevisionAsync() => reads.GetPermissionRevisionAsync();
-        public bool SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
-            writes.SetRoleMenus(role, ids, change, user).IsSuccess;
-        public bool Move(MenuSortModel model, string user) => writes.Move(model, user).IsSuccess;
-        public int Update(EditMenu model, string culture, string user) => writes.Update(model, culture, user).IsSuccess ? 1 : 0;
+        public async Task<bool> SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
+            (await writes.SetRoleMenus(role, ids, change, user)).IsSuccess;
+        public async Task<bool> Move(MenuSortModel model, string user) => (await writes.Move(model, user)).IsSuccess;
+        public async Task<int> Update(EditMenu model, string culture, string user) => (await writes.Update(model, culture, user)).IsSuccess ? 1 : 0;
     }
     private sealed class Fixture : IAsyncDisposable
     {

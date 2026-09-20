@@ -19,21 +19,20 @@ public class UserController : ControllerBase
     }
 
     [HttpPost]
-    [Route("Logout")]
-    public async Task<BaseResult> Logout()
+    [Route("RefreshToken")]
+    [Authorize(AuthenticationSchemes = "Refresh")]
+    public async Task<LoginResult> RefreshToken()
+    {
+        var result = await _authentication.RefreshAsync(HttpContext.RequestAborted);
+        if (result.IsFailed) Response.StatusCode = 401;
+        return result.ToLoginResult();
+    }
+
+    [HttpDelete("Session")]
+    public async Task<BaseResult> RevokeSession()
     {
         await _authentication.LogoutAsync(HttpContext.RequestAborted);
         return BaseResult.Success();
-    }
-
-    [HttpPost]
-    [Route("RefreshToken")]
-    [Authorize(AuthenticationSchemes = "Refresh")]
-    public MyResult RefreshToken()
-    {
-        var result = _authentication.Refresh();
-        if (result.IsFailed) Response.StatusCode = 401;
-        return result.ToLoginResult();
     }
 
     [HttpGet("GetRoles")]

@@ -23,9 +23,7 @@ public class DatabaseProviderTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
         {
             ["DatabaseProviders:Default"] = primary,
-            ["DatabaseProviders:MailMaster"] = mail,
-            ["ConnectionStrings:Default"] = ConnectionString(primary),
-            ["ConnectionStrings:MailMaster"] = ConnectionString(mail)
+            ["ConnectionStrings:Default"] = ConnectionString(primary)
         }).Build();
         var services = new ServiceCollection();
         services.AddLogging();

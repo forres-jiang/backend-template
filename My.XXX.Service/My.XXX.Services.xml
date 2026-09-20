@@ -7,14 +7,18 @@
         <member name="T:My.XXX.Service.Common.MenuOrder">
             <summary>Pure ordering policy. The repository supplies a snapshot under its write lock.</summary>
         </member>
+        <member name="T:My.XXX.Service.Common.PermissionCodes">
+            <summary>Stable security identifiers. Navigation labels, routes and CLR names are not permissions.</summary>
+        </member>
         <member name="T:My.XXX.Service.Interfaces.ICurrentRequest">
             <summary>Framework-neutral view of the current request and authenticated user.</summary>
         </member>
-        <member name="M:My.XXX.Service.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Service.DTOs.InputRoleMenus)">
+        <member name="M:My.XXX.Service.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Service.DTOs.InputRoleMenus,System.Threading.CancellationToken)">
              <summary>
             
              </summary>
              <param name="input"></param>
+             <param name="cancellationToken"></param>
              <returns></returns>
         </member>
         <member name="T:My.XXX.Service.Interfaces.IPermissionCache">
@@ -32,7 +36,10 @@
         <member name="T:My.XXX.Service.Models.MenuState">
             <summary>Application state used by menu policies; never returned directly by HTTP endpoints.</summary>
         </member>
-        <member name="M:My.XXX.Service.Ports.IMenuTransaction.Execute(System.Func{My.XXX.Service.Ports.IMenuWriteSession,FluentResults.Result})">
+        <member name="T:My.XXX.Service.Ports.IAuthenticationStore">
+            <summary>Shared persistent authority. Only trusted identity integrations may update users.</summary>
+        </member>
+        <member name="M:My.XXX.Service.Ports.IMenuTransaction.Execute(System.Func{My.XXX.Service.Ports.IMenuWriteSession,System.Threading.Tasks.Task{FluentResults.Result}},System.Threading.CancellationToken)">
             <summary>Locks the permission revision before invoking the use case. Failure results and exceptions roll back all writes.</summary>
         </member>
         <member name="T:My.XXX.Service.Ports.IMenuWriteSession">
