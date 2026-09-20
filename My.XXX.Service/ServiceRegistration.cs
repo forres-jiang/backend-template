@@ -13,7 +13,6 @@ public static class ServiceRegistration
     {
         services.AddSingleton<ApplicationMapper>();
         services.AddScoped<IValidator<DemoModel>, DemoValidator>();
-        services.AddScoped<IValidator<Mail>, MailValidator>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDemoService, DemoService>();
         services.AddScoped<IOperationService, OperationService>();

@@ -25,7 +25,7 @@ APIs -> Infrastructure -> Service
 
 Menu and role services depend only on `ICurrentUser` and/or `ICurrentCulture`; authentication uses `IAuthenticationSession`. The legacy principal-bearing `ICurrentRequest` remains for compatibility at the HTTP/user adapter boundary. `TimeProvider` supplies menu audit timestamps and can be replaced in tests.
 
-APIs calls `AddBusinessServices`, `AddRepositories`, `AddPersistenceDatabases`, `AddExternalAdapters` and `AddPermissionCaching`. Registrations are explicit and owned by their project; framework request/JWT adapters remain at the composition root. No assembly scanning is needed for these services. Existing marker interfaces are retained for source compatibility.
+APIs calls `AddBusinessServices`, `AddRepositories`, `AddPersistenceDatabases`, `AddExternalAdapters` and `AddPermissionCaching`. Registrations are explicit and owned by their project; framework request/JWT adapters remain at the composition root. No assembly scanning is used.
 
 DTO namespaces remain `My.XXX.Service.DTOs` for compatibility, although the types live in Contracts. Existing menu JSON fields remain available, but internal menu state no longer inherits from or doubles as a response DTO. API response classes, legacy HTTP validation types and host/JWT configuration retain the `My.XXX.Shared` namespace and live in APIs; Redis configuration lives in Infrastructure. New storage adapters must depend on application ports, not move storage models into Contracts.
 
@@ -57,7 +57,7 @@ Other multi-row operations use `AtomicWrite`, which commits successful results, 
 
 1. Stop old instances that can write menus or role assignments.
 2. Back up the business database and check for duplicate active role-menu assignments. The unique index deliberately fails if duplicates exist; resolve them according to the intended assignments instead of silently deleting data.
-3. Run the matching script against **Default** (not MailMaster):
+3. Run the matching script against the **Default** business database:
    - `My.XXX.Persistence/Migrations/001_permission_revision.sqlserver.sql`
    - `My.XXX.Persistence/Migrations/001_permission_revision.postgresql.sql`
 4. Configure a distinct `PermissionCache:KeyPrefix` per application/environment sharing Redis, deploy all upgraded instances, and check readiness including `permission-schema`.
@@ -111,17 +111,15 @@ Each case creates and removes its own randomly named database and runs the match
 
 ## Database providers
 
-The business database (`Default`) and mail database (`MailMaster`) independently support SQL Server (2016+) or PostgreSQL (13+). Existing installations default to SQL Server. Set each provider to `SqlServer` or `PostgreSQL` (case insensitive); unknown values fail at startup.
+The business database (`Default`) supports SQL Server (2016+) or PostgreSQL (13+). Existing installations default to SQL Server. Set the provider to `SqlServer` or `PostgreSQL` (case insensitive); unknown values fail at startup.
 
 For PostgreSQL, supply these environment variables through your deployment/secret provider:
 
 ```text
 DatabaseProviders__Default=PostgreSQL
-DatabaseProviders__MailMaster=PostgreSQL
 ConnectionStrings__Default=Host=localhost;Port=5432;Database=xxx;Username=xxx;Password=<secret>
-ConnectionStrings__MailMaster=Host=localhost;Port=5432;Database=mailmaster;Username=xxx;Password=<secret>
 ```
 
-For SQL Server, use `SqlServer` and a connection string such as `Server=localhost;Database=xxx;User Id=xxx;Password=<secret>;Encrypt=true`. Mixed deployments are supported, for example PostgreSQL for `Default` and SQL Server for `MailMaster`. Both database readiness checks use the selected driver. Existing `enc:v1:` encrypted connection strings remain supported.
+For SQL Server, use `SqlServer` and a connection string such as `Server=localhost;Database=xxx;User Id=xxx;Password=<secret>;Encrypt=true`. The database readiness check uses the selected driver. Existing `enc:v1:` encrypted connection strings remain supported.
 
-Provision tables before running the application; it does not automatically create or migrate databases. PostgreSQL tables use `public` (SQL Server mappings retain `dbo`), with the exact table and column casing declared in the entities: for example `public."Menus"`, `"Id"`, and `public."MAILQUEUE"`. Tables without an explicit schema use the connection's default schema/search path. Use quoted identifiers when creating PostgreSQL tables, identity columns for generated integer keys, `uuid` for GUIDs, `boolean` for booleans, `bytea` for attachments, and `timestamp without time zone` for the existing wall-clock `DateTime` fields. Existing SQL Server data and stored procedures require a separate migration. `DemoRepository.QueryProcMultiple` is a SQL Server-only example requiring a custom `TEST` procedure; it explicitly rejects PostgreSQL.
+Provision tables before running the application; it does not automatically create or migrate databases. PostgreSQL tables use `public` (SQL Server mappings retain `dbo`), with the exact table and column casing declared in the entities: for example `public."Menus"` and `"Id"`. Tables without an explicit schema use the connection's default schema/search path. Use quoted identifiers when creating PostgreSQL tables, identity columns for generated integer keys, `uuid` for GUIDs, `boolean` for booleans, `bytea` for attachments, and `timestamp without time zone` for the existing wall-clock `DateTime` fields. Existing SQL Server data and stored procedures require a separate migration. `DemoRepository.QueryProcMultiple` is a SQL Server-only example requiring a custom `TEST` procedure; it explicitly rejects PostgreSQL.

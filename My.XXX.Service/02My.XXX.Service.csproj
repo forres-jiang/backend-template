@@ -17,22 +17,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Connected Services\**" />
-		<EmbeddedResource Remove="Connected Services\**" />
-		<None Remove="Connected Services\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Remove="Interfaces\IRequestLogService.cs" />
-		<Compile Remove="Services\RequestLogService.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <None Remove="My.XXX.Services.xml" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<WCFMetadata Include="Connected Services" />
 	</ItemGroup>
 
 	<ItemGroup>

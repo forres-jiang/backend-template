@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Persistence.Repositories
 {
-    public class OperationRepository : IOperationRepository, IScopeDependency
+    public class OperationRepository : IOperationRepository
     {
         private readonly DBContext _dbContext;
         public OperationRepository(DBContext dbContext)

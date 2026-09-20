@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Infrastructure;
 
-public class HttpService : IHttpService, IScopeDependency
+public class HttpService : IHttpService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<HttpService> _logger;

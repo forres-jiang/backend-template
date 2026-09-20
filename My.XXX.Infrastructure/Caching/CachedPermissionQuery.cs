@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace My.XXX.Infrastructure.Caching;
 
 public sealed class CachedPermissionQuery(IPermissionStore menus, IPermissionCache cache,
-    IOptions<PermissionCacheOptions> options) : IPermissionQuery, IScopeDependency
+    IOptions<PermissionCacheOptions> options) : IPermissionQuery
 {
     public List<string> GetRoleMenuPaths(List<Guid> roleIds) => menus.GetPermissionPaths(roleIds);
 

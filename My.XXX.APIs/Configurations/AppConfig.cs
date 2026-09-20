@@ -8,13 +8,6 @@ namespace My.XXX.Shared
         public StorageTypeEnum RequestLogStorageType { get; set; }
         public StorageTypeEnum ExceptionStorageType { get; set; }
         public PermissionDataCache PermissionDataCache { get; set; }
-        public ExceptionEmailInfo ExceptionEmail { get; set; }
-    }
-
-    public class ExceptionEmailInfo
-    {
-        public string MailFrom { get; set; }
-        public string MailTo { get; set; }
     }
 
     public class ConnectionStrings

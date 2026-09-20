@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace My.XXX.Persistence.Repositories
 {
-    public class DemoRepository : IDemoRepository, IScopeDependency
+    public class DemoRepository : IDemoRepository
     {
         private readonly DBContext _dbContext;
 

@@ -5,7 +5,7 @@ using My.XXX.Shared;
 using System.Threading.Tasks;
 namespace My.XXX.Service;
 
-public sealed class OperationService(IOperationRepository repository) : IOperationService, IScopeDependency
+public sealed class OperationService(IOperationRepository repository) : IOperationService
 {
     public Task Save(MetricsInfo request) => repository.Save(request);
     public Task<Paged<OperationDto>> GetRequestLogs(OperationQeury query) => repository.Search(query);

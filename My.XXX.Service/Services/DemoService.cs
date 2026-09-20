@@ -7,7 +7,7 @@ using My.XXX.Shared;
 using System.Linq;
 namespace My.XXX.Service;
 
-public sealed class DemoService(IValidator<DemoModel> validator, IDemoRepository repository) : IDemoService, IScopeDependency
+public sealed class DemoService(IValidator<DemoModel> validator, IDemoRepository repository) : IDemoService
 {
     public Result Save(DemoModel model)
     {

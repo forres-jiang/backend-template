@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 namespace My.XXX.Service;
 /// <summary>Compatibility facade for existing HTTP contracts.</summary>
-public sealed class MenuService(MenuCommandService commands, MenuQueryService queries, RolePermissionService roles) : IMenuService, IScopeDependency
+public sealed class MenuService(MenuCommandService commands, MenuQueryService queries, RolePermissionService roles) : IMenuService
 {
     public async Task<Result> Add(SaveMenu menu, CancellationToken cancellationToken = default) => (await commands.Add(menu, cancellationToken));
     public async Task<Result> Update(EditMenu menu, CancellationToken cancellationToken = default) => (await commands.Update(menu, cancellationToken));

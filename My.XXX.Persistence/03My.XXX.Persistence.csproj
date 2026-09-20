@@ -12,47 +12,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Interfaces\IRequestLogRepository.cs" />
-		<Compile Remove="Repositories\RequestLogRepository.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\CopyMe.SqlServer.tt.txt" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\DataAnnotations.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\DataModel.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\EditableObject.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\Equatable.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\Humanizer.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.SqlServer.SqlTypes.Tools.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.SqlServer.SqlTypes.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.SqlServer.Tools.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.SqlServer.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.Tools.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\LinqToDB.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\MultipleFiles.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\NotifyDataErrorInfo.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\NotifyPropertyChanged.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\ObsoleteAttributes.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\PluralizationService.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\README.md" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\T4Model.ttinclude" />
-	  <None Remove="C:\Users\jianglijie\.nuget\packages\linq2db.sqlserver\6.5.0\contentFiles\any\any\LinqToDB.Templates\Validation.ttinclude" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\My.XXX.Shared\05My.XXX.Shared.csproj" />
+		<ProjectReference Include="../My.XXX.Service/02My.XXX.Service.csproj" />
+		<ProjectReference Include="../My.XXX.Contracts/04My.XXX.Contracts.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Riok.Mapperly" PrivateAssets="all" />
-        <ProjectReference Include="../My.XXX.Service/02My.XXX.Service.csproj" />
-        <PackageReference Include="linq2db.Extensions" />
+		<PackageReference Include="linq2db.Extensions" />
 		<PackageReference Include="linq2db.SqlServer" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<PackageReference Include="Npgsql" />
 		<PackageReference Include="Microsoft.Extensions.Options" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-		<ProjectReference Include="../My.XXX.Contracts/04My.XXX.Contracts.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
