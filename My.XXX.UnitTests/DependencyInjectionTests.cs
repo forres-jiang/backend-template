@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common.DI;
 using My.XXX.Infrastructure;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 
 namespace My.XXX.UnitTests;
 

@@ -1,5 +1,5 @@
 using Microsoft.IdentityModel.Tokens;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Shared;
 using Newtonsoft.Json;
 using System;

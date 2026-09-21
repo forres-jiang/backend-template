@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using System;

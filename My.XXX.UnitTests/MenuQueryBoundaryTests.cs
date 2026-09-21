@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Services;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using My.XXX.Services.Mapping;
 using My.XXX.Services.Models;

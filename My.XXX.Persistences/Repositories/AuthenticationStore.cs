@@ -1,7 +1,7 @@
 using LinqToDB;
 using LinqToDB.Async;
 using My.XXX.Persistences.PersistentObjects;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Models;
 using My.XXX.Services.Ports;
 using Newtonsoft.Json;

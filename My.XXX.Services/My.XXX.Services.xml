@@ -13,7 +13,7 @@
         <member name="T:My.XXX.Services.Interfaces.ICurrentRequest">
             <summary>Framework-neutral view of the current request and authenticated user.</summary>
         </member>
-        <member name="M:My.XXX.Services.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Service.DTOs.InputRoleMenus,System.Threading.CancellationToken)">
+        <member name="M:My.XXX.Services.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Contracts.DTOs.InputRoleMenus,System.Threading.CancellationToken)">
              <summary>
             
              </summary>

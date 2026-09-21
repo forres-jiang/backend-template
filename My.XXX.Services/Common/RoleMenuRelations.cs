@@ -1,4 +1,4 @@
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;

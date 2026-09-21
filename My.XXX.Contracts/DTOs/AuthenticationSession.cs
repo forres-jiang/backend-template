@@ -1,4 +1,4 @@
-namespace My.XXX.Service.DTOs;
+namespace My.XXX.Contracts.DTOs;
 
 public sealed class AuthenticationSession
 {

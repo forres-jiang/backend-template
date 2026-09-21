@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Persistences.Mapping;
 using My.XXX.Persistences.PersistentObjects;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Mapping;
 using My.XXX.Services.Models;
 using Newtonsoft.Json;

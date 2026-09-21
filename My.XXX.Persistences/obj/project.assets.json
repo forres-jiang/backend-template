@@ -724,7 +724,6 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
-          "My.XXX.Shared": "1.0.0",
           "Newtonsoft.Json": "13.0.4"
         },
         "compile": {

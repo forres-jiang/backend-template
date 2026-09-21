@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Infrastructure;
 using My.XXX.Persistences;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Validators;
 using Swashbuckle.AspNetCore.Swagger;
 using System.Collections.Generic;

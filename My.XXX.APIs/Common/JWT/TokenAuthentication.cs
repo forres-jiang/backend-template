@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using My.XXX.Services.Ports;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Security.Claims;

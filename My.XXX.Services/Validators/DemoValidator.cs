@@ -1,5 +1,5 @@
 using FluentValidation;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 
 namespace My.XXX.Services.Validators
 {

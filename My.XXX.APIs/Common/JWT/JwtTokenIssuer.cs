@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using My.XXX.Services.Models;
 using My.XXX.Services.Ports;

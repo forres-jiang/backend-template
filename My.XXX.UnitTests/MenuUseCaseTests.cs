@@ -4,7 +4,7 @@ using FluentResults;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common;
 using My.XXX.Services;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Models;
 using My.XXX.Services.Ports;
 using My.XXX.Shared;

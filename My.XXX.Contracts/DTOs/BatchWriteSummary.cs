@@ -1,6 +1,6 @@
 using System;
 
-namespace My.XXX.Service.DTOs;
+namespace My.XXX.Contracts.DTOs;
 
 /// <summary>Provider-independent batch outcome retaining the existing response fields.</summary>
 public sealed class BatchWriteSummary

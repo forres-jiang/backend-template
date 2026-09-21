@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace My.XXX.Service.DTOs
+namespace My.XXX.Contracts.DTOs
 {
     public class MetricsInfo
     {

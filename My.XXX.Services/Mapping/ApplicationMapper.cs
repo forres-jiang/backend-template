@@ -1,5 +1,5 @@
 #nullable enable
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Models;
 using Riok.Mapperly.Abstractions;
 using System.Collections.Generic;

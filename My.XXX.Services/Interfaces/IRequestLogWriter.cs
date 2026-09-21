@@ -1,4 +1,4 @@
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using System.Threading.Tasks;
 
 namespace My.XXX.Services.Interfaces;

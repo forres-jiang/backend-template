@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace My.XXX.Service.DTOs
+namespace My.XXX.Contracts.DTOs
 {
     public class LoginModel
     {

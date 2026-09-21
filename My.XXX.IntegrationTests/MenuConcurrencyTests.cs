@@ -5,7 +5,7 @@ using My.XXX.Persistences;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Persistences.Repositories;
 using My.XXX.Services;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Ports;
 using System;
 using System.Data.Common;

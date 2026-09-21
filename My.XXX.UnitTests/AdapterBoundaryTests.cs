@@ -6,7 +6,7 @@ using My.XXX.Infrastructure;
 using My.XXX.Infrastructure.Caching;
 using My.XXX.Infrastructure.Logging;
 using My.XXX.Services;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using My.XXX.Services.Ports;
 using My.XXX.Shared;

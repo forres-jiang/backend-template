@@ -1,5 +1,5 @@
 using FluentResults;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace My.XXX.Service.DTOs
+namespace My.XXX.Contracts.DTOs
 {
     public class OperationDto
     {

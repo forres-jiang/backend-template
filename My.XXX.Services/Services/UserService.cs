@@ -1,4 +1,4 @@
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using System;
 using System.Security.Claims;

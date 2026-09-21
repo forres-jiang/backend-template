@@ -6,7 +6,6 @@ using My.XXX.Persistences.Mapping;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Services.Models;
 using My.XXX.Services.Ports;
-using My.XXX.Service;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;

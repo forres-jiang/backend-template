@@ -10,7 +10,7 @@ using My.XXX.APIs;
 using My.XXX.APIs.Common.JWT;
 using My.XXX.APIs.Common.Middleware;
 using My.XXX.Persistences;
-using My.XXX.Service.DTOs;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using Newtonsoft.Json.Linq;

@@ -175,7 +175,7 @@ public class ArchitectureTests
     [TestMethod]
     public void MenuPortsDoNotReuseWireModelsAndEndpointsDoNotExposeInternalState()
     {
-        var contractsAssembly = typeof(My.XXX.Service.DTOs.MenuDto).Assembly;
+        var contractsAssembly = typeof(My.XXX.Contracts.DTOs.MenuDto).Assembly;
         foreach (var port in new[] { typeof(IMenuReadRepository), typeof(IMenuTransaction), typeof(IMenuWriteSession), typeof(IPermissionStore) })
             foreach (var method in port.GetMethods())
                 foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
@@ -205,16 +205,16 @@ public class ArchitectureTests
             typeof(My.XXX.Services.RolePermissionService), typeof(My.XXX.Services.AuthenticationService) }
             .SelectMany(t => t.GetConstructors()).SelectMany(c => c.GetParameters());
         Assert.IsFalse(constructors.Any(p => p.ParameterType == typeof(ICurrentRequest)));
-        foreach (var property in typeof(My.XXX.Service.DTOs.MetricsInfo).GetProperties())
+        foreach (var property in typeof(My.XXX.Contracts.DTOs.MetricsInfo).GetProperties())
             Assert.AreNotEqual(typeof(object), property.PropertyType, property.Name);
         var shared = typeof(Paged<>).Assembly;
         Assert.AreNotEqual(shared, typeof(AppConfig).Assembly);
         Assert.AreNotEqual(shared, typeof(JwtConfig).Assembly);
         Assert.AreNotEqual(shared, typeof(RedisConfig).Assembly);
         Assert.IsFalse(shared.GetTypes().SelectMany(t => t.GetProperties()).Any(p => p.PropertyType == typeof(System.Net.HttpStatusCode)));
-        var menuWireTypes = new[] { typeof(My.XXX.Service.DTOs.MenuBase), typeof(My.XXX.Service.DTOs.MenuBaseDto),
-            typeof(My.XXX.Service.DTOs.MenuDto), typeof(My.XXX.Service.DTOs.MenuSearchPickerDto),
-            typeof(My.XXX.Service.DTOs.SaveMenu), typeof(My.XXX.Service.DTOs.EditMenu) };
+        var menuWireTypes = new[] { typeof(My.XXX.Contracts.DTOs.MenuBase), typeof(My.XXX.Contracts.DTOs.MenuBaseDto),
+            typeof(My.XXX.Contracts.DTOs.MenuDto), typeof(My.XXX.Contracts.DTOs.MenuSearchPickerDto),
+            typeof(My.XXX.Contracts.DTOs.SaveMenu), typeof(My.XXX.Contracts.DTOs.EditMenu) };
         foreach (var method in typeof(My.XXX.Persistences.Mapping.PersistenceMapper).GetMethods())
             foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
                 Assert.IsFalse(menuWireTypes.Contains(type), $"Persistence mapper exposes {type.Name}");
