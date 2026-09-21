@@ -5,29 +5,31 @@
 The application owns its ports; persistence and external adapters implement them. Numbered project filenames control solution display order, not dependency direction.
 
 ```text
-APIs -> Service -> Contracts -> Shared
-APIs -> Persistence -> Service / Contracts / Shared
-APIs -> Infrastructure -> Service
+APIs -> Services -> Contracts / Shared
+APIs -> Persistences -> Services / Contracts / Shared
+APIs -> Infrastructure -> Services
 ```
 
 | Project | Responsibility |
 | --- | --- |
 | APIs | HTTP endpoints, response envelopes, JWT/request adapters, authorization, localization and composition root |
-| Service | Use cases, menu state and policies, transaction/read ports, application DTO mapping; no persistence/ORM/Redis implementation references |
-| Persistence | Repository implementations, database entities, entity mappings, SQL, transactions and database registration |
+| Services | Use cases, menu state and policies, transaction/read ports, application DTO mapping; no persistence/ORM/Redis implementation references |
+| Persistences | Repository implementations, database entities, entity mappings, SQL, transactions and database registration |
 | Contracts | Application inputs/read DTOs and provider-independent batch results |
 | Infrastructure | Versioned permission cache, operational log sinks, external HTTP clients, Excel export and adapter registration |
 | Shared | Shared primitives and business errors |
 
-`Service/Ports` owns repository interfaces. Their signatures and model properties contain no storage entities. Menu reads, permissions and transactional writes use separate `IMenuReadRepository`, `IPermissionStore` and `IMenuTransaction` ports. Menu persistence maps entities to `Service/Models/MenuState`; only `ApplicationMapper` creates menu response DTOs. `MenuSearch` carries normalized query criteria without reusing HTTP-bound pagination inputs.
+Services is organized by feature: `Menus`, `Authentication`, `Authorization`, `Operations` and `Examples`. Each feature owns its interfaces, ports, models and policies; `Abstractions/Interfaces` contains the shared current-user/culture context. Namespaces follow these feature directories. Repository port signatures and model properties contain no storage entities. Menu reads, permissions and transactional writes use separate `IMenuReadRepository`, `IPermissionStore` and `IMenuTransaction` ports. Menu persistence maps entities to `Services/Menus/Models/MenuState`; only `ApplicationMapper` creates menu response DTOs. `MenuSearch` carries normalized query criteria without reusing HTTP-bound pagination inputs.
 
-`MenuCommandService`, `MenuQueryService` and `RolePermissionService` separate maintenance, presentation queries and authorization changes. `MenuService` is a compatibility facade retaining the existing controller contracts. `MenuMutations` owns hierarchy checks, partial updates, ordering and role-selection changes. It runs state-dependent rules through `IMenuTransaction.Execute`; the adapter locks the revision before exposing `IMenuWriteSession` and invalidates that session after the transaction. Failed results and exceptions roll back data and revision together. Compose persistence primitives inside one session; do not nest transactions or compose independently committing use cases when atomicity is required.
+`MenuCommandService` and `MenuQueryService` own menu maintenance and presentation queries. In Authorization, `RoleMenuAssignmentService` manages role/menu assignments while `PermissionAdministration` manages stable permission codes. `MenuService` remains a compatibility facade retaining the existing controller contracts. `MenuMutations` owns hierarchy checks, partial updates and ordering; `RoleMenuMutations` owns role-selection changes. Both run state-dependent rules through the existing `IMenuTransaction.Execute`; the adapter locks the revision before exposing `IMenuWriteSession` and invalidates that session after the transaction. The transaction remains shared because menu changes and role/menu assignments must serialize against the same revision. Failed results and exceptions roll back data and revision together. Compose persistence primitives inside one session; do not nest transactions or compose independently committing use cases when atomicity is required.
 
-Menu and role services depend only on `ICurrentUser` and/or `ICurrentCulture`; authentication uses `IAuthenticationSession`. The legacy principal-bearing `ICurrentRequest` remains for compatibility at the HTTP/user adapter boundary. `TimeProvider` supplies menu audit timestamps and can be replaced in tests.
+Menu and role services depend only on `ICurrentUser` and/or `ICurrentCulture`; authentication uses `IAuthenticationSession`. `UserService` also uses `IAuthenticationSession`; the API `HttpCurrentRequest` adapter implements the narrow context interfaces and keeps claim parsing inside APIs. The unused `IUserService.GetContextUser()` method and `ICurrentRequest` compatibility interface have been removed. `TimeProvider` supplies menu audit timestamps and can be replaced in tests.
 
 APIs calls `AddBusinessServices`, `AddRepositories`, `AddPersistenceDatabases`, `AddExternalAdapters` and `AddPermissionCaching`. Registrations are explicit and owned by their project; framework request/JWT adapters remain at the composition root. No assembly scanning is used.
 
-DTO namespaces remain `My.XXX.Service.DTOs` for compatibility, although the types live in Contracts. Existing menu JSON fields remain available, but internal menu state no longer inherits from or doubles as a response DTO. API response classes, legacy HTTP validation types and host/JWT configuration retain the `My.XXX.Shared` namespace and live in APIs; Redis configuration lives in Infrastructure. New storage adapters must depend on application ports, not move storage models into Contracts.
+DTOs live in Contracts under the `My.XXX.Contracts.DTOs` namespace. Existing menu JSON fields remain available, but internal menu state no longer inherits from or doubles as a response DTO. API responses and legacy validation types use `My.XXX.APIs.Models`; host/JWT configuration, permission whitelist and host culture/policy constants use `My.XXX.APIs.Configurations`. Redis options and cache mode belong to `Infrastructure/Caching`, logging storage options belong to `Infrastructure/Logging`, and configuration encryption belongs to `Infrastructure/Security`. Shared retains common primitives, utility functions and business errors. Configuration section names, enum numeric values and HTTP JSON contracts are unchanged; C# consumers must update imports for the moved types. New storage adapters must depend on application ports, not move storage models into Contracts.
+
+Database connectivity and schema health checks live in `Persistences/Health`, exposed through `AddPersistenceHealthChecks`. Redis health checks live in `Infrastructure/Health`, exposed through `AddRedisHealthChecks`. APIs selects and registers the adapters and exposes the health routes. Readiness names (`database`, `permission-schema`, `authentication-schema`, `redis`), the `ready` tag and five-second timeouts are unchanged. Redis readiness is registered only when a Redis connection is configured.
 
 Architecture tests enforce project directions, application assembly dependencies, recursive port model boundaries, materialized repository results, narrow contexts, typed telemetry and active controller method bodies. Menu ports and persistence mappings must not expose menu wire models, and menu endpoints must not expose internal state. The `[NonController]` demo is an example and is excluded from active endpoint rules.
 
@@ -58,8 +60,8 @@ Other multi-row operations use `AtomicWrite`, which commits successful results, 
 1. Stop old instances that can write menus or role assignments.
 2. Back up the business database and check for duplicate active role-menu assignments. The unique index deliberately fails if duplicates exist; resolve them according to the intended assignments instead of silently deleting data.
 3. Run the matching script against the **Default** business database:
-   - `My.XXX.Persistence/Migrations/001_permission_revision.sqlserver.sql`
-   - `My.XXX.Persistence/Migrations/001_permission_revision.postgresql.sql`
+   - `My.XXX.Persistences/Migrations/001_permission_revision.sqlserver.sql`
+   - `My.XXX.Persistences/Migrations/001_permission_revision.postgresql.sql`
 4. Configure a distinct `PermissionCache:KeyPrefix` per application/environment sharing Redis, deploy all upgraded instances, and check readiness including `permission-schema`.
 
 Both upgrade scripts are transactional and repeatable. They create a singleton version table and a filtered/partial unique index; they do not create the existing business tables or auto-run at startup. After a database restore or rollback to older writers, change the cache prefix before resuming the versioned protocol so historical revision numbers cannot reuse old Redis entries.

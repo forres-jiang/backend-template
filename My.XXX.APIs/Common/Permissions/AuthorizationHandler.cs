@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using My.XXX.Services.Interfaces;
-using My.XXX.Shared;
-using My.XXX.Shared.Common;
+using My.XXX.APIs.Configurations;
+using My.XXX.Services.Authentication.Interfaces;
+using My.XXX.Services.Authorization.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

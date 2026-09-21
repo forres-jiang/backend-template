@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using My.XXX.Shared;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;

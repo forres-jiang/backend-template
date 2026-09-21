@@ -2,10 +2,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Infrastructure;
-using My.XXX.Services.Interfaces;
+using My.XXX.Services.Authorization.Interfaces;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -91,6 +92,30 @@ public class RedisCacheTests
         settings["AppConfig:PermissionDataCache"] = "1";
         Assert.Throws<InvalidOperationException>(() => new ServiceCollection().AddDBs(
             new ConfigurationBuilder().AddInMemoryCollection(settings).Build()));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void AdapterHealthRegistrationPreservesReadinessContract(bool configureRedis)
+    {
+        var settings = new Dictionary<string, string>
+        {
+            ["ConnectionStrings:Default"] = "Server=localhost;Database=test;Integrated Security=true"
+        };
+        if (configureRedis) settings["RedisConfig:ConnectionString"] = "localhost:6379";
+        var services = new ServiceCollection();
+        services.AddDBs(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
+        using var provider = services.BuildServiceProvider();
+        var registrations = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckServiceOptions>>().Value.Registrations;
+        var expected = new List<string> { "database", "permission-schema", "authentication-schema" };
+        if (configureRedis) expected.Add("redis");
+        CollectionAssert.AreEquivalent(expected, registrations.Select(r => r.Name).ToList());
+        foreach (var registration in registrations)
+        {
+            CollectionAssert.AreEquivalent(new[] { "ready" }, registration.Tags.ToArray());
+            Assert.AreEqual(TimeSpan.FromSeconds(5), registration.Timeout);
+        }
     }
 
     private static PermissionCache CreateCache(Func<MethodInfo, object[], object> invoke)

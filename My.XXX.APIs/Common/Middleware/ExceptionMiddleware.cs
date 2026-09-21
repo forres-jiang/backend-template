@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
-using My.XXX.Shared;
+using My.XXX.Services.Operations.Interfaces;
 using System;
 using System.Diagnostics;
 using System.Security.Claims;

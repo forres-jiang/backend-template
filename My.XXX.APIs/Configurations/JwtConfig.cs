@@ -1,4 +1,4 @@
-namespace My.XXX.Shared
+namespace My.XXX.APIs.Configurations
 {
     public class JwtConfig
     {

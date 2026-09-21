@@ -189,22 +189,37 @@
         <member name="M:My.XXX.APIs.Common.ResultResponseExtensions.ToHttpResult(FluentResults.Result)">
             <summary>New endpoints use HTTP status as well as the explicit envelope; legacy endpoints retain their status contract.</summary>
         </member>
+        <member name="P:My.XXX.APIs.Configurations.HostingConfig.UseHttpClusterHttps">
+            <summary>
+            获取或设置一个值，该值指示是否使用 HTTP_CLUSTER_HTTPS
+            </summary>
+        </member>
+        <member name="P:My.XXX.APIs.Configurations.HostingConfig.UseHttpXForwardedProto">
+            <summary>
+            获取或设置一个值，该值指示是否使用 HTTP_X_FORWARDED_PROTO
+            </summary>
+        </member>
+        <member name="P:My.XXX.APIs.Configurations.HostingConfig.ForwardedHttpHeader">
+            <summary>
+            获取或设置自定义转发的HTTP报头(e.g. CF-Connecting-IP, X-FORWARDED-PROTO, etc)
+            </summary>
+        </member>
+        <member name="P:My.XXX.APIs.Configurations.JwtConfig.ExpiryInMinutes">
+            <summary>
+            Access token在多少分钟过期
+            </summary>
+        </member>
+        <member name="P:My.XXX.APIs.Configurations.JwtConfig.RefreshExpiryInMinutes">
+            <summary>
+            Refresh token在多少分钟过期
+            </summary>
+        </member>
         <member name="M:My.XXX.APIs.Controllers.DemoController.Encrypt(System.String)">
             <summary>
             加密字符串
             </summary>
             <param name="str"></param>
             <returns></returns>
-        </member>
-        <member name="P:My.XXX.Shared.JwtConfig.ExpiryInMinutes">
-            <summary>
-            Access token在多少分钟过期
-            </summary>
-        </member>
-        <member name="P:My.XXX.Shared.JwtConfig.RefreshExpiryInMinutes">
-            <summary>
-            Refresh token在多少分钟过期
-            </summary>
         </member>
     </members>
 </doc>

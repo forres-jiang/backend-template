@@ -1,5 +1,5 @@
 using System.Net;
-namespace My.XXX.Shared
+namespace My.XXX.APIs.Models
 {
     public class DataValidator<T>
     {

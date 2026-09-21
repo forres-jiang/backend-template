@@ -4,16 +4,22 @@
         <name>My.XXX.Services</name>
     </assembly>
     <members>
-        <member name="T:My.XXX.Services.Common.MenuOrder">
-            <summary>Pure ordering policy. The repository supplies a snapshot under its write lock.</summary>
+        <member name="T:My.XXX.Services.Authentication.Ports.IAuthenticationStore">
+            <summary>Shared persistent authority. Only trusted identity integrations may update users.</summary>
         </member>
-        <member name="T:My.XXX.Services.Common.PermissionCodes">
+        <member name="T:My.XXX.Services.Authorization.Interfaces.IPermissionCache">
+            <summary>Stores permission projections by an opaque application-owned cache key.</summary>
+        </member>
+        <member name="T:My.XXX.Services.Authorization.Policies.PermissionCodes">
             <summary>Stable security identifiers. Navigation labels, routes and CLR names are not permissions.</summary>
         </member>
-        <member name="T:My.XXX.Services.Interfaces.ICurrentRequest">
-            <summary>Framework-neutral view of the current request and authenticated user.</summary>
+        <member name="T:My.XXX.Services.Authorization.RoleMenuMutations">
+            <summary>Role/menu assignment rules executed inside the shared locked transaction.</summary>
         </member>
-        <member name="M:My.XXX.Services.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Contracts.DTOs.InputRoleMenus,System.Threading.CancellationToken)">
+        <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.#ctor(My.XXX.Services.Menus.Ports.IMenuTransaction,System.TimeProvider)">
+            <summary>Role/menu assignment rules executed inside the shared locked transaction.</summary>
+        </member>
+        <member name="M:My.XXX.Services.Menus.Interfaces.IMenuService.RoleMenusRelation(My.XXX.Contracts.DTOs.InputRoleMenus,System.Threading.CancellationToken)">
              <summary>
             
              </summary>
@@ -21,41 +27,38 @@
              <param name="cancellationToken"></param>
              <returns></returns>
         </member>
-        <member name="T:My.XXX.Services.Interfaces.IPermissionCache">
-            <summary>Stores permission projections by an opaque application-owned cache key.</summary>
+        <member name="T:My.XXX.Services.Menus.MenuMutations">
+            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
         </member>
-        <member name="T:My.XXX.Services.Interfaces.IRequestLogWriter">
-            <summary>Best-effort operational logging. Not a durable business audit contract.</summary>
+        <member name="M:My.XXX.Services.Menus.MenuMutations.#ctor(My.XXX.Services.Menus.Ports.IMenuTransaction,System.TimeProvider)">
+            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
         </member>
-        <member name="T:My.XXX.Services.Models.MenuSearch">
+        <member name="T:My.XXX.Services.Menus.MenuService">
+            <summary>Compatibility facade for existing HTTP contracts.</summary>
+        </member>
+        <member name="M:My.XXX.Services.Menus.MenuService.#ctor(My.XXX.Services.Menus.MenuCommandService,My.XXX.Services.Menus.MenuQueryService,My.XXX.Services.Authorization.RoleMenuAssignmentService)">
+            <summary>Compatibility facade for existing HTTP contracts.</summary>
+        </member>
+        <member name="T:My.XXX.Services.Menus.Models.MenuSearch">
             <summary>Normalized query criteria. PageIndex is zero-based, independent of HTTP binding.</summary>
         </member>
-        <member name="M:My.XXX.Services.Models.MenuSearch.#ctor(System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Int32},System.Int32,System.Int32)">
+        <member name="M:My.XXX.Services.Menus.Models.MenuSearch.#ctor(System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Int32},System.Int32,System.Int32)">
             <summary>Normalized query criteria. PageIndex is zero-based, independent of HTTP binding.</summary>
         </member>
-        <member name="T:My.XXX.Services.Models.MenuState">
+        <member name="T:My.XXX.Services.Menus.Models.MenuState">
             <summary>Application state used by menu policies; never returned directly by HTTP endpoints.</summary>
         </member>
-        <member name="T:My.XXX.Services.Ports.IAuthenticationStore">
-            <summary>Shared persistent authority. Only trusted identity integrations may update users.</summary>
+        <member name="T:My.XXX.Services.Menus.Policies.MenuOrder">
+            <summary>Pure ordering policy. The repository supplies a snapshot under its write lock.</summary>
         </member>
-        <member name="M:My.XXX.Services.Ports.IMenuTransaction.Execute(System.Func{My.XXX.Services.Ports.IMenuWriteSession,System.Threading.Tasks.Task{FluentResults.Result}},System.Threading.CancellationToken)">
+        <member name="M:My.XXX.Services.Menus.Ports.IMenuTransaction.Execute(System.Func{My.XXX.Services.Menus.Ports.IMenuWriteSession,System.Threading.Tasks.Task{FluentResults.Result}},System.Threading.CancellationToken)">
             <summary>Locks the permission revision before invoking the use case. Failure results and exceptions roll back all writes.</summary>
         </member>
-        <member name="T:My.XXX.Services.Ports.IMenuWriteSession">
+        <member name="T:My.XXX.Services.Menus.Ports.IMenuWriteSession">
             <summary>Available only inside Execute. Contains persistence primitives, not business commands.</summary>
         </member>
-        <member name="T:My.XXX.Services.MenuMutations">
-            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
-        </member>
-        <member name="M:My.XXX.Services.MenuMutations.#ctor(My.XXX.Services.Ports.IMenuTransaction,System.TimeProvider)">
-            <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
-        </member>
-        <member name="T:My.XXX.Services.MenuService">
-            <summary>Compatibility facade for existing HTTP contracts.</summary>
-        </member>
-        <member name="M:My.XXX.Services.MenuService.#ctor(My.XXX.Services.MenuCommandService,My.XXX.Services.MenuQueryService,My.XXX.Services.RolePermissionService)">
-            <summary>Compatibility facade for existing HTTP contracts.</summary>
+        <member name="T:My.XXX.Services.Operations.Interfaces.IRequestLogWriter">
+            <summary>Best-effort operational logging. Not a durable business audit contract.</summary>
         </member>
     </members>
 </doc>

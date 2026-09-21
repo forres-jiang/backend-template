@@ -2,9 +2,18 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
-using My.XXX.Services.Mapping;
-using My.XXX.Services.Validators;
+using My.XXX.Services.Authentication;
+using My.XXX.Services.Authentication.Interfaces;
+using My.XXX.Services.Authorization;
+using My.XXX.Services.Authorization.Interfaces;
+using My.XXX.Services.Examples;
+using My.XXX.Services.Examples.Interfaces;
+using My.XXX.Services.Examples.Validators;
+using My.XXX.Services.Menus;
+using My.XXX.Services.Menus.Interfaces;
+using My.XXX.Services.Menus.Mapping;
+using My.XXX.Services.Operations;
+using My.XXX.Services.Operations.Interfaces;
 
 namespace My.XXX.Services;
 
@@ -20,9 +29,10 @@ public static class ServiceRegistration
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<MenuCommandService>();
         services.AddScoped<MenuMutations>();
+        services.AddScoped<RoleMenuMutations>();
         services.TryAddSingleton(System.TimeProvider.System);
         services.AddScoped<MenuQueryService>();
-        services.AddScoped<RolePermissionService>();
+        services.AddScoped<RoleMenuAssignmentService>();
         services.AddScoped<IPermissionAdministration, PermissionAdministration>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.TryAddScoped<IPermissionQuery, PermissionQuery>();

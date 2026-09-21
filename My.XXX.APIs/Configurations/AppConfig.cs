@@ -1,6 +1,7 @@
-using My.XXX.Shared.Common;
+using My.XXX.Infrastructure.Caching;
+using My.XXX.Infrastructure.Logging;
 
-namespace My.XXX.Shared
+namespace My.XXX.APIs.Configurations
 {
     public class AppConfig
     {

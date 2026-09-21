@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Localization;
-using My.XXX.Shared;
+using My.XXX.APIs.Models;
 using System.Linq;
 using System.Threading.Tasks;
 

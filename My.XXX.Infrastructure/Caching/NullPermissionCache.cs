@@ -1,4 +1,4 @@
-using My.XXX.Services.Interfaces;
+using My.XXX.Services.Authorization.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading;

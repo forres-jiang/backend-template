@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using My.XXX.APIs.Common.DI;
 using My.XXX.APIs.Common.Middleware;
-using My.XXX.Shared.Common;
+using My.XXX.APIs.Configurations;
 using Serilog;
 using System;
 using System.Globalization;

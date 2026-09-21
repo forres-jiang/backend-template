@@ -2,7 +2,7 @@ using FluentResults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Shared;
+using My.XXX.APIs.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 

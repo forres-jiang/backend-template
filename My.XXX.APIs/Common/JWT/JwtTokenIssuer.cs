@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
-using My.XXX.Services.Models;
-using My.XXX.Services.Ports;
-using My.XXX.Shared;
+using My.XXX.Services.Authentication.Interfaces;
+using My.XXX.Services.Authentication.Models;
+using My.XXX.Services.Authentication.Ports;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -21,8 +21,13 @@ public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, IAuthenticationS
     {
         var user = await store.GetUserAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("The user is not enabled in the identity authority.");
-        var session = new SessionState { SessionId = Guid.NewGuid().ToString("N"), UserId = userId,
-            RefreshTokenId = Guid.NewGuid().ToString("N"), ExpiresUtc = clock.GetUtcNow().UtcDateTime.AddMinutes(options.Value.RefreshExpiryInMinutes) };
+        var session = new SessionState
+        {
+            SessionId = Guid.NewGuid().ToString("N"),
+            UserId = userId,
+            RefreshTokenId = Guid.NewGuid().ToString("N"),
+            ExpiresUtc = clock.GetUtcNow().UtcDateTime.AddMinutes(options.Value.RefreshExpiryInMinutes)
+        };
         var tokens = Create(user, session.SessionId, session.RefreshTokenId, session.ExpiresUtc);
         await store.CreateSessionAsync(session, cancellationToken);
         return tokens;
@@ -43,8 +48,11 @@ public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, IAuthenticationS
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.Secret)), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        return new TokenPair { AccessToken = Build("access", Guid.NewGuid().ToString("N"), accessExpiration),
+        return new TokenPair
+        {
+            AccessToken = Build("access", Guid.NewGuid().ToString("N"), accessExpiration),
             RefreshToken = Build("refresh", refreshTokenId, refreshExpiration),
-            ExpiryInMinutes = (int)Math.Ceiling((accessExpiration - clock.GetUtcNow().UtcDateTime).TotalMinutes) };
+            ExpiryInMinutes = (int)Math.Ceiling((accessExpiration - clock.GetUtcNow().UtcDateTime).TotalMinutes)
+        };
     }
 }

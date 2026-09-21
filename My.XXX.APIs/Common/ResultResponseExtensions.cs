@@ -1,4 +1,5 @@
 using FluentResults;
+using My.XXX.APIs.Models;
 using My.XXX.Contracts.DTOs;
 using My.XXX.Shared;
 using System.Linq;

@@ -1,4 +1,3 @@
-using My.XXX.Shared.Common;
 
 namespace My.XXX.Infrastructure.Logging;
 

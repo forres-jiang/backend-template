@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using My.XXX.APIs.Models;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
+using My.XXX.Services.Operations.Interfaces;
 using My.XXX.Shared;
 using System.Threading.Tasks;
 
@@ -20,7 +21,7 @@ namespace My.XXX.APIs.Controllers
 
         [HttpPost]
         [Route("list")]
-        [My.XXX.APIs.Common.RequiresPermission(My.XXX.Services.Common.PermissionCodes.OperationList)]
+        [My.XXX.APIs.Common.RequiresPermission(My.XXX.Services.Authorization.Policies.PermissionCodes.OperationList)]
         public async Task<MyResult<Paged<OperationDto>>> List(OperationQeury query)
         {
             return MyResult<Paged<OperationDto>>.Success(await _requestLogService.GetRequestLogs(query));

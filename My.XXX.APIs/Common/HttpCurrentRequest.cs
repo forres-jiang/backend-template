@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
+using My.XXX.Services.Abstractions.Interfaces;
+using My.XXX.Services.Authentication.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using System.Security.Claims;
 
 namespace My.XXX.APIs.Common;
 
-public sealed class HttpCurrentRequest : ICurrentRequest
+public sealed class HttpCurrentRequest : IAuthenticationSession, ICurrentCulture
 {
     private readonly IHttpContextAccessor _accessor;
     private readonly ILogger<HttpCurrentRequest> _logger;
@@ -23,7 +24,11 @@ public sealed class HttpCurrentRequest : ICurrentRequest
         _logger = logger;
     }
 
-    public ClaimsPrincipal Principal => _accessor.HttpContext?.User ?? new ClaimsPrincipal();
+    public bool IsAuthenticated => Principal.Identity?.IsAuthenticated == true;
+    public string SessionId => Principal.FindFirstValue("sid");
+    public string TokenId => Principal.FindFirstValue("jti");
+
+    private ClaimsPrincipal Principal => _accessor.HttpContext?.User ?? new ClaimsPrincipal();
 
     public UserInfo User
     {

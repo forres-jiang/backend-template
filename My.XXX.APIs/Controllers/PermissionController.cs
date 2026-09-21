@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Services.Common;
-using My.XXX.Services.Interfaces;
-using My.XXX.Shared;
+using My.XXX.APIs.Models;
+using My.XXX.Services.Authorization.Interfaces;
+using My.XXX.Services.Authorization.Policies;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

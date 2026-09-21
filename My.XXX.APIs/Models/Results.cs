@@ -1,8 +1,9 @@
 using FluentValidation.Results;
+using My.XXX.Shared;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace My.XXX.Shared
+namespace My.XXX.APIs.Models
 {
     public class BaseResult
     {

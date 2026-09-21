@@ -1,11 +1,10 @@
 using LinqToDB;
 using LinqToDB.Data;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences.Common;
 using My.XXX.Persistences.Mapping;
 using My.XXX.Persistences.PersistentObjects;
-using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Ports;
-using My.XXX.Shared;
+using My.XXX.Services.Examples.Ports;
 using System.Linq;
 
 namespace My.XXX.Persistences.Repositories

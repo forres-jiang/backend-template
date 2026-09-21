@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Options;
-using My.XXX.Services.Interfaces;
-using My.XXX.Services.Ports;
-using My.XXX.Shared;
+using My.XXX.Services.Authorization.Interfaces;
+using My.XXX.Services.Authorization.Ports;
 using System;
 using System.Collections.Generic;
 using System.Threading;

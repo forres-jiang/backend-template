@@ -8,10 +8,12 @@ using Microsoft.OpenApi;
 using My.XXX.APIs;
 using My.XXX.APIs.Common;
 using My.XXX.APIs.Common.Middleware;
+using My.XXX.APIs.Configurations;
+using My.XXX.APIs.Models;
 using My.XXX.Infrastructure;
+using My.XXX.Infrastructure.Caching;
+using My.XXX.Infrastructure.Security;
 using My.XXX.Persistences;
-using My.XXX.Shared;
-using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -197,14 +199,7 @@ namespace Microsoft.Extensions.DependencyInjection
             //DB
             var defaultConnection = ResolveConnectionString(connStrings?.Default, "Default");
             services.AddPersistenceDatabases(defaultConnection, defaultProvider);
-            services.AddHealthChecks()
-                .AddCheck("database", new My.XXX.APIs.Common.Health.SqlHealthCheck(defaultConnection, defaultProvider),
-                    tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
-
-            services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.PermissionSchemaHealthCheck>(
-                "permission-schema", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
-            services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.AuthenticationSchemaHealthCheck>(
-                "authentication-schema", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
+            services.AddPersistenceHealthChecks(defaultConnection, defaultProvider);
 
             //Redis
             var redisConfig = configuration.GetSection("RedisConfig").Get<RedisConfig>();
@@ -213,8 +208,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddPermissionCaching(redisConnection,
                 configuration.GetValue<PermissionDataCache>("AppConfig:PermissionDataCache") == PermissionDataCache.Redis);
             if (redisConnection != null)
-                services.AddHealthChecks().AddCheck<My.XXX.APIs.Common.Health.RedisHealthCheck>(
-                    "redis", tags: new[] { "ready" }, timeout: TimeSpan.FromSeconds(5));
+                services.AddRedisHealthChecks();
         }
     }
 }

@@ -2,8 +2,8 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common.DI;
-using My.XXX.Infrastructure;
 using My.XXX.Contracts.DTOs;
+using My.XXX.Infrastructure;
 
 namespace My.XXX.UnitTests;
 

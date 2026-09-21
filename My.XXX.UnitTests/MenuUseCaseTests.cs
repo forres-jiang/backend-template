@@ -1,16 +1,18 @@
-using System.Threading;
-using System.Threading.Tasks;
 using FluentResults;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common;
-using My.XXX.Services;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Models;
-using My.XXX.Services.Ports;
+using My.XXX.Services.Authorization;
+using My.XXX.Services.Authorization.Ports;
+using My.XXX.Services.Menus;
+using My.XXX.Services.Menus.Models;
+using My.XXX.Services.Menus.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace My.XXX.UnitTests;
 
@@ -58,7 +60,7 @@ public class MenuUseCaseTests
         var store = Store();
         var role = Guid.NewGuid();
         store.Grants.Add(1);
-        var useCase = new MenuMutations(store, TimeProvider.System);
+        var useCase = new RoleMenuMutations(store, TimeProvider.System);
         Assert.AreEqual("Menu.InvalidSelection", Code((await useCase.SetRoleMenus(role, new() { 99 }, RoleMenuChange.Replace, "editor"))));
         CollectionAssert.AreEqual(new[] { 1 }, store.Grants);
         Assert.IsTrue((await useCase.SetRoleMenus(role, new() { 2, 2, 3 }, RoleMenuChange.Replace, "editor")).IsSuccess);

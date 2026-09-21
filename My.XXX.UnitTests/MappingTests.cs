@@ -1,9 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences.Mapping;
 using My.XXX.Persistences.PersistentObjects;
-using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Mapping;
-using My.XXX.Services.Models;
+using My.XXX.Services.Menus.Mapping;
+using My.XXX.Services.Menus.Models;
 using Newtonsoft.Json;
 using System;
 

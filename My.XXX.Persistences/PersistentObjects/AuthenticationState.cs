@@ -2,6 +2,7 @@ using LinqToDB;
 using LinqToDB.Mapping;
 using System;
 namespace My.XXX.Persistences.PersistentObjects;
+
 [Table(Schema = "dbo", Name = "AuthenticationUsers")]
 [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "AuthenticationUsers")]
 public sealed class AuthenticationUser

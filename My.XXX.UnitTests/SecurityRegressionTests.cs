@@ -3,14 +3,15 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Infrastructure;
-using My.XXX.Services;
-using My.XXX.Services.Common;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Interfaces;
-using My.XXX.Services.Mapping;
+using My.XXX.Infrastructure;
+using My.XXX.Infrastructure.Security;
+using My.XXX.Services.Abstractions.Interfaces;
+using My.XXX.Services.Authorization.Policies;
+using My.XXX.Services.Menus;
+using My.XXX.Services.Menus.Mapping;
+using My.XXX.Services.Operations.Interfaces;
 using My.XXX.Shared;
-using My.XXX.Shared.Common;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -67,7 +68,7 @@ public class SecurityRegressionTests
     {
         var context = new DefaultHttpContext();
         context.Features.Set<IRequestCultureFeature>(new RequestCultureFeature(new RequestCulture("zh-CN"), null));
-        var service = new MenuQueryService(null, new TestCurrentRequest("zh-CN"), new ApplicationMapper());
+        var service = new MenuQueryService(null, new TestCurrentCulture("zh-CN"), new ApplicationMapper());
         var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
         service.SetMenuLanguage(menus);
         Assert.AreEqual("菜单", menus[0].DisplayName);
@@ -96,11 +97,8 @@ public class SecurityRegressionTests
         public IDisposable OnChange(Action<T, string> listener) => null;
     }
 
-    private sealed class TestCurrentRequest(string cultureName) : ICurrentRequest
+    private sealed class TestCurrentCulture(string cultureName) : ICurrentCulture
     {
-        public System.Security.Claims.ClaimsPrincipal Principal => new();
-        public UserInfo User => null;
-        public DateTime TokenExpirationTime => DateTime.MinValue;
         public string CultureName => cultureName;
     }
 

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Services.Interfaces;
-using My.XXX.Shared;
+using My.XXX.APIs.Models;
+using My.XXX.Services.Authentication.Interfaces;
 using System.Threading.Tasks;
 
 namespace My.XXX.APIs.Controllers;

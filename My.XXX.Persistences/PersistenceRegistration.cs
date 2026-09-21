@@ -3,7 +3,11 @@ using LinqToDB.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using My.XXX.Persistences.Repositories;
-using My.XXX.Services.Ports;
+using My.XXX.Services.Authentication.Ports;
+using My.XXX.Services.Authorization.Ports;
+using My.XXX.Services.Examples.Ports;
+using My.XXX.Services.Menus.Ports;
+using My.XXX.Services.Operations.Ports;
 
 namespace My.XXX.Persistences;
 

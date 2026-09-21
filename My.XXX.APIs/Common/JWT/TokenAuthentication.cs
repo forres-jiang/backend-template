@@ -2,15 +2,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using My.XXX.Services.Ports;
+using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
+using My.XXX.Services.Authentication.Ports;
 using Newtonsoft.Json;
+using System;
 using System.Linq;
 using System.Security.Claims;
-using My.XXX.Shared;
-using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace My.XXX.APIs.Common.JWT;
 

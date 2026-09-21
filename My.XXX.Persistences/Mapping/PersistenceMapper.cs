@@ -1,7 +1,7 @@
+using My.XXX.Services.Menus.Models;
 #nullable enable
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Models;
 using Riok.Mapperly.Abstractions;
 using System.Collections.Generic;
 

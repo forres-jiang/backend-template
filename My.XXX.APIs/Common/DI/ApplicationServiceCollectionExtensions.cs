@@ -3,7 +3,8 @@ using My.XXX.APIs.Common.JWT;
 using My.XXX.Infrastructure;
 using My.XXX.Persistences;
 using My.XXX.Services;
-using My.XXX.Services.Interfaces;
+using My.XXX.Services.Abstractions.Interfaces;
+using My.XXX.Services.Authentication.Interfaces;
 namespace My.XXX.APIs.Common.DI;
 
 public static class ApplicationServiceCollectionExtensions
@@ -14,10 +15,10 @@ public static class ApplicationServiceCollectionExtensions
         services.AddRepositories();
         services.AddExternalAdapters();
         services.AddScoped<IWebHelper, WebHelper>();
-        services.AddScoped<ICurrentRequest, HttpCurrentRequest>();
-        services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<ICurrentRequest>());
-        services.AddScoped<ICurrentCulture>(sp => sp.GetRequiredService<ICurrentRequest>());
-        services.AddScoped<IAuthenticationSession>(sp => sp.GetRequiredService<ICurrentRequest>());
+        services.AddScoped<HttpCurrentRequest>();
+        services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentRequest>());
+        services.AddScoped<ICurrentCulture>(sp => sp.GetRequiredService<HttpCurrentRequest>());
+        services.AddScoped<IAuthenticationSession>(sp => sp.GetRequiredService<HttpCurrentRequest>());
         services.AddScoped<ITokenIssuer, JwtTokenIssuer>();
         return services;
     }

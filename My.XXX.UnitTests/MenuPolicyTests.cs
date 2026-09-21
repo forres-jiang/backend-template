@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Services.Common;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Models;
+using My.XXX.Services.Menus.Models;
+using My.XXX.Services.Menus.Policies;
 using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.UnitTests;

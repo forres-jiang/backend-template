@@ -1,4 +1,4 @@
-namespace My.XXX.Shared
+namespace My.XXX.Infrastructure.Caching
 {
     public class RedisConfig
     {

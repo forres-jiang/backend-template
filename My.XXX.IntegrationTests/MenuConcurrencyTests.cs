@@ -1,12 +1,14 @@
 using LinqToDB;
 using LinqToDB.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Persistences.Repositories;
-using My.XXX.Services;
-using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Ports;
+using My.XXX.Services.Authorization;
+using My.XXX.Services.Authorization.Ports;
+using My.XXX.Services.Menus;
+using My.XXX.Services.Menus.Ports;
 using System;
 using System.Data.Common;
 using System.IO;
@@ -152,11 +154,12 @@ public class MenuConcurrencyTests
     {
         private readonly MenuRepository reads = new(db);
         private readonly MenuMutations writes = new(new MenuRepository(db), TimeProvider.System);
-        public async Task<System.Collections.Generic.List<My.XXX.Services.Models.MenuState>> GetMenus() => (await reads.GetMenus());
-        public async Task<My.XXX.Services.Models.MenuState> Get(int id) => (await reads.Get(id));
+        private readonly RoleMenuMutations assignments = new(new MenuRepository(db), TimeProvider.System);
+        public async Task<System.Collections.Generic.List<My.XXX.Services.Menus.Models.MenuState>> GetMenus() => (await reads.GetMenus());
+        public async Task<My.XXX.Services.Menus.Models.MenuState> Get(int id) => (await reads.Get(id));
         public Task<long> GetPermissionRevisionAsync() => reads.GetPermissionRevisionAsync();
         public async Task<bool> SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
-            (await writes.SetRoleMenus(role, ids, change, user)).IsSuccess;
+            (await assignments.SetRoleMenus(role, ids, change, user)).IsSuccess;
         public async Task<bool> Move(MenuSortModel model, string user) => (await writes.Move(model, user)).IsSuccess;
         public async Task<int> Update(EditMenu model, string culture, string user) => (await writes.Update(model, culture, user)).IsSuccess ? 1 : 0;
     }
@@ -194,7 +197,7 @@ public class MenuConcurrencyTests
                 var root = new DirectoryInfo(AppContext.BaseDirectory);
                 while (root != null && !File.Exists(Path.Combine(root.FullName, "MyXXXSolution.sln"))) root = root.Parent;
                 var suffix = providerName == "PostgreSQL" ? "postgresql" : "sqlserver";
-                var sql = File.ReadAllText(Path.Combine(root.FullName, "My.XXX.Persistence", "Migrations", $"001_permission_revision.{suffix}.sql"));
+                var sql = File.ReadAllText(Path.Combine(root.FullName, "My.XXX.Persistences", "Migrations", $"001_permission_revision.{suffix}.sql"));
                 db.Execute(sql);
                 db.Execute(sql); // Upgrades must be safely repeatable.
                 for (var i = 0; i < 3; i++) db.Insert(new Menus

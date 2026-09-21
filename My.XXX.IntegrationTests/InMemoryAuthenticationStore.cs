@@ -1,6 +1,6 @@
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Models;
-using My.XXX.Services.Ports;
+using My.XXX.Services.Authentication.Models;
+using My.XXX.Services.Authentication.Ports;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

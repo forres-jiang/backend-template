@@ -2,7 +2,7 @@ using LinqToDB;
 using LinqToDB.Mapping;
 
 namespace My.XXX.Persistences.PersistentObjects;
-                 
+
 [Table(Schema = "dbo", Name = "PermissionRevision")]
 [Table(Configuration = ProviderName.PostgreSQL, Schema = "public", Name = "PermissionRevision")]
 public sealed class PermissionRevision

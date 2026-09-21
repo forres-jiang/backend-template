@@ -1,8 +1,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using My.XXX.APIs.Configurations;
 using My.XXX.APIs.Controllers;
-using My.XXX.Services.Common;
-using My.XXX.Services.Interfaces;
-using My.XXX.Services.Ports;
+using My.XXX.APIs.Models;
+using My.XXX.Infrastructure.Caching;
+using My.XXX.Services.Authorization.Ports;
+using My.XXX.Services.Examples.Policies;
+using My.XXX.Services.Menus.Interfaces;
+using My.XXX.Services.Menus.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
@@ -18,7 +22,7 @@ public class ArchitectureTests
     [TestMethod]
     public void ServiceLayerDoesNotUseAspNetOrStaticRedis()
     {
-        var serviceRoot = Path.Combine(RepositoryRoot(), "My.XXX.Service");
+        var serviceRoot = Path.Combine(RepositoryRoot(), "My.XXX.Services");
         var source = Directory.GetFiles(serviceRoot, "*.cs", SearchOption.AllDirectories)
             .SelectMany(path => File.ReadLines(path).Select(line => (path, line)));
 
@@ -50,13 +54,13 @@ public class ArchitectureTests
     public void ApplicationInterfacesDoNotExposePersistenceOrHttpResponseTypes()
     {
         var contracts = typeof(IMenuService).Assembly.GetTypes()
-            .Where(type => type.IsInterface && type.Namespace == typeof(IMenuService).Namespace);
+            .Where(type => type.IsInterface && type.Namespace?.EndsWith(".Interfaces", StringComparison.Ordinal) == true);
         foreach (var contract in contracts)
             foreach (var method in contract.GetMethods())
                 foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
                 {
                     var ns = type.Namespace ?? "";
-                    Assert.IsFalse(ns.StartsWith("LinqToDB") || ns.StartsWith("My.XXX.Persistence") || ns.StartsWith("Microsoft.AspNetCore"),
+                    Assert.IsFalse(ns.StartsWith("LinqToDB") || ns.StartsWith("My.XXX.Persistences") || ns.StartsWith("Microsoft.AspNetCore") || ns.StartsWith("System.Security.Claims"),
                         $"{contract.Name}.{method.Name} exposes {type.FullName}");
                     Assert.IsFalse(typeof(BaseResult).IsAssignableFrom(type), $"{contract.Name} exposes a response DTO");
                 }
@@ -68,14 +72,14 @@ public class ArchitectureTests
         foreach (var controller in typeof(UserController).Assembly.GetTypes()
             .Where(t => typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t)))
             foreach (var parameter in controller.GetConstructors().SelectMany(c => c.GetParameters()))
-                Assert.IsFalse((parameter.ParameterType.Namespace ?? "").StartsWith("My.XXX.Persistence") || parameter.ParameterType.Namespace == "My.XXX.Service.Ports", controller.Name);
+                Assert.IsFalse((parameter.ParameterType.Namespace ?? "").StartsWith("My.XXX.Persistences") || (parameter.ParameterType.Namespace?.StartsWith("My.XXX.Services.") == true && parameter.ParameterType.Namespace.EndsWith(".Ports")), controller.Name);
     }
 
     [TestMethod]
     public void RepositoriesDoNotReturnDeferredQueries()
     {
         foreach (var contract in typeof(IMenuReadRepository).Assembly.GetTypes()
-            .Where(t => t.IsInterface && t.Namespace == typeof(IMenuReadRepository).Namespace))
+            .Where(t => t.IsInterface && t.Namespace?.EndsWith(".Ports", StringComparison.Ordinal) == true))
             foreach (var method in contract.GetMethods())
                 Assert.IsFalse(Flatten(method.ReturnType).Any(t => typeof(IQueryable).IsAssignableFrom(t)), method.Name);
     }
@@ -83,7 +87,7 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationAssemblyDoesNotReferenceTechnicalImplementations()
     {
-        var forbidden = new[] { "linq2db", "Npgsql", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs", "My.XXX.Persistence" };
+        var forbidden = new[] { "linq2db", "Npgsql", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs", "My.XXX.Persistences" };
         foreach (var reference in typeof(IMenuService).Assembly.GetReferencedAssemblies())
             Assert.IsFalse(forbidden.Contains(reference.Name), reference.Name);
     }
@@ -94,10 +98,10 @@ public class ArchitectureTests
         var allowed = new Dictionary<string, string[]>
         {
             ["My.XXX.Shared"] = Array.Empty<string>(),
-            ["My.XXX.Contracts"] = new[] { "My.XXX.Shared" },
-            ["My.XXX.Persistence"] = new[] { "My.XXX.Shared", "My.XXX.Contracts", "My.XXX.Service" },
-            ["My.XXX.Service"] = new[] { "My.XXX.Shared", "My.XXX.Contracts" },
-            ["My.XXX.Infrastructure"] = new[] { "My.XXX.Service" }
+            ["My.XXX.Contracts"] = Array.Empty<string>(),
+            ["My.XXX.Persistences"] = new[] { "My.XXX.Shared", "My.XXX.Contracts", "My.XXX.Services" },
+            ["My.XXX.Services"] = new[] { "My.XXX.Shared", "My.XXX.Contracts" },
+            ["My.XXX.Infrastructure"] = new[] { "My.XXX.Services" }
         };
         foreach (var (project, dependencies) in allowed)
         {
@@ -120,12 +124,12 @@ public class ArchitectureTests
             foreach (var part in Flatten(type))
             {
                 var ns = part.Namespace ?? "";
-                Assert.IsFalse(ns.StartsWith("My.XXX.Persistence") || ns.StartsWith("LinqToDB") || ns.StartsWith("Microsoft.AspNetCore"), part.FullName);
+                Assert.IsFalse(ns.StartsWith("My.XXX.Persistences") || ns.StartsWith("LinqToDB") || ns.StartsWith("Microsoft.AspNetCore") || ns.StartsWith("System.Security.Claims"), part.FullName);
                 if (ns.StartsWith("My.XXX") && visited.Add(part))
                     foreach (var property in part.GetProperties()) Check(property.PropertyType);
             }
         }
-        foreach (var port in typeof(IMenuReadRepository).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace == typeof(IMenuReadRepository).Namespace))
+        foreach (var port in typeof(IMenuReadRepository).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace?.EndsWith(".Ports", StringComparison.Ordinal) == true))
             foreach (var method in port.GetMethods())
             {
                 Check(method.ReturnType);
@@ -157,7 +161,7 @@ public class ArchitectureTests
                         {
                             var member = method.Module.ResolveMember(BitConverter.ToInt32(il, offset), type.GetGenericArguments(), method.IsGenericMethod ? method.GetGenericArguments() : null);
                             var ns = (member as Type)?.Namespace ?? member.DeclaringType?.Namespace ?? "";
-                            Assert.IsFalse(ns.StartsWith("My.XXX.Persistence") || ns.StartsWith("LinqToDB") || ns.StartsWith("StackExchange.Redis") || ns.StartsWith("My.XXX.Infrastructure") || ns == "My.XXX.Service.Ports", $"{controller.Name}.{method.Name}: {member}");
+                            Assert.IsFalse(ns.StartsWith("My.XXX.Persistences") || ns.StartsWith("LinqToDB") || ns.StartsWith("StackExchange.Redis") || ns.StartsWith("My.XXX.Infrastructure") || (ns.StartsWith("My.XXX.Services.") && ns.EndsWith(".Ports")), $"{controller.Name}.{method.Name}: {member}");
                         }
                         offset += operand switch
                         {
@@ -186,7 +190,7 @@ public class ArchitectureTests
         {
             foreach (var part in Flatten(type))
             {
-                Assert.IsFalse((part.Namespace ?? "").StartsWith("My.XXX.Service.Models"), part.FullName);
+                Assert.AreNotEqual(typeof(IMenuService).Assembly, part.Assembly, $"Endpoint exposes application type {part.FullName}");
                 if (part.Assembly == contractsAssembly && visited.Add(part))
                     foreach (var property in part.GetProperties()) Check(property.PropertyType);
             }
@@ -201,13 +205,15 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationUsesNarrowContextsAndTelemetryCannotCarryFrameworkObjects()
     {
-        var constructors = new[] { typeof(My.XXX.Services.MenuCommandService), typeof(My.XXX.Services.MenuQueryService),
-            typeof(My.XXX.Services.RolePermissionService), typeof(My.XXX.Services.AuthenticationService) }
+        var constructors = new[] { typeof(My.XXX.Services.Menus.MenuCommandService), typeof(My.XXX.Services.Menus.MenuQueryService),
+            typeof(My.XXX.Services.Authorization.RoleMenuAssignmentService), typeof(My.XXX.Services.Authentication.AuthenticationService), typeof(My.XXX.Services.Authentication.UserService) }
             .SelectMany(t => t.GetConstructors()).SelectMany(c => c.GetParameters());
-        Assert.IsFalse(constructors.Any(p => p.ParameterType == typeof(ICurrentRequest)));
+        Assert.IsFalse(constructors.Any(p => p.ParameterType.Name == "ICurrentRequest"));
         foreach (var property in typeof(My.XXX.Contracts.DTOs.MetricsInfo).GetProperties())
             Assert.AreNotEqual(typeof(object), property.PropertyType, property.Name);
         var shared = typeof(Paged<>).Assembly;
+        Assert.AreNotEqual(shared, typeof(HostingConfig).Assembly);
+        Assert.AreNotEqual(shared, typeof(HttpDefaults).Assembly);
         Assert.AreNotEqual(shared, typeof(AppConfig).Assembly);
         Assert.AreNotEqual(shared, typeof(JwtConfig).Assembly);
         Assert.AreNotEqual(shared, typeof(RedisConfig).Assembly);
@@ -218,6 +224,27 @@ public class ArchitectureTests
         foreach (var method in typeof(My.XXX.Persistences.Mapping.PersistenceMapper).GetMethods())
             foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
                 Assert.IsFalse(menuWireTypes.Contains(type), $"Persistence mapper exposes {type.Name}");
+    }
+
+    [TestMethod]
+    public void HostConfigurationAndTechnicalAdaptersHaveExplicitOwners()
+    {
+        var api = typeof(UserController).Assembly;
+        var infrastructure = typeof(My.XXX.Infrastructure.InfrastructureRegistration).Assembly;
+        var persistence = typeof(My.XXX.Persistences.PersistenceRegistration).Assembly;
+        foreach (var type in new[] { typeof(AppConfig), typeof(JwtConfig), typeof(HostingConfig),
+            typeof(HttpDefaults), typeof(PermissionWhitelist), typeof(CultureType), typeof(PolicyType), typeof(BaseResult) })
+            Assert.AreEqual(api, type.Assembly, type.FullName);
+        foreach (var type in new[] { typeof(RedisConfig), typeof(PermissionDataCache),
+            typeof(My.XXX.Infrastructure.Logging.StorageTypeEnum), typeof(My.XXX.Infrastructure.Security.AESHelper),
+            typeof(My.XXX.Infrastructure.Health.RedisHealthCheck) })
+            Assert.AreEqual(infrastructure, type.Assembly, type.FullName);
+        foreach (var type in new[] { typeof(My.XXX.Persistences.Health.SqlHealthCheck),
+            typeof(My.XXX.Persistences.Health.PermissionSchemaHealthCheck), typeof(My.XXX.Persistences.Health.AuthenticationSchemaHealthCheck) })
+            Assert.AreEqual(persistence, type.Assembly, type.FullName);
+        Assert.IsFalse(api.GetTypes().Any(t => typeof(Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck).IsAssignableFrom(t)));
+        foreach (var assembly in new[] { api, infrastructure, persistence, typeof(IMenuService).Assembly })
+            Assert.IsFalse(assembly.GetTypes().Any(t => (t.Namespace ?? "").StartsWith("My.XXX.Shared")), assembly.FullName);
     }
 
     private static IEnumerable<Type> Flatten(Type type)

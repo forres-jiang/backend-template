@@ -1,6 +1,6 @@
 using Microsoft.IdentityModel.Tokens;
+using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Shared;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
