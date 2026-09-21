@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using My.XXX.Persistence;
+using My.XXX.Persistences;
 using StackExchange.Redis;
 using System;
 using System.Threading;

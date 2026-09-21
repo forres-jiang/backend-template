@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

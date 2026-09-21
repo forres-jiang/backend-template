@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
-using My.XXX.Service.Interfaces;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Interfaces;
+using My.XXX.Services.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;

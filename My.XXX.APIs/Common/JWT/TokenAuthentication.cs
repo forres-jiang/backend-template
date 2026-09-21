@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Ports;
 using My.XXX.Service.DTOs;
 using Newtonsoft.Json;
 using System.Linq;

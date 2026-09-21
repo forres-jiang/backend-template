@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using My.XXX.APIs.Common;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;

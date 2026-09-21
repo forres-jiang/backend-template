@@ -12,6 +12,6 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Newtonsoft.Json" />
-    <ProjectReference Include="../My.XXX.Service/02My.XXX.Service.csproj" />
+    <ProjectReference Include="..\My.XXX.Services\02My.XXX.Services.csproj" />
   </ItemGroup>
 </Project>

@@ -9,7 +9,7 @@ using My.XXX.APIs;
 using My.XXX.APIs.Common;
 using My.XXX.APIs.Common.Middleware;
 using My.XXX.Infrastructure;
-using My.XXX.Persistence;
+using My.XXX.Persistences;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using System.Threading.Tasks;
 

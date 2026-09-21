@@ -2,7 +2,7 @@ using LinqToDB;
 using LinqToDB.Data;
 using LinqToDB.DataProvider.SqlServer;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Persistence.Common;
+using My.XXX.Persistences.Common;
 using System;
 using System.Data;
 using System.Data.Common;

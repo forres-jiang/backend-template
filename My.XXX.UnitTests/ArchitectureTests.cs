@@ -1,8 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Controllers;
-using My.XXX.Service.Common;
-using My.XXX.Service.Interfaces;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Common;
+using My.XXX.Services.Interfaces;
+using My.XXX.Services.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
@@ -201,8 +201,8 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationUsesNarrowContextsAndTelemetryCannotCarryFrameworkObjects()
     {
-        var constructors = new[] { typeof(My.XXX.Service.MenuCommandService), typeof(My.XXX.Service.MenuQueryService),
-            typeof(My.XXX.Service.RolePermissionService), typeof(My.XXX.Service.AuthenticationService) }
+        var constructors = new[] { typeof(My.XXX.Services.MenuCommandService), typeof(My.XXX.Services.MenuQueryService),
+            typeof(My.XXX.Services.RolePermissionService), typeof(My.XXX.Services.AuthenticationService) }
             .SelectMany(t => t.GetConstructors()).SelectMany(c => c.GetParameters());
         Assert.IsFalse(constructors.Any(p => p.ParameterType == typeof(ICurrentRequest)));
         foreach (var property in typeof(My.XXX.Service.DTOs.MetricsInfo).GetProperties())
@@ -215,7 +215,7 @@ public class ArchitectureTests
         var menuWireTypes = new[] { typeof(My.XXX.Service.DTOs.MenuBase), typeof(My.XXX.Service.DTOs.MenuBaseDto),
             typeof(My.XXX.Service.DTOs.MenuDto), typeof(My.XXX.Service.DTOs.MenuSearchPickerDto),
             typeof(My.XXX.Service.DTOs.SaveMenu), typeof(My.XXX.Service.DTOs.EditMenu) };
-        foreach (var method in typeof(My.XXX.Persistence.Mapping.PersistenceMapper).GetMethods())
+        foreach (var method in typeof(My.XXX.Persistences.Mapping.PersistenceMapper).GetMethods())
             foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
                 Assert.IsFalse(menuWireTypes.Contains(type), $"Persistence mapper exposes {type.Name}");
     }

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using My.XXX.Infrastructure.Caching;
-using My.XXX.Service;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services;
+using My.XXX.Services.Interfaces;
 using StackExchange.Redis;
 using System;
 namespace My.XXX.Infrastructure;

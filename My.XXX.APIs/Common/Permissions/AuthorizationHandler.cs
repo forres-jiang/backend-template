@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using My.XXX.Shared.Common;
 using System;

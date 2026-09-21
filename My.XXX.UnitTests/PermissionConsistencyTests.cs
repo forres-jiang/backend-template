@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Infrastructure.Caching;
-using My.XXX.Service;
-using My.XXX.Service.Interfaces;
-using My.XXX.Service.Ports;
+using My.XXX.Services;
+using My.XXX.Services.Interfaces;
+using My.XXX.Services.Ports;
 using My.XXX.Shared.Common;
 using System;
 using System.Collections.Generic;

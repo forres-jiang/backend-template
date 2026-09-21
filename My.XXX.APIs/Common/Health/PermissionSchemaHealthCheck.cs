@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Ports;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

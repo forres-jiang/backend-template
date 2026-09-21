@@ -1,6 +1,6 @@
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Models;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Models;
+using My.XXX.Services.Ports;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

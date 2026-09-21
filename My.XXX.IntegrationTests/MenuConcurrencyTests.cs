@@ -1,12 +1,12 @@
 using LinqToDB;
 using LinqToDB.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Persistence;
-using My.XXX.Persistence.PersistantObjects;
-using My.XXX.Persistence.Repositories;
-using My.XXX.Service;
+using My.XXX.Persistences;
+using My.XXX.Persistences.PersistentObjects;
+using My.XXX.Persistences.Repositories;
+using My.XXX.Services;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Ports;
 using System;
 using System.Data.Common;
 using System.IO;
@@ -152,8 +152,8 @@ public class MenuConcurrencyTests
     {
         private readonly MenuRepository reads = new(db);
         private readonly MenuMutations writes = new(new MenuRepository(db), TimeProvider.System);
-        public async Task<System.Collections.Generic.List<My.XXX.Service.Models.MenuState>> GetMenus() => (await reads.GetMenus());
-        public async Task<My.XXX.Service.Models.MenuState> Get(int id) => (await reads.Get(id));
+        public async Task<System.Collections.Generic.List<My.XXX.Services.Models.MenuState>> GetMenus() => (await reads.GetMenus());
+        public async Task<My.XXX.Services.Models.MenuState> Get(int id) => (await reads.Get(id));
         public Task<long> GetPermissionRevisionAsync() => reads.GetPermissionRevisionAsync();
         public async Task<bool> SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
             (await writes.SetRoleMenus(role, ids, change, user)).IsSuccess;

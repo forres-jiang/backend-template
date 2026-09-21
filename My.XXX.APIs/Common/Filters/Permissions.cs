@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using System;
 using System.Linq;

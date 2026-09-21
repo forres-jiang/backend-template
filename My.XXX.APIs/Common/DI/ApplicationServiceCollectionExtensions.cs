@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using My.XXX.APIs.Common.JWT;
 using My.XXX.Infrastructure;
-using My.XXX.Persistence;
-using My.XXX.Service;
-using My.XXX.Service.Interfaces;
+using My.XXX.Persistences;
+using My.XXX.Services;
+using My.XXX.Services.Interfaces;
 namespace My.XXX.APIs.Common.DI;
 
 public static class ApplicationServiceCollectionExtensions

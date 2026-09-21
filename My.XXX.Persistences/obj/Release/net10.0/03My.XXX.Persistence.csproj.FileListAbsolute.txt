@@ -1,0 +1,16 @@
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Persistence.deps.json
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Persistence.dll
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Contracts.dll
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Service.dll
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Shared.dll
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Shared.pdb
+D:\NewCode\backend-template\My.XXX.Persistence\bin\Release\net10.0\My.XXX.Contracts.pdb
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.Persistence.csproj.AssemblyReference.cache
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.Persistence.GeneratedMSBuildEditorConfig.editorconfig
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.Persistence.AssemblyInfoInputs.cache
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.Persistence.AssemblyInfo.cs
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.Persistence.csproj.CoreCompileInputs.cache
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\03My.XXX.9223CC7A.Up2Date
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\My.XXX.Persistence.dll
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\refint\My.XXX.Persistence.dll
+D:\NewCode\backend-template\My.XXX.Persistence\obj\Release\net10.0\ref\My.XXX.Persistence.dll

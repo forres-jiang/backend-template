@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using System;
 using System.Diagnostics;

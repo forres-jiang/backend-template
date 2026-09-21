@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Interfaces;
+using My.XXX.Services.Ports;
 using My.XXX.Shared.Common;
 using Newtonsoft.Json;
 using System;

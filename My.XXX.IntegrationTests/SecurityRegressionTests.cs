@@ -1,4 +1,4 @@
-using My.XXX.Service.Ports;
+using My.XXX.Services.Ports;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -9,9 +9,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs;
 using My.XXX.APIs.Common.JWT;
 using My.XXX.APIs.Common.Middleware;
-using My.XXX.Persistence;
+using My.XXX.Persistences;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using Newtonsoft.Json.Linq;
 using System;

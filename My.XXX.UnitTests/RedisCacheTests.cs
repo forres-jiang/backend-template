@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Infrastructure;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;

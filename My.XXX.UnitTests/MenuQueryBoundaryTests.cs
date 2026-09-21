@@ -1,12 +1,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using My.XXX.Service;
+using My.XXX.Services;
 using My.XXX.Service.DTOs;
-using My.XXX.Service.Interfaces;
-using My.XXX.Service.Mapping;
-using My.XXX.Service.Models;
-using My.XXX.Service.Ports;
+using My.XXX.Services.Interfaces;
+using My.XXX.Services.Mapping;
+using My.XXX.Services.Models;
+using My.XXX.Services.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;

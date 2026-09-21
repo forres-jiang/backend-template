@@ -50,8 +50,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\My.XXX.Persistences\03My.XXX.Persistences.csproj" />
+    <ProjectReference Include="..\My.XXX.Services\02My.XXX.Services.csproj" />
     <ProjectReference Include="..\My.XXX.Shared\05My.XXX.Shared.csproj" />
-    <ProjectReference Include="..\My.XXX.Service\02My.XXX.Service.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -83,7 +84,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="FluentValidation" />
-    <ProjectReference Include="../My.XXX.Persistence/03My.XXX.Persistence.csproj" />
+    <ProjectReference Include="..\My.XXX.Persistences\03My.XXX.Persistences.csproj" />
     <ProjectReference Include="../My.XXX.Infrastructure/06My.XXX.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

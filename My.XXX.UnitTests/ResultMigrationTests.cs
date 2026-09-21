@@ -9,9 +9,9 @@ using Microsoft.Extensions.Localization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs;
 using My.XXX.APIs.Common;
-using My.XXX.Persistence.Common;
-using My.XXX.Persistence.Mapping;
-using My.XXX.Persistence.PersistantObjects;
+using My.XXX.Persistences.Common;
+using My.XXX.Persistences.Mapping;
+using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -95,7 +95,7 @@ public class ResultMigrationTests
         AssertJson(batch, batch.ToSummary());
         var menu = new Menus { Id = 7, DisplayName = "Menu", DisplayNames = "{}", ParentId = 0 };
         var state = new PersistenceMapper().ToMenuState(menu);
-        AssertJson(menu, new My.XXX.Service.Mapping.ApplicationMapper().ToMenuBases(new[] { state }).Single());
+        AssertJson(menu, new My.XXX.Services.Mapping.ApplicationMapper().ToMenuBases(new[] { state }).Single());
     }
 
     [TestMethod]

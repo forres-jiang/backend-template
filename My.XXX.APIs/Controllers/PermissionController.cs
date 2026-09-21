@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using My.XXX.APIs.Common;
-using My.XXX.Service.Common;
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Common;
+using My.XXX.Services.Interfaces;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;

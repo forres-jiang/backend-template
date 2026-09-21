@@ -1,4 +1,4 @@
-using My.XXX.Service.Interfaces;
+using My.XXX.Services.Interfaces;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
