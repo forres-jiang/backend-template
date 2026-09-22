@@ -3,6 +3,7 @@ using LinqToDB.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using My.XXX.Persistences.Repositories;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Authentication.Ports;
 using My.XXX.Services.Authorization.Ports;
 using My.XXX.Services.Examples.Ports;
@@ -20,7 +21,7 @@ public static class PersistenceRegistration
         services.AddScoped<MenuRepository>();
         services.AddScoped<IMenuReadRepository>(sp => sp.GetRequiredService<MenuRepository>());
         services.AddScoped<IPermissionStore>(sp => sp.GetRequiredService<MenuRepository>());
-        services.AddScoped<IMenuTransaction>(sp => sp.GetRequiredService<MenuRepository>());
+        services.AddScoped<IAccessControlTransaction>(sp => sp.GetRequiredService<MenuRepository>());
         services.AddScoped<IDemoRepository, DemoRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         return services;

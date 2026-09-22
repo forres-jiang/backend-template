@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Infrastructure.Logging;
 
-/// <summary>Ordinary telemetry must never replace the business outcome, even if a sink fails.</summary>
+/// <summary>普通遥测日志绝不能取代业务结果，即使某个日志接收端（sink）发生故障也是如此。</summary>
 public sealed class RequestLogWriter(IOperationRepository operations, IOptionsMonitor<RequestLogOptions> options,
     ILogger<RequestLogWriter> logger) : IRequestLogWriter
 {
@@ -24,7 +24,7 @@ public sealed class RequestLogWriter(IOperationRepository operations, IOptionsMo
                 logger.LogError("Failed to persist request log {RequestId}: {ExceptionType}", record.RequestId, ex.GetType().Name);
             }
         }
-        // Legacy email modes fall back to text; the removed mail module is not reinstated.
+        // 旧版邮件模式回退为文本记录；不会恢复已移除的邮件模块。
         if (storage != StorageTypeEnum.SQL)
         {
             if (record.IsException) logger.LogError("Request failed: {Metadata}", JsonConvert.SerializeObject(record));

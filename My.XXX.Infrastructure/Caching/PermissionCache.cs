@@ -15,7 +15,7 @@ public sealed class PermissionCache(IConnectionMultiplexer connection) : IPermis
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         cancellationToken.ThrowIfCancellationRequested();
         var value = await connection.GetDatabase().StringGetAsync(userId).WaitAsync(cancellationToken);
-        // Preserve existing user-id keys and JSON arrays during migration.
+        // 在迁移期间保留现有的 user-id 键和 JSON 数组。
         return value.IsNull ? null : JsonConvert.DeserializeObject<List<string>>((string)value);
     }
 
@@ -25,7 +25,7 @@ public sealed class PermissionCache(IConnectionMultiplexer connection) : IPermis
         ArgumentNullException.ThrowIfNull(paths);
         if (expiration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(expiration));
         cancellationToken.ThrowIfCancellationRequested();
-        // SET includes the TTL atomically; never cache permissions indefinitely.
+        // SET 原子地包含 TTL；绝不能无限期缓存权限。
         await connection.GetDatabase().StringSetAsync(userId, JsonConvert.SerializeObject(paths), expiration)
             .WaitAsync(cancellationToken);
     }

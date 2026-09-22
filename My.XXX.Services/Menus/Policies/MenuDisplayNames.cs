@@ -1,30 +1,10 @@
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
+using My.XXX.Services.Menus.Models;
 namespace My.XXX.Services.Menus.Policies;
 
 public static class MenuDisplayNames
 {
-    private static Dictionary<string, string> Read(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return new(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var names = JsonConvert.DeserializeObject<Dictionary<string, string>>(value);
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (names != null) foreach (var pair in names) result[pair.Key] = pair.Value;
-            return result;
-        }
-        catch (JsonException) { return new(StringComparer.OrdinalIgnoreCase); }
-    }
-
-    public static string Get(string value, string culture, string fallback) =>
-        Read(value).TryGetValue(culture, out var name) && !string.IsNullOrWhiteSpace(name) ? name : fallback;
-
-    public static string Set(string value, string culture, string name)
-    {
-        var names = Read(value);
-        names[culture] = name?.Trim();
-        return JsonConvert.SerializeObject(names);
-    }
+    public static string Get(LocalizedText value, string culture, string fallback) =>
+        value != null && value.Values.TryGetValue(culture, out var name) && !string.IsNullOrWhiteSpace(name) ? name : fallback;
+    public static LocalizedText Set(LocalizedText value, string culture, string name) =>
+        (value ?? new LocalizedText()).With(culture, name);
 }

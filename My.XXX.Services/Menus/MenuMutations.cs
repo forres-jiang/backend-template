@@ -1,8 +1,8 @@
 using FluentResults;
 using My.XXX.Contracts.DTOs;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Menus.Models;
 using My.XXX.Services.Menus.Policies;
-using My.XXX.Services.Menus.Ports;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +11,8 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Services.Menus;
 
-/// <summary>Owns menu write rules. All state-dependent decisions run inside the adapter's locked transaction.</summary>
-public sealed class MenuMutations(IMenuTransaction transaction, TimeProvider clock)
+/// <summary>负责菜单写入规则。所有依赖状态的决策都在适配器提供的加锁事务内运行。</summary>
+public sealed class MenuMutations(IAccessControlTransaction transaction, TimeProvider clock)
 {
     public async Task<Result> Add(SaveMenu input, string culture, string userId, CancellationToken cancellationToken = default)
     {

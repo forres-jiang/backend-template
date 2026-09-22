@@ -6,6 +6,7 @@ using My.XXX.Services.Authentication;
 using My.XXX.Services.Authentication.Interfaces;
 using My.XXX.Services.Authorization;
 using My.XXX.Services.Authorization.Interfaces;
+using My.XXX.Services.Compatibility;
 using My.XXX.Services.Examples;
 using My.XXX.Services.Examples.Interfaces;
 using My.XXX.Services.Examples.Validators;
@@ -35,6 +36,7 @@ public static class ServiceRegistration
         services.AddScoped<RoleMenuAssignmentService>();
         services.AddScoped<IPermissionAdministration, PermissionAdministration>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<ISessionService, SessionService>();
         services.TryAddScoped<IPermissionQuery, PermissionQuery>();
         return services;
     }

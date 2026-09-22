@@ -5,21 +5,23 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace My.XXX.Services.Menus.Ports;
+namespace My.XXX.Services.AccessControl.Ports;
 
-public interface IMenuTransaction
+public interface IAccessControlTransaction
 {
-    /// <summary>Locks the permission revision before invoking the use case. Failure results and exceptions roll back all writes.</summary>
-    Task<Result> Execute(Func<IMenuWriteSession, Task<Result>> operation, CancellationToken cancellationToken = default);
+    /// <summary>在调用用例之前锁定权限修订版本。失败结果和异常会回滚所有写入。</summary>
+    Task<Result> Execute(Func<IAccessControlWriteSession, Task<Result>> operation, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Available only inside Execute. Contains persistence primitives, not business commands.</summary>
-public interface IMenuWriteSession
+/// <summary>仅在 Execute 内部可用。包含持久化原语，而非业务命令。</summary>
+public interface IAccessControlWriteSession
 {
     Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default);
+    Task<List<int>> LoadMenuIds(CancellationToken cancellationToken = default);
     Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default);
     Task<int> Insert(MenuState menu, CancellationToken cancellationToken = default);
     Task<int> Update(MenuState menu, CancellationToken cancellationToken = default);
     Task<int> Remove(List<int> ids, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
     Task<bool> ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
 }
+

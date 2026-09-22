@@ -2,11 +2,11 @@ using FluentResults;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common;
 using My.XXX.Contracts.DTOs;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Authorization;
 using My.XXX.Services.Authorization.Ports;
 using My.XXX.Services.Menus;
 using My.XXX.Services.Menus.Models;
-using My.XXX.Services.Menus.Ports;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
@@ -47,8 +47,8 @@ public class MenuUseCaseTests
         Assert.IsNull(updated.Description);
         Assert.AreEqual("icon", updated.Icon);
         Assert.AreEqual("description", before.Description, "Use cases must not mutate loaded snapshots.");
-        StringAssert.Contains(updated.DisplayNames, "English");
-        StringAssert.Contains(updated.DisplayNames, "中文");
+        Assert.AreEqual("English", updated.DisplayNames.Values["en-US"]);
+        Assert.AreEqual("中文", updated.DisplayNames.Values["zh-CN"]);
         Assert.AreEqual(instant.DateTime, updated.UpdatedTime);
         Assert.AreEqual("editor", updated.UpdatedBy);
         Assert.AreEqual(1L, store.Revision);
@@ -93,7 +93,7 @@ public class MenuUseCaseTests
     {
         Menus = new()
         {
-            new() { Id = 1, Number = 0, DisplayName = "English", DisplayNames = "{\"en-US\":\"English\"}", Description = "description", Icon = "icon" },
+            new() { Id = 1, Number = 0, DisplayName = "English", DisplayNames = My.XXX.Services.Menus.Mapping.ApplicationMapper.ReadLocalizedText("{\"en-US\":\"English\"}"), Description = "description", Icon = "icon" },
             new() { Id = 2, Number = 1, ParentId = 1 }, new() { Id = 3, Number = 2 }
         }
     };
@@ -103,7 +103,7 @@ public class MenuUseCaseTests
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
     }
 
-    private sealed class MemoryTransaction : IMenuTransaction, IMenuWriteSession
+    private sealed class MemoryTransaction : IAccessControlTransaction, IAccessControlWriteSession
     {
         public List<MenuState> Menus = new();
         public List<int> Grants = new();
@@ -111,7 +111,7 @@ public class MenuUseCaseTests
         public int Writes, Transactions, FailOnWrite;
         public bool ThrowOnFailure;
         private bool active;
-        public async Task<Result> Execute(Func<IMenuWriteSession, Task<Result>> action, CancellationToken cancellationToken = default)
+        public async Task<Result> Execute(Func<IAccessControlWriteSession, Task<Result>> action, CancellationToken cancellationToken = default)
         {
             Assert.IsFalse(active);
             Transactions++;
@@ -135,6 +135,7 @@ public class MenuUseCaseTests
             }
         }
         public async Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Menus.Select(m => m.Copy()).ToList(); }
+        public Task<List<int>> LoadMenuIds(CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Task.FromResult(Menus.Select(m => m.Id).ToList()); }
         public async Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Grants.ToList(); }
         public async Task<int> Insert(MenuState menu, CancellationToken cancellationToken = default) { Assert.IsTrue(active); Writes++; Menus.Add(menu.Copy()); return 1; }
         public async Task<int> Update(MenuState menu, CancellationToken cancellationToken = default)

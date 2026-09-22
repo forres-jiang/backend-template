@@ -9,6 +9,10 @@ namespace My.XXX.Services.Menus.Mapping;
     ThrowOnMappingNullMismatch = false, ThrowOnPropertyMappingNullMismatch = false)]
 public partial class ApplicationMapper
 {
+    public static LocalizedText? ReadLocalizedText(string? value) => value == null ? null :
+        new LocalizedText(My.XXX.Contracts.Serialization.LocalizedNamesJson.Read(value));
+    public static string? WriteLocalizedText(LocalizedText? value) =>
+        My.XXX.Contracts.Serialization.LocalizedNamesJson.Write(value?.Values);
     [MapperIgnoreTarget(nameof(MenuDto.Checked))]
     [MapperIgnoreTarget(nameof(MenuDto.Actions))]
     [MapperIgnoreTarget(nameof(MenuDto.Children))]

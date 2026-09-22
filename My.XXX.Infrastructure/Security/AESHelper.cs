@@ -61,7 +61,7 @@ namespace My.XXX.Infrastructure.Security
             finally { CryptographicOperations.ZeroMemory(key); }
         }
 
-        // Explicit-key overloads are retained only for offline legacy-data migration.
+        // 显式密钥重载仅保留用于离线迁移旧数据。
         public static string Encrypt(string text, string key, string iv)
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(key) || string.IsNullOrEmpty(iv))

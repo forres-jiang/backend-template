@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.Services.Menus.Policies;
 
-/// <summary>Pure ordering policy. The repository supplies a snapshot under its write lock.</summary>
+/// <summary>纯排序策略。仓储在其写锁保护下提供快照。</summary>
 public static class MenuOrder
 {
     public static List<MenuState> Build(List<MenuState> menus, MenuSortModel command)
@@ -15,7 +15,7 @@ public static class MenuOrder
         if (!byId.TryGetValue(command.CurrentId, out var current)) return null;
         var anchorId = command.PrevId == 0 ? command.NextId : command.PrevId;
         if (!byId.TryGetValue(anchorId, out var anchor)) return null;
-        // Moving a node below itself or one of its descendants would corrupt the tree.
+        // 将节点移动到自身或其某个后代之下会破坏树结构。
         var parent = anchor.ParentId;
         var visited = new HashSet<int>();
         while (parent != 0)

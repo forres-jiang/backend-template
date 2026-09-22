@@ -18,7 +18,7 @@ public sealed class CachedPermissionQuery(IPermissionStore menus, IPermissionCac
         var config = options.Value;
         if (config.ExpiryInMinutes <= 0 || string.IsNullOrWhiteSpace(config.KeyPrefix))
             throw new InvalidOperationException("Permission cache requires a positive expiry and a key prefix.");
-        // Recheck after the cache/database read. Never publish data under a revision it did not belong to.
+        // 在缓存/数据库读取之后重新检查。绝不能以不属于某次修订（revision）的版本发布数据。
         for (var attempt = 0; attempt < 3; attempt++)
         {
             var revision = await menus.GetPermissionRevisionAsync(cancellationToken);
@@ -29,14 +29,14 @@ public sealed class CachedPermissionQuery(IPermissionStore menus, IPermissionCac
             if (cached == null) await cache.SetAsync(key, paths, TimeSpan.FromMinutes(config.ExpiryInMinutes), cancellationToken);
             return paths;
         }
-        // Continuous edits: read current permissions directly instead of returning an old cached grant.
+        // 持续编辑的情况下：直接读取当前权限，而不是返回过期的缓存授权。
         return await menus.GetPermissionPathsAsync(roleIds, cancellationToken);
     }
     public async Task RemoveCachedPermissionsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default)
     {
         var revision = await menus.GetPermissionRevisionAsync(cancellationToken);
         await cache.RemoveAsync(PermissionCacheKey.Create(options.Value.KeyPrefix, userId, roleIds, revision), cancellationToken);
-        // Also clear the former key during rolling data-format migration.
+        // 在数据格式滚动迁移期间，同时清除旧键。
         await cache.RemoveAsync(userId, cancellationToken);
     }
 }

@@ -1,21 +1,26 @@
 using FluentResults;
 using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Authorization;
+using My.XXX.Services.Menus;
 using My.XXX.Services.Menus.Interfaces;
 using My.XXX.Shared;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-namespace My.XXX.Services.Menus;
-/// <summary>Compatibility facade for existing HTTP contracts.</summary>
+namespace My.XXX.Services.Compatibility;
+/// <summary>面向现有 HTTP 契约的兼容性外观。</summary>
 public sealed class MenuService(MenuCommandService commands, MenuQueryService queries, RoleMenuAssignmentService roles) : IMenuService
 {
     public async Task<Result> Add(SaveMenu menu, CancellationToken cancellationToken = default) => (await commands.Add(menu, cancellationToken));
     public async Task<Result> Update(EditMenu menu, CancellationToken cancellationToken = default) => (await commands.Update(menu, cancellationToken));
     public async Task<Result> Remove(List<int> ids, CancellationToken cancellationToken = default) => (await commands.Remove(ids, cancellationToken));
     public async Task<Result> UpdateSort(MenuSortModel model, CancellationToken cancellationToken = default) => (await commands.UpdateSort(model, cancellationToken));
-    public async Task<MenuBaseDto> Get(int id, CancellationToken cancellationToken = default) => (await queries.Get(id, cancellationToken));
+    public async Task<MenuBaseDto> Get(int id, CancellationToken cancellationToken = default)
+    {
+        var result = await queries.FindAsync(id, cancellationToken);
+        return result.IsSuccess ? result.Value : null; // Legacy endpoint returns success(null) for missing menus.
+    }
     public async Task<Result<List<MenuBase>>> GetMenus(CancellationToken cancellationToken = default) => (await queries.GetMenus(cancellationToken));
     public async Task<Paged<MenuBaseDto>> GetMenus(QueryMenu query, CancellationToken cancellationToken = default) => (await queries.GetMenus(query, cancellationToken));
     public async Task<List<MenuDto>> GetTreeMenus(bool? isDisplay, CancellationToken cancellationToken = default) => (await queries.GetTreeMenus(isDisplay, cancellationToken));
@@ -28,3 +33,4 @@ public sealed class MenuService(MenuCommandService commands, MenuQueryService qu
     public async Task<Result> RemoveRoleMenu(Guid roleId, int menuId, CancellationToken cancellationToken = default) => (await roles.RemoveRoleMenu(roleId, menuId, cancellationToken));
     public async Task<Result<BatchWriteSummary>> RoleMenuAction(RoleMenuActionModel model, CancellationToken cancellationToken = default) => (await roles.RoleMenuAction(model, cancellationToken));
 }
+

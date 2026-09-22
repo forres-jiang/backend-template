@@ -4,6 +4,7 @@ using LinqToDB.Async;
 using My.XXX.Persistences.Common;
 using My.XXX.Persistences.Mapping;
 using My.XXX.Persistences.PersistentObjects;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Authorization.Ports;
 using My.XXX.Services.Menus.Models;
 using My.XXX.Services.Menus.Ports;
@@ -17,12 +18,12 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Persistences.Repositories;
 
-public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermissionStore, IMenuTransaction
+public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermissionStore, IAccessControlTransaction
 {
     private readonly PersistenceMapper mapper = new();
     private bool writing;
 
-    public async Task<Result> Execute(Func<IMenuWriteSession, Task<Result>> operation, CancellationToken cancellationToken = default)
+    public async Task<Result> Execute(Func<IAccessControlWriteSession, Task<Result>> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
         if (writing) throw new InvalidOperationException("Nested menu transactions are not supported; compose operations within the existing session.");
@@ -32,7 +33,7 @@ public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermiss
         {
             return await AtomicWrite.ExecuteAsync(db, async () =>
             {
-                // Lock before any application reads; revision and data commit or roll back together.
+                // 在任何应用程序读取之前加锁；修订号与数据一起提交或回滚。
                 if (await db.GetTable<PermissionRevision>().Where(r => r.Id == 1)
                     .Set(r => r.Version, r => r.Version + 1).UpdateAsync(cancellationToken) != 1)
                     throw new InvalidOperationException("Apply the PermissionRevision database upgrade before using menu writes.");
@@ -77,12 +78,13 @@ public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermiss
         return Paged<MenuState>.Create(mapper.ToMenuStates(list), total);
     }
 
-    private sealed class WriteSession(DBContext db, PersistenceMapper mapper) : IMenuWriteSession
+    private sealed class WriteSession(DBContext db, PersistenceMapper mapper) : IAccessControlWriteSession
     {
         private bool active = true;
         public void Close() => active = false;
         private void Check() { if (!active) throw new InvalidOperationException("The menu write session has ended."); }
         public async Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default) { Check(); return mapper.ToMenuStates(await db.Menus.Where(m => !m.IsDeleted).ToListAsync(cancellationToken)); }
+        public Task<List<int>> LoadMenuIds(CancellationToken cancellationToken = default) { Check(); return db.Menus.Where(m => !m.IsDeleted).Select(m => m.Id).ToListAsync(cancellationToken); }
         public async Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default)
         {
             Check();
@@ -92,9 +94,9 @@ public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermiss
         public async Task<int> Update(MenuState menu, CancellationToken cancellationToken = default)
         {
             Check();
-            // Explicit columns prevent accidental persistence of future application-only fields.
+            // 显式指定列可防止将来仅供应用程序使用的字段被意外持久化。
             return await db.Menus.Where(m => m.Id == menu.Id && !m.IsDeleted)
-                .Set(m => m.DisplayName, menu.DisplayName).Set(m => m.DisplayNames, menu.DisplayNames)
+                .Set(m => m.DisplayName, menu.DisplayName).Set(m => m.DisplayNames, My.XXX.Contracts.Serialization.LocalizedNamesJson.Write(menu.DisplayNames?.Values))
                 .Set(m => m.Description, menu.Description).Set(m => m.Icon, menu.Icon)
                 .Set(m => m.Url, menu.Url).Set(m => m.Component, menu.Component)
                 .Set(m => m.ControllerName, menu.ControllerName).Set(m => m.ActionName, menu.ActionName)

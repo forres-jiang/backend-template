@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 namespace My.XXX.Services.Authentication.Ports;
-/// <summary>Shared persistent authority. Only trusted identity integrations may update users.</summary>
+/// <summary>共享的持久化权限存储。仅受信任的身份集成可以更新用户。</summary>
 public interface IAuthenticationStore
 {
     Task SetUserAsync(UserInfo user, bool enabled, CancellationToken cancellationToken = default);

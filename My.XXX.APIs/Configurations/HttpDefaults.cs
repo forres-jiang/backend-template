@@ -13,7 +13,7 @@ namespace My.XXX.APIs.Configurations
         public bool UseHttpXForwardedProto { get; set; } = false;
 
         /// <summary>
-        /// 获取或设置自定义转发的HTTP报头(e.g. CF-Connecting-IP, X-FORWARDED-PROTO, etc)
+        /// 获取或设置自定义转发的HTTP报头（例如 CF-Connecting-IP、X-FORWARDED-PROTO 等）
         /// </summary>
         public string ForwardedHttpHeader { get; set; } = string.Empty;
     }

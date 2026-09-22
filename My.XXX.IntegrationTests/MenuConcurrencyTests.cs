@@ -5,10 +5,10 @@ using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Persistences.Repositories;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Authorization;
 using My.XXX.Services.Authorization.Ports;
 using My.XXX.Services.Menus;
-using My.XXX.Services.Menus.Ports;
 using System;
 using System.Data.Common;
 using System.IO;
@@ -16,7 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 namespace My.XXX.IntegrationTests;
 
-/// <summary>Requires an explicitly supplied disposable database server; each case creates its own database.</summary>
+/// <summary>需要显式提供一次性的数据库服务器；每个测试用例都会创建自己的数据库。</summary>
 [TestClass]
 public class MenuConcurrencyTests
 {
@@ -85,8 +85,8 @@ public class MenuConcurrencyTests
         var updated = (await repository.Get(menu.Id));
         Assert.IsNull(updated.Description);
         Assert.AreEqual(menu.Icon, updated.Icon);
-        StringAssert.Contains(updated.DisplayNames, "English");
-        StringAssert.Contains(updated.DisplayNames, "菜单");
+        Assert.AreEqual("English", updated.DisplayNames.Values["en-US"]);
+        Assert.AreEqual("菜单", updated.DisplayNames.Values["zh-CN"]);
         var revision = await repository.GetPermissionRevisionAsync();
         Assert.AreEqual(0, (await repository.Update(new EditMenu { Id = menu.Id, ClearFields = new() { "CreatedBy" } }, "en-US", "editor")));
         Assert.AreEqual(revision, await repository.GetPermissionRevisionAsync());
@@ -132,7 +132,7 @@ public class MenuConcurrencyTests
         using var db = fixture.Open();
         var repository = new MenuRepository(db);
         var before = (await repository.GetMenus()).First();
-        IMenuWriteSession captured = null;
+        IAccessControlWriteSession captured = null;
         var result = (await repository.Execute(async session =>
         {
             captured = session;
@@ -149,7 +149,7 @@ public class MenuConcurrencyTests
         Assert.AreEqual(0L, await repository.GetPermissionRevisionAsync());
     }
 
-    // Exercise the application use cases with real transaction adapters.
+    // 使用真实的事务适配器来执行应用程序用例。
     private sealed class MenuTestDriver(DBContext db)
     {
         private readonly MenuRepository reads = new(db);
@@ -199,7 +199,7 @@ public class MenuConcurrencyTests
                 var suffix = providerName == "PostgreSQL" ? "postgresql" : "sqlserver";
                 var sql = File.ReadAllText(Path.Combine(root.FullName, "My.XXX.Persistences", "Migrations", $"001_permission_revision.{suffix}.sql"));
                 db.Execute(sql);
-                db.Execute(sql); // Upgrades must be safely repeatable.
+                db.Execute(sql); // 升级脚本必须可以安全地重复执行。
                 for (var i = 0; i < 3; i++) db.Insert(new Menus
                 {
                     DisplayName = "English",
@@ -218,7 +218,7 @@ public class MenuConcurrencyTests
         }
         public async ValueTask DisposeAsync()
         {
-            // Only the randomly named database created above is removed.
+            // 只删除上面创建的随机命名数据库。
             await using var connection = DatabaseConfiguration.CreateConnection(adminConnection, provider);
             await connection.OpenAsync();
             await using var command = connection.CreateCommand();

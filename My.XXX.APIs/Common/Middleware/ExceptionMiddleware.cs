@@ -72,7 +72,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
     {
         try
         {
-            // Metadata only: never read request bodies, query strings, headers or response payloads.
+            // 仅记录元数据：绝不读取请求体、查询字符串、请求头或响应内容。
             var record = new MetricsInfo
             {
                 RequestId = requestId,
@@ -93,7 +93,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
         }
         catch (Exception loggingException)
         {
-            // Logging failures cannot change the business response or replace the original exception.
+            // 日志记录失败不能改变业务响应，也不能替代原始异常。
             _logger.LogError("Failed to persist request log {RequestId}: {ExceptionType}",
                 requestId, loggingException.GetType().Name);
         }

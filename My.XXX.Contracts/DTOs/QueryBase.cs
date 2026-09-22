@@ -1,32 +1,13 @@
-﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace My.XXX.Contracts.DTOs
+namespace My.XXX.Contracts.DTOs;
+
+/// <summary>Raw HTTP pagination input. Application boundaries normalize it explicitly.</summary>
+public class QueryBase
 {
-    public class QueryBase
-    {
-        private int pageindex;
-        private int pagesize;
-
-        [Required]
-        [Range(1, 100)]
-        public int PageSize
-        {
-            get
-            {
-                return pagesize > 100 ? 100 : pagesize;
-            }
-            set
-            {
-                pagesize = value;
-            }
-        }
-
-        [Required]
-        public int PageIndex
-        {
-            get { return pageindex <= 0 ? 0 : pageindex - 1; }
-            set { pageindex = value; }
-        }
-    }
+    [Required]
+    [Range(1, int.MaxValue)]
+    public int PageSize { get; set; }
+    [Required]
+    public int PageIndex { get; set; }
 }

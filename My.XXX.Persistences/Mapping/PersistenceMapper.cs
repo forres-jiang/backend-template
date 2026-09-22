@@ -11,6 +11,10 @@ namespace My.XXX.Persistences.Mapping;
     ThrowOnMappingNullMismatch = false, ThrowOnPropertyMappingNullMismatch = false)]
 public partial class PersistenceMapper
 {
+    private static LocalizedText? ReadLocalizedText(string? value) => value == null ? null :
+        new LocalizedText(My.XXX.Contracts.Serialization.LocalizedNamesJson.Read(value));
+    private static string? WriteLocalizedText(LocalizedText? value) =>
+        My.XXX.Contracts.Serialization.LocalizedNamesJson.Write(value?.Values);
     [MapperIgnoreTarget(nameof(Demo.DemoGUID))]
     [MapperIgnoreTarget(nameof(Demo.DemoBoolean))]
     [MapperIgnoreTarget(nameof(Demo.DemoDecimal))]
@@ -24,7 +28,7 @@ public partial class PersistenceMapper
     public partial MenuState? ToMenuState(Menus? source);
     public partial List<MenuState> ToMenuStates(IEnumerable<Menus>? source);
     public partial Menus? ToMenuEntity(MenuState? source);
-    // Values arrive serialized at the boundary; do not serialize JSON a second time.
+    // 值在边界处到达时已经过序列化；请勿对 JSON 进行二次序列化。
     public Operation? ToOperation(MetricsInfo? source)
     {
         if (source is null)

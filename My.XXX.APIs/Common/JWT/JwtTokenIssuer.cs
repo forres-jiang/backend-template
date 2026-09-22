@@ -3,35 +3,18 @@ using Microsoft.IdentityModel.Tokens;
 using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
 using My.XXX.Services.Authentication.Interfaces;
-using My.XXX.Services.Authentication.Models;
-using My.XXX.Services.Authentication.Ports;
+
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+
 namespace My.XXX.APIs.Common.JWT;
 
-public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, IAuthenticationStore store, TimeProvider clock) : ITokenIssuer
+public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, TimeProvider clock) : ITokenIssuer
 {
-    public async Task<TokenPair> IssueAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        var user = await store.GetUserAsync(userId, cancellationToken)
-            ?? throw new InvalidOperationException("The user is not enabled in the identity authority.");
-        var session = new SessionState
-        {
-            SessionId = Guid.NewGuid().ToString("N"),
-            UserId = userId,
-            RefreshTokenId = Guid.NewGuid().ToString("N"),
-            ExpiresUtc = clock.GetUtcNow().UtcDateTime.AddMinutes(options.Value.RefreshExpiryInMinutes)
-        };
-        var tokens = Create(user, session.SessionId, session.RefreshTokenId, session.ExpiresUtc);
-        await store.CreateSessionAsync(session, cancellationToken);
-        return tokens;
-    }
     public TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, DateTime refreshExpiration)
     {
         var config = options.Value;

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Persistences.Common;
 
-/// <summary>Executes one repository write operation atomically; unexpected exceptions propagate.</summary>
+/// <summary>以原子方式执行一次仓储写操作；意外异常将向上传播。</summary>
 internal static class AtomicWrite
 {
     public static async Task<T> ExecuteAsync<T>(DataConnection connection, Func<Task<T>> action,
@@ -22,7 +22,7 @@ internal static class AtomicWrite
         }
         catch
         {
-            // Cleanup must still run after the HTTP request is cancelled.
+            // HTTP 请求被取消后仍必须执行清理。
             await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }

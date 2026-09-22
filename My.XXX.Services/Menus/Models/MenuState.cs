@@ -2,12 +2,12 @@ using System;
 
 namespace My.XXX.Services.Menus.Models;
 
-/// <summary>Application state used by menu policies; never returned directly by HTTP endpoints.</summary>
+/// <summary>供菜单策略使用的应用状态；绝不由 HTTP 端点直接返回。</summary>
 public sealed class MenuState
 {
     public int Id { get; set; }
     public string DisplayName { get; set; }
-    public string DisplayNames { get; set; }
+    public LocalizedText DisplayNames { get; set; }
     public string Description { get; set; }
     public string Icon { get; set; }
     public int Number { get; set; }

@@ -20,7 +20,7 @@ namespace My.XXX.Persistences.Repositories
         {
             await _dbContext.InsertAsync(new PersistenceMapper().ToOperation(rlog));
         }
-        public async Task<Paged<OperationDto>> Search(OperationQeury query)
+        public async Task<Paged<OperationDto>> Search(My.XXX.Services.Operations.Models.OperationSearch query)
         {
             var rl = _dbContext.Operations.Where(m => m.UserId != null);
             if (!string.IsNullOrEmpty(query.Controller))
@@ -41,8 +41,8 @@ namespace My.XXX.Persistences.Repositories
 
             var total = await rl.CountAsync();
             var list = await rl.OrderByDescending(m => m.CreateTime)
-                .Skip(query.PageIndex * query.PageSize)
-                .Take(query.PageSize).ToListAsync();
+                .Skip(query.Offset)
+                .Take(query.Limit).ToListAsync();
 
             return Paged<OperationDto>.Create(new PersistenceMapper().ToOperationDtos(list), total);
         }

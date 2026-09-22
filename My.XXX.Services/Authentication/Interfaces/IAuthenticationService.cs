@@ -14,6 +14,5 @@ public interface IAuthenticationService
 
 public interface ITokenIssuer
 {
-    Task<TokenPair> IssueAsync(string userId, CancellationToken cancellationToken = default);
     TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, System.DateTime refreshExpiration);
 }

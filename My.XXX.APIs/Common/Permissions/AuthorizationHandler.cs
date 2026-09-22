@@ -20,7 +20,7 @@ public sealed class PermissionsHandler(IOptionsMonitor<PermissionWhitelist> whit
     {
         if (context.Resource is not HttpContext http || context.User.Identity?.IsAuthenticated != true) return;
         var code = http.GetEndpoint()?.Metadata.GetMetadata<RequiresPermissionAttribute>()?.Code;
-        // Missing metadata fails closed, even for administrators; works for MVC and minimal endpoints.
+        // 缺失元数据时采用失败关闭（fail closed）策略，即使是管理员也不例外；对 MVC 和 Minimal API 端点均适用。
         if (string.IsNullOrWhiteSpace(code) || requirement.Name != PolicyType.Default) return;
         var user = users.CurrentUser;
         if (user == null) return;

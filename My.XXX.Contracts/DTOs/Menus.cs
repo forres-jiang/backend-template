@@ -11,7 +11,7 @@ namespace My.XXX.Contracts.DTOs
         string DisplayNames { get; set; }
     }
 
-    // Legacy response shape. Internal menu state lives in Service.Models.
+    // 旧版响应结构。内部菜单状态位于 Service.Models 中。
     public class MenuBase : ILocalizedMenuDto
     {
         public int Id { get; set; }
@@ -125,7 +125,7 @@ namespace My.XXX.Contracts.DTOs
 
     public class EditMenu : BaseInputMenu
     {
-        // Null/omitted values retain old data. These names explicitly clear nullable strings.
+        // null 或未提供的值将保留原有数据。此处列出的字段名将显式清空对应的可空字符串。
         public List<string> ClearFields { get; set; }
 
         public int Id { get; set; }

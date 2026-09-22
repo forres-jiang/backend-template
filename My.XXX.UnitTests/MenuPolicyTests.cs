@@ -39,9 +39,9 @@ public class MenuPolicyTests
     [TestMethod]
     public void LocalizationFallsBackForLegacyInvalidOrMissingValues()
     {
-        Assert.AreEqual("fallback", MenuDisplayNames.Get("not-json", "zh-CN", "fallback"));
+        Assert.AreEqual("fallback", MenuDisplayNames.Get(My.XXX.Services.Menus.Mapping.ApplicationMapper.ReadLocalizedText("not-json"), "zh-CN", "fallback"));
         Assert.AreEqual("fallback", MenuDisplayNames.Get(null, "zh-CN", "fallback"));
-        var value = MenuDisplayNames.Set("{\"en-US\":\"English\"}", "zh-CN", " 中文 ");
+        var value = MenuDisplayNames.Set(new LocalizedText(new Dictionary<string, string> { ["en-US"] = "English" }), "zh-CN", " 中文 ");
         Assert.AreEqual("English", MenuDisplayNames.Get(value, "en-us", "fallback"));
         Assert.AreEqual("中文", MenuDisplayNames.Get(value, "ZH-cn", "fallback"));
         Assert.IsFalse(MenuUpdateFields.Valid(new[] { "CreatedBy" }));

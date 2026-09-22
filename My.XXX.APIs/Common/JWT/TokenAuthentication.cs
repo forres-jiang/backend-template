@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using My.XXX.APIs.Configurations;
 using My.XXX.Contracts.DTOs;
-using My.XXX.Services.Authentication.Ports;
+using My.XXX.Services.Authentication.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -46,15 +46,17 @@ public static class TokenAuthentication
                 var sessionId = context.Principal.FindFirst("sid")?.Value;
                 if (string.IsNullOrEmpty(sessionId)) { context.Fail("Session required."); return; }
                 var services = context.HttpContext.RequestServices;
-                var active = await services.GetRequiredService<IAuthenticationStore>().GetActiveSessionAsync(sessionId,
-                    services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime, context.HttpContext.RequestAborted);
-                if (active == null || active.User.UserId != context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ||
-                    (purpose == "refresh" && active.Session.RefreshTokenId != context.Principal.FindFirst("jti")?.Value))
+                var validation = await services.GetRequiredService<ISessionService>().ValidateAsync(sessionId,
+                    context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+                    purpose == "refresh" ? context.Principal.FindFirst("jti")?.Value ?? "" : null,
+                    context.HttpContext.RequestAborted);
+                if (validation.IsFailed)
                 {
                     context.Fail("Session expired or revoked.");
                     return;
                 }
-                // Authorization always observes the current authority, including administrator removal.
+                var active = validation.Value;
+                // 授权始终以当前权限为准，包括管理员被移除的情况。
                 var identity = (ClaimsIdentity)context.Principal.Identity;
                 foreach (var claim in identity.Claims.Where(c => c.Type == ClaimTypes.Role || c.Type == ClaimTypes.UserData ||
                     c.Type == ClaimTypes.Name || c.Type == ClaimTypes.Email).ToList()) identity.RemoveClaim(claim);

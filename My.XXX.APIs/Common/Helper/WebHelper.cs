@@ -7,73 +7,66 @@ using My.XXX.APIs.Configurations;
 using My.XXX.Shared;
 using System;
 using System.Linq;
-using System.Net;
 
 namespace My.XXX.APIs.Common
 {
     public interface IWebHelper
     {
         /// <summary>
-        /// Get URL referrer if exists
+        /// 如果存在，则获取 URL 引荐来源地址
         /// </summary>
-        /// <returns>URL referrer</returns>
+        /// <returns>URL 引荐来源地址</returns>
         string GetUrlReferrer();
 
         /// <summary>
-        /// Get IP address from HTTP context
+        /// 获取一个值，该值指示当前连接是否安全
         /// </summary>
-        /// <returns>String of IP address</returns>
-        string GetCurrentIpAddress();
-
-        /// <summary>
-        /// Gets a value indicating whether current connection is secured
-        /// </summary>
-        /// <returns>True if it's secured, otherwise false</returns>
+        /// <returns>如果安全则为 true，否则为 false</returns>
         bool IsCurrentConnectionSecured();
 
         /// <summary>
-        /// Gets store host location
+        /// 获取存储主机位置
         /// </summary>
-        /// <param name="useSsl">Whether to get SSL secured URL</param>
-        /// <returns>Store host location</returns>
+        /// <param name="useSsl">是否获取 SSL 安全 URL</param>
+        /// <returns>存储主机位置</returns>
         string GetStoreHost(bool useSsl);
 
         /// <summary>
-        /// Returns true if the requested resource is one of the typical resources that needn't be processed by the CMS engine.
+        /// 如果请求的资源属于典型的无需由 CMS 引擎处理的资源，则返回 true。
         /// </summary>
-        /// <returns>True if the request targets a static resource file.</returns>
+        /// <returns>如果请求目标是静态资源文件，则为 true。</returns>
         bool IsStaticResource();
 
         /// <summary>
-        /// Gets query string value by name
+        /// 按名称获取查询字符串值
         /// </summary>
-        /// <typeparam name="T">Returned value type</typeparam>
-        /// <param name="name">Query parameter name</param>
-        /// <returns>Query string value</returns>
+        /// <typeparam name="T">返回值类型</typeparam>
+        /// <param name="name">查询参数名称</param>
+        /// <returns>查询字符串值</returns>
         T QueryString<T>(string name);
 
         /// <summary>
-        /// Gets a value that indicates whether the client is being redirected to a new location
+        /// 获取一个值，该值指示客户端是否正在被重定向到新位置
         /// </summary>
         bool IsRequestBeingRedirected { get; }
 
         /// <summary>
-        /// Gets current HTTP request protocol
+        /// 获取当前 HTTP 请求协议
         /// </summary>
         string GetCurrentRequestProtocol();
 
         /// <summary>
-        /// Get the raw path and full query of request
+        /// 获取请求的原始路径和完整查询
         /// </summary>
-        /// <param name="request">HTTP request</param>
-        /// <returns>Raw URL</returns>
+        /// <param name="request">HTTP 请求</param>
+        /// <returns>原始 URL</returns>
         string GetRawUrl(HttpRequest request);
 
         /// <summary>
-        /// Gets whether the request is made with AJAX
+        /// 获取请求是否通过 AJAX 发出
         /// </summary>
-        /// <param name="request">HTTP request</param>
-        /// <returns>Result</returns>
+        /// <param name="request">HTTP 请求</param>
+        /// <returns>结果</returns>
         bool IsAjaxRequest(HttpRequest request);
     }
 
@@ -109,73 +102,16 @@ namespace My.XXX.APIs.Common
         }
 
         /// <summary>
-        /// Get URL referrer if exists
+        /// 如果存在，则获取 URL 引荐来源地址
         /// </summary>
-        /// <returns>URL referrer</returns>
+        /// <returns>URL 引荐来源地址</returns>
         public virtual string GetUrlReferrer()
         {
             if (!IsRequestAvailable())
                 return string.Empty;
 
-            //URL referrer 某些情况下为空 (for example, in IE 8)
+            //URL referrer 某些情况下为空（例如在 IE 8 中）
             return _httpContextAccessor.HttpContext.Request.Headers[HeaderNames.Referer];
-        }
-
-        /// <summary>
-        /// 从HttpContext获取IP地址
-        /// </summary>
-        /// <returns>String of IP address</returns>
-        public virtual string GetCurrentIpAddress()
-        {
-            if (!IsRequestAvailable())
-                return string.Empty;
-
-            var result = string.Empty;
-            try
-            {
-                HostingConfig hostingConfig = new();
-                //首先尝试从转发的头获取IP地址
-                if (_httpContextAccessor.HttpContext.Request.Headers != null)
-                {
-                    //the X-Forwarded-For (XFF) HTTP header field is a de facto standard for identifying the originating IP address of a client
-                    //connecting to a web server through an HTTP proxy or load balancer
-                    var forwardedHttpHeaderKey = HttpDefaults.XForwardedForHeader;
-                    if (!string.IsNullOrEmpty(hostingConfig.ForwardedHttpHeader))
-                    {
-                        //but in some cases server use other HTTP header
-                        //in these cases an administrator can specify a custom Forwarded HTTP header (e.g. CF-Connecting-IP, X-FORWARDED-PROTO, etc)
-                        forwardedHttpHeaderKey = hostingConfig.ForwardedHttpHeader;
-                    }
-
-                    var forwardedHeader = _httpContextAccessor.HttpContext.Request.Headers[forwardedHttpHeaderKey];
-                    if (!StringValues.IsNullOrEmpty(forwardedHeader))
-                        result = forwardedHeader.FirstOrDefault();
-                }
-
-                //如果此报头不存在，请尝试获取连接远程IP地址
-                if (string.IsNullOrEmpty(result) && _httpContextAccessor.HttpContext.Connection.RemoteIpAddress != null)
-                    result = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
-            }
-            catch
-            {
-                return string.Empty;
-            }
-
-            if (result != null && result.Equals(IPAddress.IPv6Loopback.ToString(), StringComparison.InvariantCultureIgnoreCase))
-            {
-                result = IPAddress.Loopback.ToString();
-            }
-
-            //"TryParse" 不支持IPv4的端口号
-            if (IPAddress.TryParse(result ?? string.Empty, out var ip))
-            {
-                result = ip.ToString();
-            }
-            else if (!string.IsNullOrEmpty(result))
-            {
-                result = result.Split(':').FirstOrDefault();
-            }
-            return result;
         }
 
         /// <summary>
@@ -189,11 +125,11 @@ namespace My.XXX.APIs.Common
 
             HostingConfig hostingConfig = new();
             //检查主机是否使用负载均衡器
-            //use HTTP_CLUSTER_HTTPS?
+            //使用 HTTP_CLUSTER_HTTPS？
             if (hostingConfig.UseHttpClusterHttps)
                 return _httpContextAccessor.HttpContext.Request.Headers[HttpDefaults.HttpClusterHttpsHeader].ToString().Equals("on", StringComparison.OrdinalIgnoreCase);
 
-            //use HTTP_X_FORWARDED_PROTO?
+            //使用 HTTP_X_FORWARDED_PROTO？
             if (hostingConfig.UseHttpXForwardedProto)
                 return _httpContextAccessor.HttpContext.Request.Headers[HttpDefaults.HttpXForwardedProtoHeader].ToString().Equals("https", StringComparison.OrdinalIgnoreCase);
 
@@ -201,33 +137,33 @@ namespace My.XXX.APIs.Common
         }
 
         /// <summary>
-        /// Gets store host location
+        /// 获取存储主机位置
         /// </summary>
-        /// <param name="useSsl">Whether to get SSL secured URL</param>
-        /// <returns>Store host location</returns>
+        /// <param name="useSsl">是否获取 SSL 安全 URL</param>
+        /// <returns>存储主机位置</returns>
         public virtual string GetStoreHost(bool useSsl)
         {
             if (!IsRequestAvailable())
                 return string.Empty;
 
-            //try to get host from the request HOST header
+            //尝试从请求的 HOST 报头获取主机
             var hostHeader = _httpContextAccessor.HttpContext.Request.Headers[HeaderNames.Host];
             if (StringValues.IsNullOrEmpty(hostHeader))
                 return string.Empty;
 
-            //add scheme to the URL
+            //为 URL 添加协议方案
             var storeHost = $"{(useSsl ? Uri.UriSchemeHttps : Uri.UriSchemeHttp)}{Uri.SchemeDelimiter}{hostHeader.FirstOrDefault()}";
 
-            //ensure that host is ended with slash
+            //确保主机以斜杠结尾
             storeHost = $"{storeHost.TrimEnd('/')}/";
 
             return storeHost;
         }
 
         /// <summary>
-        /// Returns true if the requested resource is one of the typical resources that needn't be processed by the cms engine.
+        /// 如果请求的资源属于典型的无需由 CMS 引擎处理的资源，则返回 true。
         /// </summary>
-        /// <returns>True if the request targets a static resource file.</returns>
+        /// <returns>如果请求目标是静态资源文件，则为 true。</returns>
         public virtual bool IsStaticResource()
         {
             if (!IsRequestAvailable())
@@ -235,9 +171,9 @@ namespace My.XXX.APIs.Common
 
             string path = _httpContextAccessor.HttpContext.Request.Path;
 
-            //a little workaround. FileExtensionContentTypeProvider contains most of static file extensions. So we can use it
-            //source: https://github.com/aspnet/StaticFiles/blob/dev/src/Microsoft.AspNetCore.StaticFiles/FileExtensionContentTypeProvider.cs
-            //if it can return content type, then it's a static file
+            //一个小变通方法。FileExtensionContentTypeProvider 包含大多数静态文件扩展名，因此我们可以使用它
+            //来源：https://github.com/aspnet/StaticFiles/blob/dev/src/Microsoft.AspNetCore.StaticFiles/FileExtensionContentTypeProvider.cs
+            //如果它能返回内容类型，则说明这是一个静态文件
             var contentTypeProvider = new FileExtensionContentTypeProvider();
             return contentTypeProvider.TryGetContentType(path, out var _);
         }
@@ -245,9 +181,9 @@ namespace My.XXX.APIs.Common
         /// <summary>
         /// 按名称获取查询字符串值
         /// </summary>
-        /// <typeparam name="T">Returned value type</typeparam>
-        /// <param name="name">Query parameter name</param>
-        /// <returns>Query string value</returns>
+        /// <typeparam name="T">返回值类型</typeparam>
+        /// <param name="name">查询参数名称</param>
+        /// <returns>查询字符串值</returns>
         public virtual T QueryString<T>(string name)
         {
             if (!IsRequestAvailable())
@@ -267,7 +203,7 @@ namespace My.XXX.APIs.Common
             get
             {
                 var response = _httpContextAccessor.HttpContext.Response;
-                //ASP.NET 4 style - return response.IsRequestBeingRedirected;
+                //ASP.NET 4 风格 - return response.IsRequestBeingRedirected;
                 int[] redirectionStatusCodes = { StatusCodes.Status301MovedPermanently, StatusCodes.Status302Found };
 
                 return redirectionStatusCodes.Contains(response.StatusCode);
@@ -285,15 +221,15 @@ namespace My.XXX.APIs.Common
         /// <summary>
         /// 获取请求的原始路径和完整查询
         /// </summary>
-        /// <param name="request">HTTP request</param>
-        /// <returns>Raw URL</returns>
+        /// <param name="request">HTTP 请求</param>
+        /// <returns>原始 URL</returns>
         public virtual string GetRawUrl(HttpRequest request)
         {
-            //first try to get the raw target from request feature
-            //note: value has not been UrlDecoded
+            //首先尝试从请求特性获取原始目标
+            //注意：该值尚未经过 UrlDecode 解码
             var rawUrl = request.HttpContext.Features.Get<IHttpRequestFeature>()?.RawTarget;
 
-            //or compose raw URL manually
+            //或者手动组合原始 URL
             if (string.IsNullOrEmpty(rawUrl))
                 rawUrl = $"{request.PathBase}{request.Path}{request.QueryString}";
 
@@ -303,8 +239,8 @@ namespace My.XXX.APIs.Common
         /// <summary>
         /// 判断是否为AJAX请求
         /// </summary>
-        /// <param name="request">HTTP request</param>
-        /// <returns>Result</returns>
+        /// <param name="request">HTTP 请求</param>
+        /// <returns>结果</returns>
         public virtual bool IsAjaxRequest(HttpRequest request)
         {
             if (request == null)

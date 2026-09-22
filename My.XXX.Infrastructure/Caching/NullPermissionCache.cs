@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Infrastructure;
 
-// Used only when Redis is not configured and permissions come from the database.
+// 仅在未配置 Redis 且权限来自数据库时使用。
 public sealed class NullPermissionCache : IPermissionCache
 {
     public Task<List<string>> GetAsync(string userId, CancellationToken cancellationToken = default) =>

@@ -33,7 +33,7 @@ public class HttpService : IHttpService
 
         var watch = Stopwatch.StartNew();
         using var response = await client.SendAsync(request);
-        // URLs, headers and payloads can all carry credentials.
+        // URL、请求头和请求负载都可能携带凭据。
         _logger.LogInformation("External HTTP {Method} returned {StatusCode} in {ElapsedMs} ms",
             method.Method, (int)response.StatusCode, watch.ElapsedMilliseconds);
 

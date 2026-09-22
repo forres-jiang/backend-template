@@ -145,7 +145,7 @@ public class SecurityRegressionTests
                 };
                 await authority.SetUserAsync(user, true);
                 using var tokenScope = app.Services.CreateScope();
-                var issuer = tokenScope.ServiceProvider.GetRequiredService<ITokenIssuer>();
+                var issuer = tokenScope.ServiceProvider.GetRequiredService<ISessionService>();
                 var tokens = await issuer.IssueAsync(user.UserId);
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
@@ -182,7 +182,7 @@ public class SecurityRegressionTests
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", nextRefresh);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/RefreshToken", null)).StatusCode);
-                // A correctly signed legacy token still fails without a persisted session.
+                // 即使旧式令牌签名正确，在没有已持久化会话的情况下仍会被拒绝。
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTokenBuilder.CreateTokens(Jwt, user).AccessToken);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
             }

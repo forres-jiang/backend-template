@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 namespace My.XXX.Services.Authorization.Policies;
 
-/// <summary>Stable security identifiers. Navigation labels, routes and CLR names are not permissions.</summary>
+/// <summary>稳定的安全标识符。导航标签、路由和 CLR 名称都不是权限。</summary>
 public static class PermissionCodes
 {
     public const string MenuAdd = "menu.add", MenuRemove = "menu.remove", MenuEdit = "menu.edit", MenuGet = "menu.get",

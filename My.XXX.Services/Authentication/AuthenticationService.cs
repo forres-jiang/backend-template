@@ -8,19 +8,19 @@ using System.Threading.Tasks;
 namespace My.XXX.Services.Authentication;
 
 public sealed class AuthenticationService(IAuthenticationSession current, ITokenIssuer tokens,
-    IAuthenticationStore store, TimeProvider clock) : IAuthenticationService
+    IAuthenticationStore store, TimeProvider clock, ISessionService sessions) : IAuthenticationService
 {
     public async Task<Result<AuthenticationSession>> RefreshAsync(CancellationToken cancellationToken = default)
     {
         if (!current.IsAuthenticated || string.IsNullOrEmpty(current.SessionId) || string.IsNullOrEmpty(current.TokenId))
-            return Result.Fail<AuthenticationSession>("Token invalid.");
-        var active = await store.GetActiveSessionAsync(current.SessionId, clock.GetUtcNow().UtcDateTime, cancellationToken);
-        if (active == null || active.User.UserId != current.User?.UserId)
-            return Result.Fail<AuthenticationSession>("Token invalid.");
+            return Result.Fail<AuthenticationSession>(AuthenticationErrors.InvalidToken());
+        var validation = await sessions.ValidateAsync(current.SessionId, current.User?.UserId, current.TokenId, cancellationToken);
+        if (validation.IsFailed) return Result.Fail<AuthenticationSession>(validation.Errors);
+        var active = validation.Value;
         var nextId = Guid.NewGuid().ToString("N");
         var pair = tokens.Create(active.User, current.SessionId, nextId, active.Session.ExpiresUtc);
         if (!await store.RotateAsync(current.SessionId, current.TokenId, nextId, clock.GetUtcNow().UtcDateTime, cancellationToken))
-            return Result.Fail<AuthenticationSession>("Refresh token has already been used or revoked.");
+            return Result.Fail<AuthenticationSession>(AuthenticationErrors.RefreshRejected());
         return Result.Ok(new AuthenticationSession { Tokens = pair });
     }
     public Task LogoutAsync(CancellationToken cancellationToken = default) => string.IsNullOrEmpty(current.SessionId)

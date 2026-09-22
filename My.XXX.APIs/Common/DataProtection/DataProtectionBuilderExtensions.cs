@@ -10,18 +10,15 @@ using System.Xml.Linq;
 namespace Microsoft.AspNetCore.DataProtection
 {
     /// <summary>
-    /// Extensions for configuring data protection using an <see cref="IDataProtectionBuilder"/>.
+    /// 用于通过 <see cref="IDataProtectionBuilder"/> 配置数据保护的扩展方法。
     /// </summary>
     public static class DataProtectionBuilderExtensions
     {
         /// <summary>
-        /// Configures keys to be encrypted with AES before being persisted to
-        /// storage.
+        /// 配置密钥在持久化到存储之前先用 AES 加密。
         /// </summary>
-        /// <param name="builder">The <see cref="IDataProtectionBuilder"/>.</param>
-        /// use on the local machine, 'false' if the key should only be decryptable by the current
-        /// Windows user account.
-        /// <returns>A reference to the <see cref="IDataProtectionBuilder" /> after this operation has completed.</returns>
+        /// <param name="builder"><see cref="IDataProtectionBuilder"/>。</param>
+        /// <returns>此操作完成后对 <see cref="IDataProtectionBuilder" /> 的引用。</returns>
         public static IDataProtectionBuilder ProtectKeysWithAES(this IDataProtectionBuilder builder)
         {
             ArgumentNullException.ThrowIfNull(builder);
@@ -39,19 +36,17 @@ namespace Microsoft.AspNetCore.DataProtection
     }
 
     /// <summary>
-    /// An <see cref="IXmlEncryptor"/> that encrypts XML elements with a Aes encryptor.
+    /// 一个使用 AES 加密器对 XML 元素进行加密的 <see cref="IXmlEncryptor"/>。
     /// </summary>
     internal sealed class AesXmlEncryptor : IXmlEncryptor
     {
         /// <summary>
-        /// Encrypts the specified <see cref="XElement"/> with a null encryptor, i.e.,
-        /// by returning the original value of <paramref name="plaintextElement"/> unencrypted.
+        /// 使用 AES 加密器对指定的 <see cref="XElement"/> 进行加密。
         /// </summary>
-        /// <param name="plaintextElement">The plaintext to echo back.</param>
+        /// <param name="plaintextElement">要加密的明文元素。</param>
         /// <returns>
-        /// An <see cref="EncryptedXmlInfo"/> that contains the null-encrypted value of
-        /// <paramref name="plaintextElement"/> along with information about how to
-        /// decrypt it.
+        /// 一个 <see cref="EncryptedXmlInfo"/>，包含 <paramref name="plaintextElement"/>
+        /// 的加密值以及解密所需的相关信息。
         /// </returns>
         public EncryptedXmlInfo Encrypt(XElement plaintextElement)
         {
@@ -60,7 +55,7 @@ namespace Microsoft.AspNetCore.DataProtection
             var Jsonxmlstr = JsonConvert.SerializeObject(plaintextElement);
             var EncryptedData = AESHelper.Encrypt(Jsonxmlstr);
             var newElement = new XElement("encryptedKey",
-                new XComment(" This key is encrypted with AES."),
+                new XComment(" 此密钥已使用 AES 加密。"),
                 new XElement("value", EncryptedData));
 
             return new EncryptedXmlInfo(newElement, typeof(AesXmlDecryptor));
@@ -68,15 +63,15 @@ namespace Microsoft.AspNetCore.DataProtection
     }
 
     /// <summary>
-    /// An <see cref="IXmlDecryptor"/> that decrypts XML elements with a Aes decryptor.
+    /// 一个使用 AES 解密器对 XML 元素进行解密的 <see cref="IXmlDecryptor"/>。
     /// </summary>
     internal sealed class AesXmlDecryptor : IXmlDecryptor
     {
         /// <summary>
-        /// Decrypts the specified XML element.
+        /// 解密指定的 XML 元素。
         /// </summary>
-        /// <param name="encryptedElement">An encrypted XML element.</param>
-        /// <returns>The decrypted form of <paramref name="encryptedElement"/>.</returns>
+        /// <param name="encryptedElement">已加密的 XML 元素。</param>
+        /// <returns><paramref name="encryptedElement"/> 的解密形式。</returns>
         public XElement Decrypt(XElement encryptedElement)
         {
             ArgumentNullException.ThrowIfNull(encryptedElement);

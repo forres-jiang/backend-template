@@ -15,7 +15,7 @@ namespace My.XXX.Contracts.DTOs
         public string ClientIP { get; set; }
         public string UserId { get; set; }
         public string UserName { get; set; }
-        // Already serialized data only; framework objects cannot cross this boundary.
+        // 仅允许已序列化的数据；框架对象不能跨越此边界。
         public string Inputs { get; set; } = "null";
         public string Url { get; set; }
         public string ReturnValue { get; set; } = "null";

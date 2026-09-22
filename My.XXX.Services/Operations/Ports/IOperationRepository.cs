@@ -6,5 +6,5 @@ namespace My.XXX.Services.Operations.Ports;
 public interface IOperationRepository
 {
     Task Save(MetricsInfo operation);
-    Task<Paged<OperationDto>> Search(OperationQeury query);
+    Task<Paged<OperationDto>> Search(My.XXX.Services.Operations.Models.OperationSearch query);
 }

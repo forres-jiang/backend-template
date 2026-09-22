@@ -6,113 +6,102 @@
     <members>
         <member name="T:Microsoft.AspNetCore.DataProtection.DataProtectionBuilderExtensions">
             <summary>
-            Extensions for configuring data protection using an <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/>.
+            用于通过 <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/> 配置数据保护的扩展方法。
             </summary>
         </member>
         <member name="M:Microsoft.AspNetCore.DataProtection.DataProtectionBuilderExtensions.ProtectKeysWithAES(Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder)">
             <summary>
-            Configures keys to be encrypted with AES before being persisted to
-            storage.
+            配置密钥在持久化到存储之前先用 AES 加密。
             </summary>
-            <param name="builder">The <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/>.</param>
-            use on the local machine, 'false' if the key should only be decryptable by the current
-            Windows user account.
-            <returns>A reference to the <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder" /> after this operation has completed.</returns>
+            <param name="builder"><see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder"/>。</param>
+            <returns>此操作完成后对 <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtectionBuilder" /> 的引用。</returns>
         </member>
         <member name="T:Microsoft.AspNetCore.DataProtection.AesXmlEncryptor">
             <summary>
-            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlEncryptor"/> that encrypts XML elements with a Aes encryptor.
+            一个使用 AES 加密器对 XML 元素进行加密的 <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlEncryptor"/>。
             </summary>
         </member>
         <member name="M:Microsoft.AspNetCore.DataProtection.AesXmlEncryptor.Encrypt(System.Xml.Linq.XElement)">
             <summary>
-            Encrypts the specified <see cref="T:System.Xml.Linq.XElement"/> with a null encryptor, i.e.,
-            by returning the original value of <paramref name="plaintextElement"/> unencrypted.
+            使用 AES 加密器对指定的 <see cref="T:System.Xml.Linq.XElement"/> 进行加密。
             </summary>
-            <param name="plaintextElement">The plaintext to echo back.</param>
+            <param name="plaintextElement">要加密的明文元素。</param>
             <returns>
-            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.EncryptedXmlInfo"/> that contains the null-encrypted value of
-            <paramref name="plaintextElement"/> along with information about how to
-            decrypt it.
+            一个 <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.EncryptedXmlInfo"/>，包含 <paramref name="plaintextElement"/>
+            的加密值以及解密所需的相关信息。
             </returns>
         </member>
         <member name="T:Microsoft.AspNetCore.DataProtection.AesXmlDecryptor">
             <summary>
-            An <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlDecryptor"/> that decrypts XML elements with a Aes decryptor.
+            一个使用 AES 解密器对 XML 元素进行解密的 <see cref="T:Microsoft.AspNetCore.DataProtection.XmlEncryption.IXmlDecryptor"/>。
             </summary>
         </member>
         <member name="M:Microsoft.AspNetCore.DataProtection.AesXmlDecryptor.Decrypt(System.Xml.Linq.XElement)">
             <summary>
-            Decrypts the specified XML element.
+            解密指定的 XML 元素。
             </summary>
-            <param name="encryptedElement">An encrypted XML element.</param>
-            <returns>The decrypted form of <paramref name="encryptedElement"/>.</returns>
+            <param name="encryptedElement">已加密的 XML 元素。</param>
+            <returns><paramref name="encryptedElement"/> 的解密形式。</returns>
         </member>
         <member name="T:My.XXX.APIs.Common.IgnoreMetrics">
-            <summary>Skip ordinary request telemetry; failures are still logged by the exception middleware.</summary>
+            <summary>跳过常规请求遥测；失败仍会由异常中间件记录日志。</summary>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.GetUrlReferrer">
             <summary>
-            Get URL referrer if exists
+            如果存在，则获取 URL 引荐来源地址
             </summary>
-            <returns>URL referrer</returns>
-        </member>
-        <member name="M:My.XXX.APIs.Common.IWebHelper.GetCurrentIpAddress">
-            <summary>
-            Get IP address from HTTP context
-            </summary>
-            <returns>String of IP address</returns>
+            <returns>URL 引荐来源地址</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.IsCurrentConnectionSecured">
             <summary>
-            Gets a value indicating whether current connection is secured
+            获取一个值，该值指示当前连接是否安全
             </summary>
-            <returns>True if it's secured, otherwise false</returns>
+            <returns>如果安全则为 true，否则为 false</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.GetStoreHost(System.Boolean)">
             <summary>
-            Gets store host location
+            获取存储主机位置
             </summary>
-            <param name="useSsl">Whether to get SSL secured URL</param>
-            <returns>Store host location</returns>
+            <param name="useSsl">是否获取 SSL 安全 URL</param>
+            <returns>存储主机位置</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.IsStaticResource">
             <summary>
-            Returns true if the requested resource is one of the typical resources that needn't be processed by the CMS engine.
+            如果请求的资源属于典型的无需由 CMS 引擎处理的资源，则返回 true。
             </summary>
-            <returns>True if the request targets a static resource file.</returns>
+            <returns>如果请求目标是静态资源文件，则为 true。</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.QueryString``1(System.String)">
             <summary>
-            Gets query string value by name
+            按名称获取查询字符串值
             </summary>
-            <typeparam name="T">Returned value type</typeparam>
-            <param name="name">Query parameter name</param>
-            <returns>Query string value</returns>
+            <typeparam name="T">返回值类型</typeparam>
+            <param name="name">查询参数名称</param>
+            <returns>查询字符串值</returns>
         </member>
         <member name="P:My.XXX.APIs.Common.IWebHelper.IsRequestBeingRedirected">
             <summary>
-            Gets a value that indicates whether the client is being redirected to a new location
+            获取一个值，该值指示客户端是否正在被重定向到新位置
             </summary>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.GetCurrentRequestProtocol">
             <summary>
-            Gets current HTTP request protocol
+            获取当前 HTTP 请求协议
             </summary>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.GetRawUrl(Microsoft.AspNetCore.Http.HttpRequest)">
             <summary>
-            Get the raw path and full query of request
+            获取请求的原始路径和完整查询
             </summary>
-            <param name="request">HTTP request</param>
-            <returns>Raw URL</returns>
+            <param name="request">HTTP 请求</param>
+            <returns>原始 URL</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.IWebHelper.IsAjaxRequest(Microsoft.AspNetCore.Http.HttpRequest)">
             <summary>
-            Gets whether the request is made with AJAX
+            获取请求是否通过 AJAX 发出
             </summary>
-            <param name="request">HTTP request</param>
-            <returns>Result</returns>
+            <param name="request">HTTP 请求</param>
+            <returns>结果</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.IsRequestAvailable">
             <summary>
@@ -122,15 +111,9 @@
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.GetUrlReferrer">
             <summary>
-            Get URL referrer if exists
+            如果存在，则获取 URL 引荐来源地址
             </summary>
-            <returns>URL referrer</returns>
-        </member>
-        <member name="M:My.XXX.APIs.Common.WebHelper.GetCurrentIpAddress">
-            <summary>
-            从HttpContext获取IP地址
-            </summary>
-            <returns>String of IP address</returns>
+            <returns>URL 引荐来源地址</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.IsCurrentConnectionSecured">
             <summary>
@@ -140,24 +123,24 @@
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.GetStoreHost(System.Boolean)">
             <summary>
-            Gets store host location
+            获取存储主机位置
             </summary>
-            <param name="useSsl">Whether to get SSL secured URL</param>
-            <returns>Store host location</returns>
+            <param name="useSsl">是否获取 SSL 安全 URL</param>
+            <returns>存储主机位置</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.IsStaticResource">
             <summary>
-            Returns true if the requested resource is one of the typical resources that needn't be processed by the cms engine.
+            如果请求的资源属于典型的无需由 CMS 引擎处理的资源，则返回 true。
             </summary>
-            <returns>True if the request targets a static resource file.</returns>
+            <returns>如果请求目标是静态资源文件，则为 true。</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.QueryString``1(System.String)">
             <summary>
             按名称获取查询字符串值
             </summary>
-            <typeparam name="T">Returned value type</typeparam>
-            <param name="name">Query parameter name</param>
-            <returns>Query string value</returns>
+            <typeparam name="T">返回值类型</typeparam>
+            <param name="name">查询参数名称</param>
+            <returns>查询字符串值</returns>
         </member>
         <member name="P:My.XXX.APIs.Common.WebHelper.IsRequestBeingRedirected">
             <summary>
@@ -173,21 +156,21 @@
             <summary>
             获取请求的原始路径和完整查询
             </summary>
-            <param name="request">HTTP request</param>
-            <returns>Raw URL</returns>
+            <param name="request">HTTP 请求</param>
+            <returns>原始 URL</returns>
         </member>
         <member name="M:My.XXX.APIs.Common.WebHelper.IsAjaxRequest(Microsoft.AspNetCore.Http.HttpRequest)">
             <summary>
             判断是否为AJAX请求
             </summary>
-            <param name="request">HTTP request</param>
-            <returns>Result</returns>
+            <param name="request">HTTP 请求</param>
+            <returns>结果</returns>
         </member>
         <member name="T:My.XXX.APIs.Common.ResultResponseExtensions">
-            <summary>Maps business results to the existing public response contract.</summary>
+            <summary>将业务结果映射到现有的公开响应契约。</summary>
         </member>
         <member name="M:My.XXX.APIs.Common.ResultResponseExtensions.ToHttpResult(FluentResults.Result)">
-            <summary>New endpoints use HTTP status as well as the explicit envelope; legacy endpoints retain their status contract.</summary>
+            <summary>新端点同时使用 HTTP 状态码和显式响应信封；旧端点保留其原有状态码契约。</summary>
         </member>
         <member name="P:My.XXX.APIs.Configurations.HostingConfig.UseHttpClusterHttps">
             <summary>
@@ -201,7 +184,7 @@
         </member>
         <member name="P:My.XXX.APIs.Configurations.HostingConfig.ForwardedHttpHeader">
             <summary>
-            获取或设置自定义转发的HTTP报头(e.g. CF-Connecting-IP, X-FORWARDED-PROTO, etc)
+            获取或设置自定义转发的HTTP报头（例如 CF-Connecting-IP、X-FORWARDED-PROTO 等）
             </summary>
         </member>
         <member name="P:My.XXX.APIs.Configurations.JwtConfig.ExpiryInMinutes">

@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.APIs.Controllers
 {
-    [NonController] // Examples only; these operations are not HTTP endpoints.
+    [NonController] // 仅作示例；这些操作并非 HTTP 端点。
     [ApiController]
     [Route("api/[controller]")]
     public class DemoController : ControllerBase
@@ -44,9 +44,6 @@ namespace My.XXX.APIs.Controllers
         [HttpGet("Index")]
         public MyResult Index()
         {
-            //var r = new DataValidator<UserRole>();
-            //r.Valid(null);
-            //_demoService.ExecProc();
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             //http://localhost:5000/swagger/index.html​
             string localIp = NetworkInterface.GetAllNetworkInterfaces()
@@ -55,7 +52,6 @@ namespace My.XXX.APIs.Controllers
                 .FirstOrDefault(p => p.Address.AddressFamily == AddressFamily.InterNetwork
                             && !IPAddress.IsLoopback(p.Address))?.Address.ToString();
             var s = JsonConvert.SerializeObject(new { name = "test" });
-            //_logger.LogError("{env}", environment);
 
             return MyResult.Success(new
             {
@@ -156,16 +152,6 @@ namespace My.XXX.APIs.Controllers
             var files = Request.Form.Files;
             long size = files.Sum(f => f.Length);
             var list = new List<string>();
-            //foreach (var formFile in files)
-            //{
-            //    if (formFile.Length > 0)
-            //    {
-            //        var allPath = wwwroot + "/" + formFile.FileName;
-            //        list.Add(allPath);
-            //        using var stream = System.IO.File.Create(allPath);
-            //        await formFile.CopyToAsync(stream);
-            //    }
-            //}
             return Ok(new
             {
                 count = files.Count,

@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace My.XXX.IntegrationTests;
 
-// Loaded only into the test host. This assembly is never an application dependency.
+// 仅加载到测试主机中。此程序集绝不会成为应用程序的依赖项。
 [ApiController]
 [AllowAnonymous]
 [Route("__test/boundary")]

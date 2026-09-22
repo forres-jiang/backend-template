@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.Configure<ConnectionStrings>(configuration.GetSection("ConnectionStrings"));
             //JWT
             services.Configure<JwtConfig>(configuration.GetSection("JwtConfig"));
+            services.Configure<My.XXX.Services.Authentication.Models.SessionOptions>(configuration.GetSection("JwtConfig"));
             services.AddOptions<My.XXX.Infrastructure.Caching.PermissionCacheOptions>()
                 .Bind(configuration.GetSection("PermissionCache"))
                 .Validate(o => o.ExpiryInMinutes > 0 && !string.IsNullOrWhiteSpace(o.KeyPrefix),
@@ -124,7 +125,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .PersistKeysToFileSystem(new DirectoryInfo(configuration["DataProtection:KeyPath"] ?? Path.Combine(AppContext.BaseDirectory, "keys")))
                 .ProtectKeysWithAES();
 
-            //Authentication
+            //身份验证
             var jwtConfig = configuration.GetSection("JwtConfig").Get<JwtConfig>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options => My.XXX.APIs.Common.JWT.TokenAuthentication.Configure(options, jwtConfig, "access"))

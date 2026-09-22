@@ -25,7 +25,7 @@ namespace My.XXX.Infrastructure
                     {
                         for (var column = 0; column < dt.Columns.Count; column++)
                         {
-                            // Preserve text values, including leading zeroes and formula-like strings.
+                            // 保留文本值，包括前导零以及类似公式的字符串。
                             sheet.Cell(row + 2, column + 1).Value = dt.Rows[row][column].ToString();
                         }
                     }

@@ -15,18 +15,18 @@ namespace My.XXX.Services.Menus;
 
 public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurrentCulture _currentRequest, ApplicationMapper _mapper)
 {
-    public async Task<MenuBaseDto> Get(int menuId, CancellationToken cancellationToken = default)
+    public async Task<Result<MenuBaseDto>> FindAsync(int menuId, CancellationToken cancellationToken = default)
     {
         var menu = (await _menuRepository.Get(menuId, cancellationToken));
         if (menu != null)
         {
             var menuDto = _mapper.ToMenuBaseDto(menu);
             menuDto.DisplayName = MenuDisplayNames.Get(menu.DisplayNames, _currentRequest.CultureName, menu.DisplayName);
-            return menuDto;
+            return Result.Ok(menuDto);
         }
         else
         {
-            return null;
+            return Result.Fail<MenuBaseDto>(MenuErrors.NotFound());
         }
     }
 
@@ -100,8 +100,9 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
     }
     private async Task<Paged<MenuBaseDto>> Search(QueryMenu query, bool picker, CancellationToken cancellationToken = default)
     {
+        var paging = My.XXX.Services.Abstractions.Models.PageWindow.FromRequest(query.PageIndex, query.PageSize);
         var criteria = new MenuSearch(query.DisplayName, picker ? false : query.IsAction,
-            picker || query.IsDisplay, query.ParentId, query.PageIndex, Math.Clamp(query.PageSize, 1, 100));
+            picker || query.IsDisplay, query.ParentId, paging.PageIndex, paging.Size);
         var page = (await _menuRepository.Search(criteria, cancellationToken));
         var result = page.List.Select(menu =>
         {
@@ -114,6 +115,6 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
     public void SetMenuLanguage<T>(List<T> menus) where T : ILocalizedMenuDto
     {
         foreach (var menu in menus)
-            menu.DisplayName = MenuDisplayNames.Get(menu.DisplayNames, _currentRequest.CultureName, menu.DisplayName);
+            menu.DisplayName = MenuDisplayNames.Get(ApplicationMapper.ReadLocalizedText(menu.DisplayNames), _currentRequest.CultureName, menu.DisplayName);
     }
 }

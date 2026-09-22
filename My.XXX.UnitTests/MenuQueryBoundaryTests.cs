@@ -17,6 +17,18 @@ namespace My.XXX.UnitTests;
 public class MenuQueryBoundaryTests
 {
     [TestMethod]
+    public async Task MissingMenuIsAnExplicitFailureForNewCallersAndNullForLegacyCallers()
+    {
+        var service = new MenuQueryService(new ReadRepository { State = null }, new Culture(), new ApplicationMapper());
+        var result = await service.FindAsync(999);
+        Assert.IsTrue(result.IsFailed);
+        Assert.AreEqual("Menu.NotFound", ((BusinessError)result.Errors[0]).Code);
+        var http = (Microsoft.AspNetCore.Mvc.ObjectResult)My.XXX.APIs.Common.ResultResponseExtensions.ToHttpResult(result).Result;
+        Assert.AreEqual(404, http.StatusCode);
+        var legacy = new My.XXX.Services.Compatibility.MenuService(null, service, null);
+        Assert.IsNull(await legacy.Get(999));
+    }
+    [TestMethod]
     public async Task PickerNormalizesCriteriaWithoutMutatingInputOrRepositoryState()
     {
         var repository = new ReadRepository();
@@ -28,7 +40,7 @@ public class MenuQueryBoundaryTests
         Assert.AreEqual(1, repository.Criteria.PageIndex);
         Assert.IsTrue(input.IsAction.Value);
         Assert.IsFalse(input.IsDisplay);
-        Assert.AreEqual(1, input.PageIndex);
+        Assert.AreEqual(2, input.PageIndex);
         Assert.AreEqual("English", repository.State.DisplayName);
         Assert.AreEqual("中文", result.List[0].DisplayName);
         Assert.AreEqual(7, result.List[0].Value);
@@ -38,7 +50,7 @@ public class MenuQueryBoundaryTests
     private sealed class ReadRepository : IMenuReadRepository
     {
         public MenuSearch Criteria;
-        public MenuState State = new() { Id = 7, DisplayName = "English", DisplayNames = "{\"zh-CN\":\"中文\"}" };
+        public MenuState State = new() { Id = 7, DisplayName = "English", DisplayNames = My.XXX.Services.Menus.Mapping.ApplicationMapper.ReadLocalizedText("{\"zh-CN\":\"中文\"}") };
         public async Task<Paged<MenuState>> Search(MenuSearch criteria, CancellationToken cancellationToken = default) { Criteria = criteria; return Paged<MenuState>.Create(new() { State }, 1); }
         public async Task<MenuState> Get(int id, CancellationToken cancellationToken = default) => State;
         public async Task<List<MenuState>> GetMenus(int? parentId = null, List<int> ids = null, bool? isDisplay = null, CancellationToken cancellationToken = default) => new() { State };

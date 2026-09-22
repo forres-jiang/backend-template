@@ -3,6 +3,7 @@ using My.XXX.APIs.Configurations;
 using My.XXX.APIs.Controllers;
 using My.XXX.APIs.Models;
 using My.XXX.Infrastructure.Caching;
+using My.XXX.Services.AccessControl.Ports;
 using My.XXX.Services.Authorization.Ports;
 using My.XXX.Services.Examples.Policies;
 using My.XXX.Services.Menus.Interfaces;
@@ -138,14 +139,17 @@ public class ArchitectureTests
     }
 
     [TestMethod]
-    public void ActiveControllerMethodBodiesDoNotUseStorageOrCacheImplementations()
+    public void HttpEntryPointsDoNotUseStorageOrCacheImplementations()
     {
         var codes = typeof(System.Reflection.Emit.OpCodes).GetFields()
             .Where(f => f.FieldType == typeof(System.Reflection.Emit.OpCode))
             .Select(f => (System.Reflection.Emit.OpCode)f.GetValue(null)).ToDictionary(c => unchecked((ushort)c.Value));
         var controllers = typeof(UserController).Assembly.GetTypes().Where(t =>
-            typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t) &&
-            !Attribute.IsDefined(t, typeof(Microsoft.AspNetCore.Mvc.NonControllerAttribute)));
+            (typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t) &&
+            !Attribute.IsDefined(t, typeof(Microsoft.AspNetCore.Mvc.NonControllerAttribute))) ||
+            t.Namespace == "My.XXX.APIs.Common.JWT" ||
+            typeof(Microsoft.AspNetCore.Mvc.Filters.IFilterMetadata).IsAssignableFrom(t) ||
+            t.Name.StartsWith("ExceptionHandlingMiddleware"));
         foreach (var controller in controllers)
             foreach (var type in new[] { controller }.Concat(controller.GetNestedTypes(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)))
                 foreach (var method in type.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly))
@@ -180,7 +184,7 @@ public class ArchitectureTests
     public void MenuPortsDoNotReuseWireModelsAndEndpointsDoNotExposeInternalState()
     {
         var contractsAssembly = typeof(My.XXX.Contracts.DTOs.MenuDto).Assembly;
-        foreach (var port in new[] { typeof(IMenuReadRepository), typeof(IMenuTransaction), typeof(IMenuWriteSession), typeof(IPermissionStore) })
+        foreach (var port in new[] { typeof(IMenuReadRepository), typeof(IAccessControlTransaction), typeof(IAccessControlWriteSession), typeof(IPermissionStore) })
             foreach (var method in port.GetMethods())
                 foreach (var type in method.GetParameters().Select(p => p.ParameterType).Append(method.ReturnType).SelectMany(Flatten))
                     Assert.AreNotEqual(contractsAssembly, type.Assembly, $"{port.Name}.{method.Name} reuses a wire model.");

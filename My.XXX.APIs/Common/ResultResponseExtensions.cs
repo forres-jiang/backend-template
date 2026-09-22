@@ -6,24 +6,29 @@ using System.Linq;
 
 namespace My.XXX.APIs.Common;
 
-/// <summary>Maps business results to the existing public response contract.</summary>
+/// <summary>将业务结果映射到现有的公开响应契约。</summary>
 public static class ResultResponseExtensions
 {
-    /// <summary>New endpoints use HTTP status as well as the explicit envelope; legacy endpoints retain their status contract.</summary>
+    /// <summary>新端点同时使用 HTTP 状态码和显式响应信封；旧端点保留其原有状态码契约。</summary>
     public static Microsoft.AspNetCore.Mvc.ActionResult<MyResult<bool>> ToHttpResult(this Result result)
     {
         var response = result.ToBooleanApiResult();
         if (result.IsSuccess) return new Microsoft.AspNetCore.Mvc.OkObjectResult(response);
-        var code = result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code;
-        var status = code switch
-        {
-            "Menu.NotFound" => 404,
-            "Menu.HasChildren" => 409,
-            "Menu.WriteFailed" => 409,
-            _ => 400
-        };
-        return new Microsoft.AspNetCore.Mvc.ObjectResult(response) { StatusCode = status };
+        return new Microsoft.AspNetCore.Mvc.ObjectResult(response) { StatusCode = HttpStatus(result) };
     }
+    public static Microsoft.AspNetCore.Mvc.ActionResult<MyResult> ToHttpResult<T>(this Result<T> result)
+    {
+        var response = result.ToApiResult();
+        return new Microsoft.AspNetCore.Mvc.ObjectResult(response) { StatusCode = result.IsSuccess ? 200 : HttpStatus(result) };
+    }
+    private static int HttpStatus(ResultBase result) => result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code switch
+    {
+        "Menu.NotFound" => 404,
+        "Menu.HasChildren" => 409,
+        "Menu.WriteFailed" => 409,
+        "Authentication.InvalidToken" or "Authentication.RefreshRejected" => 401,
+        _ => 400
+    };
     public static MyResult<bool> ToBooleanApiResult(this Result result) => result.IsSuccess
         ? MyResult<bool>.Success(true)
         : new MyResult<bool>(0, string.Join(",", result.Errors.Select(error => error.Message)), false);
@@ -43,7 +48,7 @@ public static class ResultResponseExtensions
 
     private static MyResult Failure(ResultBase result)
     {
-        // Preserve the first explicit business code; this does not set HTTP status.
+        // 保留第一个显式的业务错误码；此处不设置 HTTP 状态码。
         var code = result.Errors.OfType<BusinessError>().FirstOrDefault()?.StatusCode ?? 0;
         return MyResult.Fail(string.Join(",", result.Errors.Select(error => error.Message)), code);
     }

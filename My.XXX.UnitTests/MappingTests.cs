@@ -24,8 +24,10 @@ public class MappingTests
         AssertMatchingProperties(detail, mapper.ToDemoDetail(detail));
 
         var menu = Populate<Menus>();
+        menu.DisplayNames = "{\"en-US\":\"English\",\"zh-CN\":\"中文\"}";
         var state = mapper.ToMenuState(menu);
-        AssertMatchingProperties(menu, state);
+        AssertMatchingProperties(menu, state, "DisplayNames");
+        Assert.AreEqual("中文", state.DisplayNames.Values["ZH-cn"]);
         AssertMatchingProperties(menu, mapper.ToMenuEntity(state));
         AssertMatchingProperties(menu, application.ToMenuDto(state));
         AssertMatchingProperties(menu, application.ToMenuBaseDto(state));
