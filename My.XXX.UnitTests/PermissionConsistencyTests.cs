@@ -23,22 +23,22 @@ public class PermissionConsistencyTests
         var repository = Repository((method, _) => method.Name switch
         {
             nameof(IPermissionStore.GetPermissionRevisionAsync) => Task.FromResult(revision),
-            nameof(IPermissionStore.GetPermissionPathsAsync) => Read(),
+            nameof(IPermissionStore.GetPermissionCodesAsync) => Read(),
             _ => throw new NotSupportedException(method.Name)
         });
         Task<List<string>> Read() { reads++; return Task.FromResult(new List<string>(allowed)); }
         var cache = new MemoryCache();
         var query = Query(repository, cache);
         var roles = new List<Guid> { Guid.NewGuid() };
-        CollectionAssert.AreEqual(allowed, await query.GetRoleMenuPathsAsync(roles, "user"));
-        await query.GetRoleMenuPathsAsync(roles, "user");
+        CollectionAssert.AreEqual(allowed, await query.GetPermissionCodesAsync(roles, "user"));
+        await query.GetPermissionCodesAsync(roles, "user");
         Assert.AreEqual(1, reads, "A stable revision should use the cached projection.");
         revision++;
         allowed.Clear();
-        Assert.HasCount(0, await query.GetRoleMenuPathsAsync(roles, "user"));
+        Assert.HasCount(0, await query.GetPermissionCodesAsync(roles, "user"));
         Assert.AreEqual(2, reads);
         roles.Add(Guid.NewGuid());
-        await query.GetRoleMenuPathsAsync(roles, "user");
+        await query.GetPermissionCodesAsync(roles, "user");
         Assert.AreEqual(3, reads, "Role claims are part of the cache identity.");
     }
 
@@ -55,7 +55,7 @@ public class PermissionConsistencyTests
             return Task.FromResult(new List<string>());
         });
         var cache = new MemoryCache();
-        var result = await Query(repository, cache).GetRoleMenuPathsAsync(new() { Guid.NewGuid() }, "user");
+        var result = await Query(repository, cache).GetPermissionCodesAsync(new() { Guid.NewGuid() }, "user");
         Assert.HasCount(0, result);
         Assert.AreEqual(2, reads);
         Assert.HasCount(1, cache.Values);
@@ -72,7 +72,7 @@ public class PermissionConsistencyTests
         cache.OnGet = () => revision = 2;
         var repository = Repository((method, _) => method.Name == nameof(IPermissionStore.GetPermissionRevisionAsync)
             ? Task.FromResult(revision) : Task.FromResult(new List<string>()));
-        Assert.HasCount(0, await Query(repository, cache).GetRoleMenuPathsAsync(roles, "user"));
+        Assert.HasCount(0, await Query(repository, cache).GetPermissionCodesAsync(roles, "user"));
     }
 
     [TestMethod]
@@ -80,19 +80,19 @@ public class PermissionConsistencyTests
     {
         var repository = Repository((method, args) =>
         {
-            Assert.AreEqual(nameof(IPermissionStore.GetPermissionPathsAsync), method.Name);
+            Assert.AreEqual(nameof(IPermissionStore.GetPermissionCodesAsync), method.Name);
             return Task.FromResult(new List<string> { "current/grant" });
         });
         var cache = new MemoryCache { OnGet = () => throw new AssertFailedException("Redis must not be read.") };
         var query = Query(repository, cache, PermissionDataCache.None);
-        CollectionAssert.AreEqual(new[] { "current/grant" }, await query.GetRoleMenuPathsAsync(new(), "user"));
+        CollectionAssert.AreEqual(new[] { "current/grant" }, await query.GetPermissionCodesAsync(new(), "user"));
     }
 
     [TestMethod]
     public async Task DatabaseFailureCannotBeHiddenByCachedGrants()
     {
         var repository = Repository((_, _) => Task.FromException<long>(new InvalidOperationException("offline")));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Query(repository, new()).GetRoleMenuPathsAsync(new(), "user"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Query(repository, new()).GetPermissionCodesAsync(new(), "user"));
     }
 
     [TestMethod]

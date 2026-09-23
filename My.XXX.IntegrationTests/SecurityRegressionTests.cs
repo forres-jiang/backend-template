@@ -85,6 +85,23 @@ public class SecurityRegressionTests
             {
                 using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/healthy")).StatusCode);
+                foreach (var (path, status, code) in new[]
+                {
+                    ("/__test/boundary/explicit-failure", HttpStatusCode.NotFound, "Menu.NotFound"),
+                    ("/__test/boundary/explicit-exception", HttpStatusCode.InternalServerError, "Server.Unexpected"),
+                    ("/api/v2/permissions/catalog", HttpStatusCode.Unauthorized, "Authentication.Required")
+                })
+                {
+                    var response = await client.GetAsync(path);
+                    Assert.AreEqual(status, response.StatusCode);
+                    var body = JObject.Parse(await response.Content.ReadAsStringAsync());
+                    Assert.AreEqual(code, (string)body["code"]);
+                    Assert.AreEqual(response.Headers.GetValues("X-Request-Id").Single(), (string)body["traceId"]);
+                    Assert.IsFalse(body.ToString().Contains("private database detail"));
+                }
+                var explicitValidation = await client.PostAsync("/__test/boundary/explicit-validate", new StringContent("{}", Encoding.UTF8, "application/json"));
+                Assert.AreEqual(HttpStatusCode.BadRequest, explicitValidation.StatusCode);
+                Assert.AreEqual("Request.ValidationFailed", (string)JObject.Parse(await explicitValidation.Content.ReadAsStringAsync())["code"]);
                 var success = JObject.Parse(await client.GetStringAsync("/__test/boundary/success"));
                 Assert.AreEqual(1, (int)success["statusCode"]);
                 Assert.AreEqual(7, (int)success["data"]["id"]);

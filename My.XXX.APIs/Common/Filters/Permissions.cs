@@ -92,7 +92,7 @@ namespace My.XXX.APIs.Common
                 return true;
             }
 
-            var paths = await _permissions.GetRoleMenuPathsAsync(user.RoleIds, user.UserId, context.HttpContext.RequestAborted);
+            var paths = await _permissions.GetPermissionCodesAsync(user.RoleIds, user.UserId, context.HttpContext.RequestAborted);
             var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
             var currentPath = descriptor.ControllerName + "/" + descriptor.ActionName;
             var result = paths

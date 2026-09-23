@@ -6,6 +6,7 @@ using My.XXX.Services.Operations.Ports;
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace My.XXX.Infrastructure.Logging;
 
@@ -13,12 +14,13 @@ namespace My.XXX.Infrastructure.Logging;
 public sealed class RequestLogWriter(IOperationRepository operations, IOptionsMonitor<RequestLogOptions> options,
     ILogger<RequestLogWriter> logger) : IRequestLogWriter
 {
-    public async Task WriteAsync(MetricsInfo record)
+    public Task WriteAsync(MetricsInfo record) => WriteAsync(record, CancellationToken.None);
+    public async Task WriteAsync(MetricsInfo record, CancellationToken cancellationToken)
     {
         var storage = record.IsException ? options.CurrentValue.ExceptionStorageType : options.CurrentValue.RequestLogStorageType;
         if (storage is StorageTypeEnum.SQL or StorageTypeEnum.TextAndSQL)
         {
-            try { await operations.Save(record); }
+            try { await operations.Save(record, cancellationToken); }
             catch (Exception ex)
             {
                 logger.LogError("Failed to persist request log {RequestId}: {ExceptionType}", record.RequestId, ex.GetType().Name);
@@ -28,7 +30,7 @@ public sealed class RequestLogWriter(IOperationRepository operations, IOptionsMo
         if (storage != StorageTypeEnum.SQL)
         {
             if (record.IsException) logger.LogError("Request failed: {Metadata}", JsonConvert.SerializeObject(record));
-            else logger.LogInformation("Request {RequestId} completed in {ElapsedMs} ms", record.RequestId, record.TotalTime);
+            else logger.LogInformation("Request {RequestId} trace {TraceId} completed in {ElapsedMs} ms", record.RequestId, record.TraceId, record.TotalTime);
         }
     }
 }

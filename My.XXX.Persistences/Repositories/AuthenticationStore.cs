@@ -4,7 +4,7 @@ using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Services.Authentication.Models;
 using My.XXX.Services.Authentication.Ports;
-using Newtonsoft.Json;
+using My.XXX.Persistences.Mapping;
 using System;
 using System.Linq;
 using System.Threading;
@@ -18,25 +18,17 @@ public sealed class AuthenticationStore(DBContext db) : IAuthenticationStore
         ArgumentNullException.ThrowIfNull(user);
         ArgumentException.ThrowIfNullOrWhiteSpace(user.UserId);
         if (user.UserId.Length > 200) throw new ArgumentException("User ID is too long.");
-        var authority = new UserInfo
-        {
-            UserId = user.UserId,
-            UserName = user.UserName,
-            Email = user.Email,
-            Roles = user.Roles ?? new(),
-            RoleIds = user.RoleIds ?? new()
-        };
         await db.InsertOrReplaceAsync(new AuthenticationUser
         {
             UserId = user.UserId,
-            UserJson = JsonConvert.SerializeObject(authority),
+            UserJson = IdentitySnapshot.Write(user),
             Enabled = enabled
         }, token: cancellationToken);
     }
     public async Task<UserInfo> GetUserAsync(string userId, CancellationToken cancellationToken = default)
     {
         var row = await db.GetTable<AuthenticationUser>().FirstOrDefaultAsync(u => u.UserId == userId && u.Enabled, cancellationToken);
-        return row == null ? null : JsonConvert.DeserializeObject<UserInfo>(row.UserJson);
+        return row == null ? null : IdentitySnapshot.Read(row.UserJson);
     }
     public async Task CreateSessionAsync(SessionState session, CancellationToken cancellationToken = default) =>
         await db.InsertAsync(new AuthenticationSessionRow
@@ -55,7 +47,7 @@ public sealed class AuthenticationStore(DBContext db) : IAuthenticationStore
                          select new { Session = session, user.UserJson }).FirstOrDefaultAsync(cancellationToken);
         return row == null ? null : new ActiveSession
         {
-            User = JsonConvert.DeserializeObject<UserInfo>(row.UserJson),
+            User = IdentitySnapshot.Read(row.UserJson),
             Session = new SessionState
             {
                 SessionId = row.Session.SessionId,

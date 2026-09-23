@@ -49,7 +49,7 @@ public class AdapterBoundaryTests
 
     private sealed class FailingRepository : IOperationRepository
     {
-        public Task Save(MetricsInfo record) => throw new InvalidOperationException("sensitive connection");
+        public Task Save(MetricsInfo record, System.Threading.CancellationToken cancellationToken = default) => throw new InvalidOperationException("sensitive connection");
         public Task<Paged<OperationDto>> Search(My.XXX.Services.Operations.Models.OperationSearch query) => throw new NotSupportedException();
     }
     private sealed class Monitor<T>(T value) : IOptionsMonitor<T>

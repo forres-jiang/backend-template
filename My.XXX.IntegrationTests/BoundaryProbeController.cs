@@ -29,6 +29,19 @@ public sealed class BoundaryProbeController : ControllerBase
     [HttpGet("raw")]
     [NonUnifyResult]
     public IActionResult Raw() => Ok(new { Id = 7 });
+
+    [HttpGet("explicit-failure")]
+    [ExplicitApiContract]
+    public ActionResult<ApiResponse<string>> ExplicitFailure() =>
+        Result.Fail<string>(new My.XXX.Shared.BusinessError("Missing", code: "Menu.NotFound")).ToHttpResult(HttpContext.TraceIdentifier);
+
+    [HttpPost("explicit-validate")]
+    [ExplicitApiContract]
+    public ApiResponse<string> ExplicitValidate(ProbeInput input) => new(1, "Success", input.Name, traceId: HttpContext.TraceIdentifier);
+
+    [HttpGet("explicit-exception")]
+    [ExplicitApiContract]
+    public ApiResponse<string> ExplicitException() => throw new InvalidOperationException("private database detail");
 }
 
 public sealed class ProbeInput

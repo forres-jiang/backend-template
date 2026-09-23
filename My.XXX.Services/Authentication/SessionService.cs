@@ -8,14 +8,26 @@ using My.XXX.Shared;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace My.XXX.Services.Authentication;
 
 public sealed class SessionService(IAuthenticationStore store, ITokenIssuer tokens,
     TimeProvider clock, IOptions<SessionOptions> options) : ISessionService
 {
+    private static readonly Meter Meter = new("My.XXX.Authentication");
+    private static readonly Histogram<double> ValidationDuration = Meter.CreateHistogram<double>("authentication.validation.duration", "ms");
     public async Task<Result<ActiveSession>> ValidateAsync(string sessionId, string userId,
         string refreshTokenId = null, CancellationToken cancellationToken = default)
+    {
+        var start = Stopwatch.GetTimestamp();
+        try { return await ValidateCoreAsync(sessionId, userId, refreshTokenId, cancellationToken); }
+        finally { ValidationDuration.Record(Stopwatch.GetElapsedTime(start).TotalMilliseconds); }
+    }
+
+    private async Task<Result<ActiveSession>> ValidateCoreAsync(string sessionId, string userId,
+        string refreshTokenId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(userId))
             return Result.Fail<ActiveSession>(AuthenticationErrors.InvalidToken());

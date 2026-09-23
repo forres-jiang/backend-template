@@ -10,17 +10,23 @@ namespace My.XXX.APIs.Common;
 public static class ResultResponseExtensions
 {
     /// <summary>新端点同时使用 HTTP 状态码和显式响应信封；旧端点保留其原有状态码契约。</summary>
-    public static Microsoft.AspNetCore.Mvc.ActionResult<MyResult<bool>> ToHttpResult(this Result result)
+    public static Microsoft.AspNetCore.Mvc.ActionResult<ApiResponse<bool>> ToHttpResult(this Result result, string traceId = null)
     {
-        var response = result.ToBooleanApiResult();
+        var response = new ApiResponse<bool>(result.IsSuccess ? 1 : 0,
+            result.IsSuccess ? "Success" : string.Join(",", result.Errors.Select(e => e.Message)), result.IsSuccess,
+            ErrorCode(result), traceId);
         if (result.IsSuccess) return new Microsoft.AspNetCore.Mvc.OkObjectResult(response);
         return new Microsoft.AspNetCore.Mvc.ObjectResult(response) { StatusCode = HttpStatus(result) };
     }
-    public static Microsoft.AspNetCore.Mvc.ActionResult<MyResult> ToHttpResult<T>(this Result<T> result)
+    public static Microsoft.AspNetCore.Mvc.ActionResult<ApiResponse<T>> ToHttpResult<T>(this Result<T> result, string traceId = null)
     {
-        var response = result.ToApiResult();
+        var response = new ApiResponse<T>(result.IsSuccess ? 1 : 0,
+            result.IsSuccess ? "Success" : string.Join(",", result.Errors.Select(e => e.Message)),
+            result.IsSuccess ? result.Value : default, ErrorCode(result), traceId);
         return new Microsoft.AspNetCore.Mvc.ObjectResult(response) { StatusCode = result.IsSuccess ? 200 : HttpStatus(result) };
     }
+    private static string ErrorCode(ResultBase result) => result.IsSuccess ? null
+        : result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code ?? "Request.Failed";
     private static int HttpStatus(ResultBase result) => result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code switch
     {
         "Menu.NotFound" => 404,

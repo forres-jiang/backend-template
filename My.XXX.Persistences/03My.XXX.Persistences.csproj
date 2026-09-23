@@ -31,5 +31,8 @@
 	<PropertyGroup>
 		<DisableImplicitContentFiles>true</DisableImplicitContentFiles>
 	</PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations/*.sql" />
+  </ItemGroup>
 
 </Project>

@@ -90,6 +90,29 @@ public class SecurityRegressionTests
         Assert.IsFalse(string.Join(" ", logger.Messages).Contains("hidden"));
     }
 
+    [TestMethod]
+    public async Task ExternalRequestsObserveCallerCancellation()
+    {
+        using var handler = new WaitingHandler();
+        var service = new HttpService(new Factory(handler), new RecordingLogger<HttpService>());
+        using var cancellation = new CancellationTokenSource();
+        var request = service.Post<string>(new RequestModel { Url = "https://example.invalid/" }, cancellation.Token);
+        await handler.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => request);
+    }
+
+    private sealed class WaitingHandler : HttpMessageHandler
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Started.SetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+    }
+
     private sealed class Monitor<T>(T value) : IOptionsMonitor<T>
     {
         public T CurrentValue => value;

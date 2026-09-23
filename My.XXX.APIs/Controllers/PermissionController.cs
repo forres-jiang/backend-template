@@ -9,23 +9,24 @@ using System.Threading.Tasks;
 namespace My.XXX.APIs.Controllers;
 
 [ApiController]
+[ExplicitApiContract]
 [Route("api/v2/permissions")]
 public sealed class PermissionController(IPermissionAdministration permissions) : ControllerBase
 {
     [HttpGet("catalog")]
     [RequiresPermission(PermissionCodes.PermissionsRead)]
-    public MyResult<IReadOnlyList<string>> Catalog() => MyResult<IReadOnlyList<string>>.Success(PermissionCodes.All);
+    public ApiResponse<IReadOnlyList<string>> Catalog() => new(1, "Success", PermissionCodes.All, traceId: HttpContext.TraceIdentifier);
 
     [HttpGet("roles/{roleId:guid}")]
     [RequiresPermission(PermissionCodes.PermissionsRead)]
-    public async Task<MyResult<List<string>>> Get(Guid roleId) =>
-        MyResult<List<string>>.Success(await permissions.GetAsync(roleId, HttpContext.RequestAborted));
+    public async Task<ApiResponse<List<string>>> Get(Guid roleId) =>
+        new(1, "Success", await permissions.GetAsync(roleId, HttpContext.RequestAborted), traceId: HttpContext.TraceIdentifier);
 
     [HttpPut("roles/{roleId:guid}")]
     [RequiresPermission(PermissionCodes.PermissionsWrite)]
-    public async Task<ActionResult<MyResult<bool>>> Replace(Guid roleId, [FromBody] List<string> codes)
+    public async Task<ActionResult<ApiResponse<bool>>> Replace(Guid roleId, [FromBody] List<string> codes)
     {
         var result = await permissions.ReplaceAsync(roleId, codes, HttpContext.RequestAborted);
-        return result.ToHttpResult();
+        return result.ToHttpResult(HttpContext.TraceIdentifier);
     }
 }

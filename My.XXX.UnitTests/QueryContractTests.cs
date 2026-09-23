@@ -43,7 +43,7 @@ public class QueryContractTests
     private sealed class Repository : IOperationRepository
     {
         public OperationSearch Query;
-        public Task Save(MetricsInfo operation) => Task.CompletedTask;
+        public Task Save(MetricsInfo operation, System.Threading.CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<Paged<OperationDto>> Search(OperationSearch query)
         { Query = query; return Task.FromResult(Paged<OperationDto>.Create(new(), 0)); }
     }

@@ -69,7 +69,19 @@ public static class TokenAuthentication
             {
                 context.HandleResponse();
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new { state = "0", message = "Authentication required." });
+                if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<ExplicitApiContractAttribute>() != null)
+                    await context.Response.WriteAsJsonAsync(new My.XXX.APIs.Models.ApiResponse<object>(0,
+                        "Authentication required.", null, "Authentication.Required", context.HttpContext.TraceIdentifier));
+                else await context.Response.WriteAsJsonAsync(new { state = "0", message = "Authentication required." });
+            },
+            OnForbidden = async context =>
+            {
+                if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<ExplicitApiContractAttribute>() != null)
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsJsonAsync(new My.XXX.APIs.Models.ApiResponse<object>(0,
+                        "Permission denied.", null, "Authorization.Forbidden", context.HttpContext.TraceIdentifier));
+                }
             }
         };
     }

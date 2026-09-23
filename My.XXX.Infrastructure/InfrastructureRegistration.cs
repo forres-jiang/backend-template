@@ -16,7 +16,10 @@ public static class InfrastructureRegistration
         services.AddHttpClient("External", client => client.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers();
         services.AddMemoryCache();
         services.AddOptions<Logging.RequestLogOptions>();
-        services.AddScoped<IRequestLogWriter, Logging.RequestLogWriter>();
+        services.AddScoped<Logging.RequestLogWriter>();
+        services.AddSingleton<Logging.QueuedRequestLogWriter>();
+        services.AddSingleton<IRequestLogWriter>(sp => sp.GetRequiredService<Logging.QueuedRequestLogWriter>());
+        services.AddHostedService(sp => sp.GetRequiredService<Logging.QueuedRequestLogWriter>());
         return services;
     }
     public static IServiceCollection AddPermissionCaching(this IServiceCollection services, string connectionString, bool enabled)

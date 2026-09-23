@@ -21,6 +21,20 @@ namespace My.XXX.APIs
         {
             try
             {
+                if (args.Contains("--migrate", StringComparer.Ordinal))
+                {
+                    var migrationArgs = args.Where(a => a != "--migrate").ToArray();
+                    var builder = WebApplication.CreateBuilder(migrationArgs);
+                    ConfigureSources(builder, migrationArgs);
+                    var connection = builder.Configuration.GetConnectionString("Default");
+                    if (string.IsNullOrWhiteSpace(connection)) throw new InvalidOperationException("Configure ConnectionStrings:Default for migrations.");
+                    if (connection.StartsWith("enc:v1:", StringComparison.Ordinal)) connection = My.XXX.Infrastructure.Security.AESHelper.Decrypt(connection);
+                    My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(connection,
+                        My.XXX.Persistences.DatabaseConfiguration.ParseProvider(builder.Configuration["DatabaseProviders:Default"]))
+                        .GetAwaiter().GetResult();
+                    Console.WriteLine("Database migrations completed.");
+                    return;
+                }
                 var app = CreateApplication(args);
                 Log.Information("Application Starting.");
                 app.Run();

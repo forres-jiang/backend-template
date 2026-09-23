@@ -9,6 +9,7 @@ namespace My.XXX.Contracts.DTOs
         public string HostName { get; set; }
         public DateTime CreateTime { get; set; }
         public Guid? RequestId { get; set; }
+        public string TraceId { get; set; }
         public string ControllerName { get; set; }
         public string ActionName { get; set; }
         public double TotalTime { get; set; }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi;
 using My.XXX.APIs;
@@ -99,6 +100,9 @@ namespace Microsoft.Extensions.DependencyInjection
                     .Where(e => e.Value.Errors.Count > 0)
                     .Select(e => e.Value.Errors.First().ErrorMessage).ToList();
                     //设置返回内容,根据实际情况可以调整返回httpstatus200或400
+                    if (actionContext.HttpContext.GetEndpoint()?.Metadata.GetMetadata<ExplicitApiContractAttribute>() != null)
+                        return new BadRequestObjectResult(new ApiResponse<object>(0, string.Join("|", errors), null,
+                            "Request.ValidationFailed", actionContext.HttpContext.TraceIdentifier));
                     return new BadRequestObjectResult(BaseResult.Fail(string.Join("|", errors)));
                 };
             });

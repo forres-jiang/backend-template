@@ -4,10 +4,11 @@ WORKDIR /src
 
 COPY ["global.json", "."]
 COPY ["Directory.Packages.props", "."]
+COPY ["Directory.Build.props", "."]
 
 COPY ["My.XXX.APIs/01My.XXX.APIs.csproj", "My.XXX.APIs/"]
-COPY ["My.XXX.Service/02My.XXX.Service.csproj", "My.XXX.Service/"]
-COPY ["My.XXX.Persistence/03My.XXX.Persistence.csproj", "My.XXX.Persistence/"]
+COPY ["My.XXX.Services/02My.XXX.Services.csproj", "My.XXX.Services/"]
+COPY ["My.XXX.Persistences/03My.XXX.Persistences.csproj", "My.XXX.Persistences/"]
 COPY ["My.XXX.Shared/05My.XXX.Shared.csproj", "My.XXX.Shared/"]
 
 COPY ["My.XXX.Contracts/04My.XXX.Contracts.csproj", "My.XXX.Contracts/"]

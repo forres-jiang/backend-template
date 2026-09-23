@@ -7,7 +7,7 @@ namespace My.XXX.Services.Authorization.Ports;
 
 public interface IPermissionStore
 {
-    List<string> GetPermissionPaths(List<Guid> roleIds);
+    List<string> GetPermissionCodes(List<Guid> roleIds);
     Task<long> GetPermissionRevisionAsync(CancellationToken cancellationToken = default);
-    Task<List<string>> GetPermissionPathsAsync(List<Guid> roleIds, CancellationToken cancellationToken = default);
+    Task<List<string>> GetPermissionCodesAsync(List<Guid> roleIds, CancellationToken cancellationToken = default);
 }

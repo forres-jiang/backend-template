@@ -23,6 +23,40 @@ public class MenuConcurrencyTests
     [TestMethod]
     [DataRow("PostgreSQL")]
     [DataRow("SqlServer")]
+    public async Task FullMigrationSupportsAuthenticationAndStablePermissions(string providerName)
+    {
+        await using var fixture = await Fixture.Create(providerName);
+        using var db = fixture.Open();
+        var authentication = new AuthenticationStore(db);
+        var role = Guid.NewGuid();
+        await authentication.SetUserAsync(new UserInfo { UserId = "migration-user", RoleIds = new() { role } }, true);
+        await authentication.CreateSessionAsync(new My.XXX.Services.Authentication.Models.SessionState
+        {
+            SessionId = "migration-session", UserId = "migration-user", RefreshTokenId = "first",
+            ExpiresUtc = DateTime.UtcNow.AddHours(1)
+        });
+        var session = await authentication.GetActiveSessionAsync("migration-session", DateTime.UtcNow);
+        CollectionAssert.AreEqual(new[] { role }, session.User.RoleIds);
+        var rotations = await Task.WhenAll(Enumerable.Range(0, 2).Select(async i =>
+        {
+            using var other = fixture.Open();
+            return await new AuthenticationStore(other).RotateAsync("migration-session", "first", "next" + i, DateTime.UtcNow);
+        }));
+        Assert.AreEqual(1, rotations.Count(success => success));
+        var permissions = new PermissionStore(db);
+        var before = await permissions.GetPermissionRevisionAsync();
+        await new RolePermissionStore(db).ReplaceAsync(role, new() { "menu.add" });
+        Assert.AreEqual(before + 1, await permissions.GetPermissionRevisionAsync());
+        CollectionAssert.AreEqual(new[] { "menu.add" }, await permissions.GetPermissionCodesAsync(new() { role }));
+        await My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, DatabaseConfiguration.ParseProvider(providerName));
+        Assert.AreEqual(before + 1, await permissions.GetPermissionRevisionAsync(), "Replaying migrations must not reimport grants.");
+        await authentication.RevokeAsync("migration-session");
+        Assert.IsNull(await authentication.GetActiveSessionAsync("migration-session", DateTime.UtcNow));
+    }
+
+    [TestMethod]
+    [DataRow("PostgreSQL")]
+    [DataRow("SqlServer")]
     public async Task ConcurrentRoleChangesAreSerializedAndFailedWritesRollbackRevision(string providerName)
     {
         await using var fixture = await Fixture.Create(providerName);
@@ -36,7 +70,7 @@ public class MenuConcurrencyTests
             Assert.IsTrue((await new MenuTestDriver(writer).SetRoleMenus(role, new() { ids[i % ids.Count] }, RoleMenuChange.Add, "test")));
         })));
         Assert.AreEqual(ids.Count, db.RoleMenu.Count(m => m.RoleId == role && !m.IsDeleted));
-        Assert.AreEqual(8L, await repository.GetPermissionRevisionAsync());
+        Assert.AreEqual(9L, await repository.GetPermissionRevisionAsync());
         var before = await repository.GetPermissionRevisionAsync();
         Assert.IsFalse((await repository.SetRoleMenus(role, new() { int.MaxValue }, RoleMenuChange.Replace, "test")));
         Assert.AreEqual(before, await repository.GetPermissionRevisionAsync(), "Rejected data must roll back the revision as well.");
@@ -143,10 +177,10 @@ public class MenuConcurrencyTests
         }));
         Assert.IsTrue(result.IsFailed);
         Assert.AreEqual(before.DisplayName, (await repository.Get(before.Id)).DisplayName);
-        Assert.AreEqual(0L, await repository.GetPermissionRevisionAsync());
+        Assert.AreEqual(1L, await new PermissionStore(db).GetPermissionRevisionAsync());
         await Assert.ThrowsAsync<InvalidOperationException>(async () => { await captured.LoadMenus(); });
         await Assert.ThrowsAsync<InvalidOperationException>(async () => { await repository.Execute(_ => repository.Execute(_ => Task.FromResult(FluentResults.Result.Ok()))); });
-        Assert.AreEqual(0L, await repository.GetPermissionRevisionAsync());
+        Assert.AreEqual(1L, await new PermissionStore(db).GetPermissionRevisionAsync());
     }
 
     // 使用真实的事务适配器来执行应用程序用例。
@@ -157,7 +191,7 @@ public class MenuConcurrencyTests
         private readonly RoleMenuMutations assignments = new(new MenuRepository(db), TimeProvider.System);
         public async Task<System.Collections.Generic.List<My.XXX.Services.Menus.Models.MenuState>> GetMenus() => (await reads.GetMenus());
         public async Task<My.XXX.Services.Menus.Models.MenuState> Get(int id) => (await reads.Get(id));
-        public Task<long> GetPermissionRevisionAsync() => reads.GetPermissionRevisionAsync();
+        public Task<long> GetPermissionRevisionAsync() => new PermissionStore(db).GetPermissionRevisionAsync();
         public async Task<bool> SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
             (await assignments.SetRoleMenus(role, ids, change, user)).IsSuccess;
         public async Task<bool> Move(MenuSortModel model, string user) => (await writes.Move(model, user)).IsSuccess;
@@ -167,7 +201,7 @@ public class MenuConcurrencyTests
     {
         private readonly string adminConnection, database;
         private readonly DatabaseProvider provider;
-        private string ConnectionString { get; }
+        public string ConnectionString { get; }
         private Fixture(string admin, string name, DatabaseProvider type)
         {
             adminConnection = admin; database = name; provider = type;
@@ -180,7 +214,12 @@ public class MenuConcurrencyTests
         {
             var variable = providerName == "PostgreSQL" ? "ARCH_TEST_POSTGRES" : "ARCH_TEST_SQLSERVER";
             var admin = Environment.GetEnvironmentVariable(variable);
-            if (string.IsNullOrWhiteSpace(admin)) Assert.Inconclusive($"Set {variable} to a disposable server connection with CREATE DATABASE permission.");
+            if (string.IsNullOrWhiteSpace(admin))
+            {
+                if (Environment.GetEnvironmentVariable("ARCH_TEST_REQUIRE_DATABASES") == "1")
+                    Assert.Fail($"CI requires {variable}.");
+                Assert.Inconclusive($"Set {variable} to a disposable server connection with CREATE DATABASE permission.");
+            }
             var fixture = new Fixture(admin, "architecture_test_" + Guid.NewGuid().ToString("N"), DatabaseConfiguration.ParseProvider(providerName));
             await using (var connection = DatabaseConfiguration.CreateConnection(admin, fixture.provider))
             {
@@ -194,12 +233,8 @@ public class MenuConcurrencyTests
                 using var db = fixture.Open();
                 db.CreateTable<Menus>();
                 db.CreateTable<RoleMenu>();
-                var root = new DirectoryInfo(AppContext.BaseDirectory);
-                while (root != null && !File.Exists(Path.Combine(root.FullName, "MyXXXSolution.sln"))) root = root.Parent;
-                var suffix = providerName == "PostgreSQL" ? "postgresql" : "sqlserver";
-                var sql = File.ReadAllText(Path.Combine(root.FullName, "My.XXX.Persistences", "Migrations", $"001_permission_revision.{suffix}.sql"));
-                db.Execute(sql);
-                db.Execute(sql); // 升级脚本必须可以安全地重复执行。
+                await My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, fixture.provider);
+                await My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, fixture.provider);
                 for (var i = 0; i < 3; i++) db.Insert(new Menus
                 {
                     DisplayName = "English",

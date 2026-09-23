@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace My.XXX.Persistences.Repositories;
 
-public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermissionStore, IAccessControlTransaction
+public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IAccessControlTransaction
 {
     private readonly PersistenceMapper mapper = new();
     private bool writing;
@@ -43,18 +43,11 @@ public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IPermiss
         finally { session.Close(); writing = false; }
     }
 
-    public Task<long> GetPermissionRevisionAsync(CancellationToken cancellationToken = default) =>
-        db.GetTable<PermissionRevision>().Where(r => r.Id == 1).Select(r => r.Version).SingleAsync(cancellationToken);
     private IQueryable<Menus> RoleMenus(List<Guid> roleIds) =>
         (from rm in db.RoleMenu
          join m in db.Menus on rm.MenuId equals m.Id
          where roleIds.Contains(rm.RoleId) && !rm.IsDeleted && !m.IsDeleted
          select m).Distinct();
-    private IQueryable<string> PermissionCodes(List<Guid> roleIds) => db.GetTable<RolePermission>()
-        .Where(p => roleIds.Contains(p.RoleId)).Select(p => p.Code).Distinct();
-    public List<string> GetPermissionPaths(List<Guid> roleIds) => PermissionCodes(roleIds).ToList();
-    public Task<List<string>> GetPermissionPathsAsync(List<Guid> roleIds, CancellationToken cancellationToken = default) =>
-        PermissionCodes(roleIds).ToListAsync(cancellationToken);
     public async Task<MenuState> Get(int id, CancellationToken cancellationToken = default) => mapper.ToMenuState(await db.Menus.FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted, cancellationToken));
     public async Task<List<MenuState>> GetMenus(int? parentId = null, List<int> ids = null, bool? isDisplay = null, CancellationToken cancellationToken = default)
     {

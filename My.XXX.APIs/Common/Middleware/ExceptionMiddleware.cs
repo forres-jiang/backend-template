@@ -30,6 +30,9 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
     {
         var timer = Stopwatch.StartNew();
         var requestId = Guid.NewGuid();
+        var traceId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
+        context.TraceIdentifier = traceId;
+        context.Response.Headers["X-Request-Id"] = traceId;
         context.Items["request_id"] = requestId;
         Exception failure = null;
         try
@@ -49,7 +52,11 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
             {
                 context.Response.Clear();
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new
+                context.Response.Headers["X-Request-Id"] = traceId;
+                if (context.GetEndpoint()?.Metadata.GetMetadata<ExplicitApiContractAttribute>() != null)
+                    await context.Response.WriteAsJsonAsync(new My.XXX.APIs.Models.ApiResponse<object>(0,
+                        "An internal error occurred.", null, "Server.Unexpected", traceId), context.RequestAborted);
+                else await context.Response.WriteAsJsonAsync(new
                 {
                     state = "0",
                     message = "An internal error occurred.",
@@ -76,6 +83,7 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
             var record = new MetricsInfo
             {
                 RequestId = requestId,
+                TraceId = context.TraceIdentifier,
                 HostName = Environment.MachineName,
                 CreateTime = DateTime.UtcNow,
                 ControllerName = context.Request.RouteValues["controller"]?.ToString() ?? "",

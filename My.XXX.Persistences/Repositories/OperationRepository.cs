@@ -6,6 +6,7 @@ using My.XXX.Services.Operations.Ports;
 using My.XXX.Shared;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace My.XXX.Persistences.Repositories
 {
@@ -16,9 +17,9 @@ namespace My.XXX.Persistences.Repositories
         {
             _dbContext = dbContext;
         }
-        public async Task Save(MetricsInfo rlog)
+        public async Task Save(MetricsInfo rlog, CancellationToken cancellationToken = default)
         {
-            await _dbContext.InsertAsync(new PersistenceMapper().ToOperation(rlog));
+            await _dbContext.InsertAsync(new PersistenceMapper().ToOperation(rlog), token: cancellationToken);
         }
         public async Task<Paged<OperationDto>> Search(My.XXX.Services.Operations.Models.OperationSearch query)
         {

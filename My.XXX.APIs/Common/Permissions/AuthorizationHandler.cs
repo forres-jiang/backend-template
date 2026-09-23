@@ -31,7 +31,7 @@ public sealed class PermissionsHandler(IOptionsMonitor<PermissionWhitelist> whit
             return;
         }
         if (user.RoleIds == null || user.RoleIds.Count == 0) return;
-        var codes = await permissions.GetRoleMenuPathsAsync(user.RoleIds, user.UserId, http.RequestAborted);
+        var codes = await permissions.GetPermissionCodesAsync(user.RoleIds, user.UserId, http.RequestAborted);
         if (codes.Contains(code, StringComparer.Ordinal)) context.Succeed(requirement);
     }
 }
