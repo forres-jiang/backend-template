@@ -1,6 +1,5 @@
 using LinqToDB;
 using LinqToDB.Async;
-using My.XXX.Contracts.DTOs;
 using My.XXX.Persistences.PersistentObjects;
 using My.XXX.Services.Authentication.Models;
 using My.XXX.Services.Authentication.Ports;
@@ -13,7 +12,7 @@ namespace My.XXX.Persistences.Repositories;
 
 public sealed class AuthenticationStore(DBContext db) : IAuthenticationStore
 {
-    public async Task SetUserAsync(UserInfo user, bool enabled, CancellationToken cancellationToken = default)
+    public async Task SetUserAsync(UserIdentity user, bool enabled, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(user);
         ArgumentException.ThrowIfNullOrWhiteSpace(user.UserId);
@@ -25,7 +24,7 @@ public sealed class AuthenticationStore(DBContext db) : IAuthenticationStore
             Enabled = enabled
         }, token: cancellationToken);
     }
-    public async Task<UserInfo> GetUserAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<UserIdentity> GetUserAsync(string userId, CancellationToken cancellationToken = default)
     {
         var row = await db.GetTable<AuthenticationUser>().FirstOrDefaultAsync(u => u.UserId == userId && u.Enabled, cancellationToken);
         return row == null ? null : IdentitySnapshot.Read(row.UserJson);

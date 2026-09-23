@@ -1,3 +1,4 @@
+using My.XXX.Services.Authentication.Models;
 using FluentResults;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Common;
@@ -24,7 +25,7 @@ public class MenuUseCaseTests
     {
         var store = Store();
         var role = Guid.NewGuid();
-        var useCase = new RoleAccessAdministration(store, new RoleMenuMutations(store, TimeProvider.System),
+        var useCase = new RoleAccessAdministration(store, new RoleMenuMutations(TimeProvider.System),
             new PermissionMutations(), new CurrentUser());
         Assert.IsTrue((await useCase.ReplaceAsync(role, new() { 1 }, new() { "menu.add", "menu.add" })).IsSuccess);
         Assert.AreEqual(1, store.Transactions);
@@ -49,14 +50,14 @@ public class MenuUseCaseTests
 
     private sealed class CurrentUser : My.XXX.Services.Abstractions.Interfaces.ICurrentUser
     {
-        public UserInfo User => new() { UserId = "editor" };
+        public UserIdentity User => new() { UserId = "editor" };
     }
 
     [TestMethod]
     public async Task InvalidParentAndMissingMenuKeepDistinctErrorsAndNeverWrite()
     {
         var store = Store();
-        var useCase = new MenuMutations(store, TimeProvider.System);
+        var useCase = new MenuCommands(store, TimeProvider.System);
         var missing = (await useCase.Update(new EditMenu { Id = 99 }, "en-US", "editor"));
         var cycle = (await useCase.Update(new EditMenu { Id = 1, ParentId = 2 }, "en-US", "editor"));
         Assert.AreEqual("Menu.NotFound", Code(missing));
@@ -73,7 +74,7 @@ public class MenuUseCaseTests
         var store = Store();
         var before = store.Menus[0];
         var instant = new DateTimeOffset(2026, 9, 20, 8, 0, 0, TimeSpan.Zero);
-        var useCase = new MenuMutations(store, new FixedClock(instant));
+        var useCase = new MenuCommands(store, new FixedClock(instant));
         var result = (await useCase.Update(new EditMenu { Id = 1, DisplayName = " 中文 ", Description = "ignored", ClearFields = new() { "description" } }, "zh-CN", "editor"));
         Assert.IsTrue(result.IsSuccess);
         var updated = store.Menus[0];
@@ -93,12 +94,12 @@ public class MenuUseCaseTests
         var store = Store();
         var role = Guid.NewGuid();
         store.Grants.Add(1);
-        var useCase = new RoleMenuMutations(store, TimeProvider.System);
-        Assert.AreEqual("Menu.InvalidSelection", Code((await useCase.SetRoleMenus(role, new() { 99 }, RoleMenuChange.Replace, "editor"))));
+        var useCase = new RoleMenuAssignmentService(store, new RoleMenuMutations(TimeProvider.System), new CurrentUser(), TimeProvider.System);
+        Assert.AreEqual("Menu.InvalidSelection", Code((await useCase.SetRoleMenus(role, new() { 99 }, RoleMenuChange.Replace))));
         CollectionAssert.AreEqual(new[] { 1 }, store.Grants);
-        Assert.IsTrue((await useCase.SetRoleMenus(role, new() { 2, 2, 3 }, RoleMenuChange.Replace, "editor")).IsSuccess);
+        Assert.IsTrue((await useCase.SetRoleMenus(role, new() { 2, 2, 3 }, RoleMenuChange.Replace)).IsSuccess);
         CollectionAssert.AreEquivalent(new[] { 2, 3 }, store.Grants);
-        Assert.IsTrue((await useCase.SetRoleMenus(role, new(), RoleMenuChange.Replace, "editor")).IsSuccess);
+        Assert.IsTrue((await useCase.SetRoleMenus(role, new(), RoleMenuChange.Replace)).IsSuccess);
         Assert.HasCount(0, store.Grants);
         Assert.AreEqual(2L, store.Revision);
     }
@@ -109,7 +110,7 @@ public class MenuUseCaseTests
         var store = Store();
         store.Menus[1].ParentId = 0;
         store.FailOnWrite = 2;
-        var useCase = new MenuMutations(store, TimeProvider.System);
+        var useCase = new MenuCommands(store, TimeProvider.System);
         var result = (await useCase.Move(new MenuSortModel { CurrentId = 1, PrevId = 3 }, "editor"));
         Assert.AreEqual("Menu.WriteFailed", Code(result));
         CollectionAssert.AreEqual(new[] { 0, 1, 2 }, store.Menus.Select(m => m.Number).ToArray());
@@ -121,12 +122,45 @@ public class MenuUseCaseTests
         Assert.AreEqual(0L, store.Revision);
     }
 
+    [TestMethod]
+    public async Task InvalidInputIsRejectedBeforeOpeningTheTransactionAndCancellationIsForwarded()
+    {
+        var store = Store();
+        var context = new CommandContext("en-US", "editor");
+        var commands = new MenuCommandService(store, new MenuMutations(TimeProvider.System), context, context);
+        Assert.IsTrue((await commands.Add(null)).IsFailed);
+        Assert.IsTrue((await commands.Update(new EditMenu { Id = 0 })).IsFailed);
+        Assert.IsTrue((await commands.Remove(new())).IsFailed);
+        Assert.AreEqual(0, store.Transactions);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => commands.Update(new EditMenu { Id = 1 }, cancellation.Token));
+        Assert.AreEqual(0L, store.Revision);
+        Assert.AreEqual(0, store.Writes);
+    }
+
+    private sealed class CommandContext(string culture, string user) : My.XXX.Services.Abstractions.Interfaces.ICurrentUser, My.XXX.Services.Abstractions.Interfaces.ICurrentCulture
+    {
+        public UserIdentity User => new() { UserId = user };
+        public string CultureName => culture;
+    }
+    private sealed class MenuCommands(IAccessControlTransaction transaction, TimeProvider clock)
+    {
+        private MenuCommandService Create(string culture, string user)
+        {
+            var context = new CommandContext(culture, user);
+            return new(transaction, new MenuMutations(clock), context, context);
+        }
+        public Task<Result> Update(EditMenu input, string culture, string user) => Create(culture, user).Update(input);
+        public Task<Result> Move(MenuSortModel input, string user) => Create("en-US", user).UpdateSort(input);
+    }
+
     private static string Code(Result result) => result.Errors.OfType<BusinessError>().Single().Code;
     private static MemoryTransaction Store() => new()
     {
         Menus = new()
         {
-            new() { Id = 1, Number = 0, DisplayName = "English", DisplayNames = My.XXX.Services.Menus.Mapping.ApplicationMapper.ReadLocalizedText("{\"en-US\":\"English\"}"), Description = "description", Icon = "icon" },
+            new() { Id = 1, Number = 0, DisplayName = "English", DisplayNames = new LocalizedText(new Dictionary<string, string> { ["en-US"] = "English" }), Description = "description", Icon = "icon" },
             new() { Id = 2, Number = 1, ParentId = 1 }, new() { Id = 3, Number = 2 }
         }
     };

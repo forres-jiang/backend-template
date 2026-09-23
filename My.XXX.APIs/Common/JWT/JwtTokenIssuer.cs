@@ -1,3 +1,4 @@
+using My.XXX.Services.Authentication.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using My.XXX.APIs.Configurations;
@@ -15,7 +16,7 @@ namespace My.XXX.APIs.Common.JWT;
 
 public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, TimeProvider clock) : ITokenIssuer
 {
-    public TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, DateTime refreshExpiration)
+    public TokenPair Create(UserIdentity user, string sessionId, string refreshTokenId, DateTime refreshExpiration)
     {
         var config = options.Value;
         var accessExpiration = clock.GetUtcNow().UtcDateTime.AddMinutes(config.ExpiryInMinutes);
@@ -24,8 +25,8 @@ public sealed class JwtTokenIssuer(IOptions<JwtConfig> options, TimeProvider clo
         {
             var claims = new List<Claim> { new("sid", sessionId), new("jti", id), new("token_use", purpose),
                 new(ClaimTypes.NameIdentifier, user.UserId), new(ClaimTypes.Name, user.UserName ?? ""),
-                new(ClaimTypes.Email, user.Email ?? ""), new(ClaimTypes.UserData, JsonConvert.SerializeObject(new UserData { RoleIds = user.RoleIds ?? new() })) };
-            foreach (var role in user.Roles ?? new()) claims.Add(new Claim(ClaimTypes.Role, role));
+                new(ClaimTypes.Email, user.Email ?? ""), new(ClaimTypes.UserData, JsonConvert.SerializeObject(new UserData { RoleIds = new List<Guid>(user.RoleIds) })) };
+            foreach (var role in user.Roles) claims.Add(new Claim(ClaimTypes.Role, role));
             var token = new JwtSecurityToken(config.Issuer, config.Audience + (purpose == "refresh" ? ":refresh" : ""),
                 claims, expires: expiration, signingCredentials: new SigningCredentials(
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.Secret)), SecurityAlgorithms.HmacSha256));

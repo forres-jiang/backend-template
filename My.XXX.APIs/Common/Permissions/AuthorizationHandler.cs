@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using My.XXX.APIs.Configurations;
-using My.XXX.Services.Authentication.Interfaces;
+using My.XXX.Services.Abstractions.Interfaces;
 using My.XXX.Services.Authorization.Interfaces;
 using System;
 using System.Linq;
@@ -14,7 +14,7 @@ public sealed class PermissionsRequirement(string policyName) : IAuthorizationRe
     public string Name { get; } = policyName;
 }
 public sealed class PermissionsHandler(IOptionsMonitor<PermissionWhitelist> whitelist,
-    IPermissionQuery permissions, IUserService users) : AuthorizationHandler<PermissionsRequirement>
+    IPermissionQuery permissions, ICurrentUser users) : AuthorizationHandler<PermissionsRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionsRequirement requirement)
     {
@@ -22,7 +22,7 @@ public sealed class PermissionsHandler(IOptionsMonitor<PermissionWhitelist> whit
         var code = http.GetEndpoint()?.Metadata.GetMetadata<RequiresPermissionAttribute>()?.Code;
         // 缺失元数据时采用失败关闭（fail closed）策略，即使是管理员也不例外；对 MVC 和 Minimal API 端点均适用。
         if (string.IsNullOrWhiteSpace(code) || requirement.Name != PolicyType.Default) return;
-        var user = users.CurrentUser;
+        var user = users.User;
         if (user == null) return;
         if (whitelist.CurrentValue.Codes?.Contains(code, StringComparer.Ordinal) == true ||
             user.Roles.Any(role => role.Equals("AppAdmin", StringComparison.OrdinalIgnoreCase)))
@@ -31,7 +31,7 @@ public sealed class PermissionsHandler(IOptionsMonitor<PermissionWhitelist> whit
             return;
         }
         if (user.RoleIds == null || user.RoleIds.Count == 0) return;
-        var codes = await permissions.GetPermissionCodesAsync(user.RoleIds, user.UserId, http.RequestAborted);
+        var codes = await permissions.GetPermissionCodesAsync(user.RoleIds.ToList(), user.UserId, http.RequestAborted);
         if (codes.Contains(code, StringComparer.Ordinal)) context.Succeed(requirement);
     }
 }

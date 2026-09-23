@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.Contracts.DTOs;
@@ -61,13 +62,13 @@ public class SessionBoundaryTests
         Options.Create(new SessionOptions { RefreshExpiryInMinutes = 60 }));
     private sealed class Tokens : ITokenIssuer
     {
-        public TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, DateTime refreshExpiration) =>
+        public TokenPair Create(UserIdentity user, string sessionId, string refreshTokenId, DateTime refreshExpiration) =>
             new() { AccessToken = sessionId, RefreshToken = refreshTokenId };
     }
     private sealed class Context : IAuthenticationSession
     {
         public bool IsAuthenticated => true;
-        public UserInfo User => new() { UserId = "user" };
+        public UserIdentity User => new() { UserId = "user" };
         public DateTime TokenExpirationTime => DateTime.UtcNow.AddMinutes(1);
         public string SessionId => "session";
         public string TokenId => "refresh";
@@ -76,12 +77,12 @@ public class SessionBoundaryTests
     {
         public SessionState Session = new() { SessionId = "session", UserId = "user", RefreshTokenId = "refresh", ExpiresUtc = DateTime.UtcNow.AddHours(1) };
         public bool RejectRotation, RotationAttempted;
-        public Task SetUserAsync(UserInfo user, bool enabled, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<UserInfo> GetUserAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult(new UserInfo { UserId = userId });
+        public Task SetUserAsync(UserIdentity user, bool enabled, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<UserIdentity> GetUserAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult(new UserIdentity { UserId = userId });
         public Task CreateSessionAsync(SessionState session, CancellationToken cancellationToken = default) { Session = session; return Task.CompletedTask; }
         public Task<ActiveSession> GetActiveSessionAsync(string sessionId, DateTime nowUtc, CancellationToken cancellationToken = default) =>
             Task.FromResult(Session != null && Session.SessionId == sessionId && Session.ExpiresUtc > nowUtc
-                ? new ActiveSession { Session = Session, User = new UserInfo { UserId = Session.UserId } } : null);
+                ? new ActiveSession { Session = Session, User = new UserIdentity { UserId = Session.UserId } } : null);
         public Task<bool> RotateAsync(string sessionId, string expectedTokenId, string nextTokenId, DateTime nowUtc, CancellationToken cancellationToken = default)
         {
             RotationAttempted = true;

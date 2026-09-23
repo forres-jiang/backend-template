@@ -1,4 +1,4 @@
-using My.XXX.Contracts.DTOs;
+using My.XXX.Services.Authentication.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -16,13 +16,13 @@ public sealed class IdentitySnapshot
     public List<string> Roles { get; set; } = new();
     public List<Guid> RoleIds { get; set; } = new();
 
-    public static string Write(UserInfo user) => JsonConvert.SerializeObject(new IdentitySnapshot
+    public static string Write(UserIdentity user) => JsonConvert.SerializeObject(new IdentitySnapshot
     {
         Version = 1, UserId = user.UserId, UserName = user.UserName, Email = user.Email,
-        Roles = new(user.Roles ?? new()), RoleIds = new(user.RoleIds ?? new())
+        Roles = new(user.Roles), RoleIds = new(user.RoleIds)
     });
 
-    public static UserInfo Read(string json)
+    public static UserIdentity Read(string json)
     {
         var snapshot = JsonConvert.DeserializeObject<IdentitySnapshot>(json)
             ?? throw new InvalidOperationException("Identity snapshot is empty.");
@@ -30,7 +30,7 @@ public sealed class IdentitySnapshot
             throw new InvalidOperationException("Unsupported identity snapshot version.");
         if (string.IsNullOrWhiteSpace(snapshot.UserId))
             throw new InvalidOperationException("Identity snapshot has no user ID.");
-        return new UserInfo
+        return new UserIdentity
         {
             UserId = snapshot.UserId, UserName = snapshot.UserName, Email = snapshot.Email,
             Roles = snapshot.Roles ?? new(), RoleIds = snapshot.RoleIds ?? new()

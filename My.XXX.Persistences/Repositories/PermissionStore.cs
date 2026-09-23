@@ -16,7 +16,6 @@ public sealed class PermissionStore(DBContext db) : IPermissionStore
         db.GetTable<PermissionRevision>().Where(r => r.Id == 1).Select(r => r.Version).SingleAsync(cancellationToken);
     private IQueryable<string> Codes(List<Guid> roleIds) => db.GetTable<RolePermission>()
         .Where(p => roleIds.Contains(p.RoleId)).Select(p => p.Code).Distinct();
-    public List<string> GetPermissionCodes(List<Guid> roleIds) => Codes(roleIds).ToList();
     public Task<List<string>> GetPermissionCodesAsync(List<Guid> roleIds, CancellationToken cancellationToken = default) =>
         Codes(roleIds).ToListAsync(cancellationToken);
 }

@@ -18,7 +18,6 @@ public sealed class CachedPermissionQuery(IPermissionStore menus, IPermissionCac
     private static readonly Counter<long> Retries = Meter.CreateCounter<long>("permissions.revision.retries");
     private static readonly Counter<long> Fallbacks = Meter.CreateCounter<long>("permissions.database.fallbacks");
     private static readonly Histogram<double> Duration = Meter.CreateHistogram<double>("permissions.query.duration", "ms");
-    public List<string> GetPermissionCodes(List<Guid> roleIds) => menus.GetPermissionCodes(roleIds);
 
     public async Task<List<string>> GetPermissionCodesAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default)
     {
@@ -48,12 +47,5 @@ public sealed class CachedPermissionQuery(IPermissionStore menus, IPermissionCac
         // 持续编辑的情况下：直接读取当前权限，而不是返回过期的缓存授权。
         Fallbacks.Add(1);
         return await menus.GetPermissionCodesAsync(roleIds, cancellationToken);
-    }
-    public async Task RemoveCachedPermissionsAsync(List<Guid> roleIds, string userId, CancellationToken cancellationToken = default)
-    {
-        var revision = await menus.GetPermissionRevisionAsync(cancellationToken);
-        await cache.RemoveAsync(PermissionCacheKey.Create(options.Value.KeyPrefix, userId, roleIds, revision), cancellationToken);
-        // 在数据格式滚动迁移期间，同时清除旧键。
-        await cache.RemoveAsync(userId, cancellationToken);
     }
 }

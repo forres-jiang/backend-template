@@ -66,12 +66,8 @@ public class SecurityRegressionTests
     [TestMethod]
     public void MenuLocalizationAppliesNonEmptyTranslations()
     {
-        var context = new DefaultHttpContext();
-        context.Features.Set<IRequestCultureFeature>(new RequestCultureFeature(new RequestCulture("zh-CN"), null));
-        var service = new MenuQueryService(null, new TestCurrentCulture("zh-CN"), new ApplicationMapper());
-        var menus = new List<MenuDto> { new() { DisplayName = "fallback", DisplayNames = "{\"zh-CN\":\"菜单\"}" } };
-        service.SetMenuLanguage(menus);
-        Assert.AreEqual("菜单", menus[0].DisplayName);
+        var names = new My.XXX.Services.Menus.Models.LocalizedText(new Dictionary<string, string> { ["zh-CN"] = "菜单" });
+        Assert.AreEqual("菜单", My.XXX.Services.Menus.Policies.MenuDisplayNames.Get(names, "zh-CN", "fallback"));
     }
 
     [TestMethod]

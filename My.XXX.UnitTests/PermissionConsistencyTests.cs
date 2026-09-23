@@ -96,7 +96,7 @@ public class PermissionConsistencyTests
     }
 
     [TestMethod]
-    public async Task LogoutDeletesVersionedAndLegacyKeysAndPropagatesFailures()
+    public async Task MaintenanceDeletesVersionedAndLegacyKeysAndPropagatesFailures()
     {
         var roles = new List<Guid> { Guid.NewGuid() };
         var cache = new MemoryCache();
@@ -104,7 +104,8 @@ public class PermissionConsistencyTests
         cache.Values[key] = new();
         cache.Values["user"] = new();
         var repository = Repository((_, _) => Task.FromResult(7L));
-        var query = Query(repository, cache);
+        var query = new PermissionCacheMaintenance(repository, cache,
+            Options.Create(new PermissionCacheOptions { KeyPrefix = "test" }));
         await query.RemoveCachedPermissionsAsync(roles, "user");
         Assert.HasCount(0, cache.Values);
         cache.FailDelete = true;

@@ -18,10 +18,9 @@ public static class PersistenceRegistration
     {
         services.TryAddScoped<IAuthenticationStore, AuthenticationStore>();
         services.AddScoped<IRolePermissionStore, RolePermissionStore>();
-        services.AddScoped<MenuRepository>();
-        services.AddScoped<IMenuReadRepository>(sp => sp.GetRequiredService<MenuRepository>());
+        services.AddScoped<IMenuReadRepository, MenuReadRepository>();
         services.AddScoped<IPermissionStore, PermissionStore>();
-        services.AddScoped<IAccessControlTransaction>(sp => sp.GetRequiredService<MenuRepository>());
+        services.AddScoped<IAccessControlTransaction, AccessControlTransaction>();
         services.AddScoped<IDemoRepository, DemoRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         return services;

@@ -1,4 +1,3 @@
-using My.XXX.Contracts.DTOs;
 using System;
 
 namespace My.XXX.Services.Authentication.Models;
@@ -13,5 +12,5 @@ public sealed class SessionState
 public sealed class ActiveSession
 {
     public SessionState Session { get; set; }
-    public UserInfo User { get; set; }
+    public UserIdentity User { get; set; }
 }

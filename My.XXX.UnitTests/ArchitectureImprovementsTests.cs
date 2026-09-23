@@ -1,3 +1,4 @@
+using My.XXX.Services.Authentication.Models;
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,8 +29,8 @@ public class ArchitectureImprovementsTests
     {
         var legacy = IdentitySnapshot.Read("{\"UserId\":\"u\",\"Roles\":null,\"RoleIds\":null,\"Menus\":[{\"Id\":1}]}");
         Assert.HasCount(0, legacy.Roles);
-        Assert.IsNull(legacy.Menus);
-        var json = IdentitySnapshot.Write(new UserInfo { UserId = "u", Menus = new() { new MenuDto() } });
+        Assert.IsNull(typeof(UserIdentity).GetProperty("Menus"));
+        var json = IdentitySnapshot.Write(new UserIdentity { UserId = "u" });
         Assert.AreEqual(1, (int)JObject.Parse(json)["Version"]);
         Assert.IsNull(JObject.Parse(json)["Menus"]);
         Assert.AreEqual("u", IdentitySnapshot.Read(json).UserId);

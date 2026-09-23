@@ -32,56 +32,28 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
 
     public async Task<List<MenuDto>> GetMenuByRoles(RoleMenuQuery query, CancellationToken cancellationToken = default)
     {
-        var dbMenuAction = (await _menuRepository.GetRoleMenuByRoles(query.RoleIds, cancellationToken))
-            .Where(m => m.IsDisplay).ToList();
-
-        var dtoList = _mapper.ToMenuDtos(dbMenuAction);
-
-        SetMenuLanguage(dtoList);
-
-        var dbMenus = dtoList.Where(m => !m.IsAction).ToList();
-
-        foreach (var item in dbMenus)
+        var menus = (await _menuRepository.GetRoleMenuByRoles(query.RoleIds, cancellationToken))
+            .Where(m => m.IsDisplay).Select(Localize).ToList();
+        var actions = menus.Where(m => m.IsAction).ToLookup(m => m.ParentId);
+        var nodes = menus.Where(m => !m.IsAction).Select(menu => new MenuNode(menu)
         {
-            var actions = dbMenuAction.Where(m => m.ParentId == item.Id && m.IsAction).ToList();
-            if (actions != null && actions.Count > 0)
-            {
-                item.Actions = _mapper.ToMenuDtos(actions);
-                SetMenuLanguage(item.Actions);
-            }
-        }
-
-        var tree = MenuTree.Build(dbMenus);
-        return tree;
+            Actions = actions.Contains(menu.Id) ? actions[menu.Id].Select(action => new MenuNode(action)).ToList() : null
+        }).ToList();
+        return _mapper.ToTreeDtos(MenuTree.Build(nodes));
     }
 
     public async Task<List<MenuDto>> GetMenuTreeCheckedByRoles(List<Guid> roleIds, CancellationToken cancellationToken = default)
     {
-        var menus = (await _menuRepository.GetMenus(cancellationToken: cancellationToken));
-        var list = _mapper.ToMenuDtos(menus);
-
-        SetMenuLanguage(list);
-
-        var roleMenus = (await _menuRepository.GetRoleMenuByRoles(roleIds, cancellationToken)).Select(m => m.Id).Distinct().ToList();
-
-        foreach (var item in roleMenus)
-        {
-            var m = list.Where(m => m.Id == item).FirstOrDefault();
-            if (m != null)
-            {
-                m.Checked = true;
-            }
-        }
-
-        var tree = MenuTree.Build(list);
-        return tree;
+        var menus = await _menuRepository.GetMenus(cancellationToken: cancellationToken);
+        var selected = (await _menuRepository.GetRoleMenuByRoles(roleIds, cancellationToken)).Select(m => m.Id).ToHashSet();
+        var nodes = menus.Select(menu => new MenuNode(Localize(menu)) { Checked = selected.Contains(menu.Id) }).ToList();
+        return _mapper.ToTreeDtos(MenuTree.Build(nodes));
     }
 
     public async Task<List<MenuDto>> GetTreeMenus(bool? isDisplay, CancellationToken cancellationToken = default)
     {
-        var list = _mapper.ToMenuDtos((await _menuRepository.GetMenus(isDisplay: isDisplay, cancellationToken: cancellationToken)));
-        SetMenuLanguage(list);
-        return MenuTree.Build(list);
+        var menus = await _menuRepository.GetMenus(isDisplay: isDisplay, cancellationToken: cancellationToken);
+        return _mapper.ToTreeDtos(MenuTree.Build(menus.Select(menu => new MenuNode(Localize(menu))).ToList()));
     }
 
     public async Task<Paged<MenuSearchPickerDto>> SearchMenus(QueryMenu query, CancellationToken cancellationToken = default)
@@ -90,7 +62,6 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
         var dtoList = _mapper.ToMenuSearchPickersFromBase(result.List)
             .OrderBy(m => m.ParentId).ThenBy(m => m.Number).ToList();
 
-        SetMenuLanguage(dtoList);
         return Paged<MenuSearchPickerDto>.Create(dtoList, result.Total);
     }
     public async Task<Result<List<MenuBase>>> GetMenus(CancellationToken cancellationToken = default) => Result.Ok(_mapper.ToMenuBases((await _menuRepository.GetMenus(cancellationToken: cancellationToken))));
@@ -104,17 +75,13 @@ public sealed class MenuQueryService(IMenuReadRepository _menuRepository, ICurre
         var criteria = new MenuSearch(query.DisplayName, picker ? false : query.IsAction,
             picker || query.IsDisplay, query.ParentId, paging.PageIndex, paging.Size);
         var page = (await _menuRepository.Search(criteria, cancellationToken));
-        var result = page.List.Select(menu =>
-        {
-            var dto = _mapper.ToMenuBaseDto(menu);
-            dto.DisplayName = MenuDisplayNames.Get(menu.DisplayNames, _currentRequest.CultureName, menu.DisplayName);
-            return dto;
-        }).ToList();
+        var result = page.List.Select(menu => _mapper.ToMenuBaseDto(Localize(menu))).ToList();
         return Paged<MenuBaseDto>.Create(result, page.Total);
     }
-    public void SetMenuLanguage<T>(List<T> menus) where T : ILocalizedMenuDto
+    private MenuState Localize(MenuState menu)
     {
-        foreach (var menu in menus)
-            menu.DisplayName = MenuDisplayNames.Get(ApplicationMapper.ReadLocalizedText(menu.DisplayNames), _currentRequest.CultureName, menu.DisplayName);
+        var copy = menu.Copy();
+        copy.DisplayName = MenuDisplayNames.Get(menu.DisplayNames, _currentRequest.CultureName, menu.DisplayName);
+        return copy;
     }
 }

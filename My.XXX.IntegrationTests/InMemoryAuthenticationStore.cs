@@ -11,12 +11,12 @@ namespace My.XXX.IntegrationTests;
 internal sealed class InMemoryAuthenticationStore : IAuthenticationStore
 {
     private readonly object gate = new();
-    private readonly Dictionary<string, (UserInfo User, bool Enabled)> users = new();
+    private readonly Dictionary<string, (UserIdentity User, bool Enabled)> users = new();
     private readonly Dictionary<string, SessionState> sessions = new();
     private static T Copy<T>(T value) => JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(value));
-    public Task SetUserAsync(UserInfo user, bool enabled, CancellationToken cancellationToken = default)
+    public Task SetUserAsync(UserIdentity user, bool enabled, CancellationToken cancellationToken = default)
     { lock (gate) users[user.UserId] = (Copy(user), enabled); return Task.CompletedTask; }
-    public Task<UserInfo> GetUserAsync(string id, CancellationToken cancellationToken = default)
+    public Task<UserIdentity> GetUserAsync(string id, CancellationToken cancellationToken = default)
     { lock (gate) return Task.FromResult(users.TryGetValue(id, out var u) && u.Enabled ? Copy(u.User) : null); }
     public Task CreateSessionAsync(SessionState session, CancellationToken cancellationToken = default)
     { lock (gate) sessions.Add(session.SessionId, Copy(session)); return Task.CompletedTask; }

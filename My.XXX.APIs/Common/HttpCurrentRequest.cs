@@ -1,3 +1,4 @@
+using My.XXX.Services.Authentication.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Logging;
@@ -30,28 +31,27 @@ public sealed class HttpCurrentRequest : IAuthenticationSession, ICurrentCulture
 
     private ClaimsPrincipal Principal => _accessor.HttpContext?.User ?? new ClaimsPrincipal();
 
-    public UserInfo User
+    public UserIdentity User
     {
         get
         {
             var principal = Principal;
             if (principal.Identity?.IsAuthenticated != true) return null;
-            var result = new UserInfo
+            var roleIds = new List<Guid>();
+            var userData = principal.FindFirstValue(ClaimTypes.UserData);
+            if (!string.IsNullOrWhiteSpace(userData))
+            {
+                try { roleIds = JsonConvert.DeserializeObject<UserData>(userData)?.RoleIds ?? new List<Guid>(); }
+                catch (JsonException ex) { _logger.LogWarning(ex, "Invalid user-data claim."); }
+            }
+            return new UserIdentity
             {
                 UserId = principal.FindFirstValue(ClaimTypes.NameIdentifier),
                 UserName = principal.FindFirstValue(ClaimTypes.Name),
                 Email = principal.FindFirstValue(ClaimTypes.Email),
                 Roles = principal.FindAll(ClaimTypes.Role).Select(x => x.Value).ToList(),
-                RoleIds = new List<Guid>(),
-                Menus = new List<MenuDto>()
+                RoleIds = roleIds
             };
-            var userData = principal.FindFirstValue(ClaimTypes.UserData);
-            if (!string.IsNullOrWhiteSpace(userData))
-            {
-                try { result.RoleIds = JsonConvert.DeserializeObject<UserData>(userData)?.RoleIds ?? new List<Guid>(); }
-                catch (JsonException ex) { _logger.LogWarning(ex, "Invalid user-data claim."); }
-            }
-            return result;
         }
     }
 

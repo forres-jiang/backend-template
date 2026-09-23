@@ -60,8 +60,8 @@ public static class TokenAuthentication
                 var identity = (ClaimsIdentity)context.Principal.Identity;
                 foreach (var claim in identity.Claims.Where(c => c.Type == ClaimTypes.Role || c.Type == ClaimTypes.UserData ||
                     c.Type == ClaimTypes.Name || c.Type == ClaimTypes.Email).ToList()) identity.RemoveClaim(claim);
-                foreach (var role in active.User.Roles ?? new()) identity.AddClaim(new Claim(ClaimTypes.Role, role));
-                identity.AddClaim(new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(new UserData { RoleIds = active.User.RoleIds ?? new() })));
+                foreach (var role in active.User.Roles) identity.AddClaim(new Claim(ClaimTypes.Role, role));
+                identity.AddClaim(new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(new UserData { RoleIds = new System.Collections.Generic.List<System.Guid>(active.User.RoleIds) })));
                 identity.AddClaim(new Claim(ClaimTypes.Name, active.User.UserName ?? ""));
                 identity.AddClaim(new Claim(ClaimTypes.Email, active.User.Email ?? ""));
             },

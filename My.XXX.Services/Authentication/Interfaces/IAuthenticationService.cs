@@ -1,8 +1,8 @@
+using My.XXX.Services.Authentication.Models;
 using FluentResults;
 using My.XXX.Contracts.DTOs;
 using System.Threading;
 using System.Threading.Tasks;
-
 
 namespace My.XXX.Services.Authentication.Interfaces;
 
@@ -14,5 +14,5 @@ public interface IAuthenticationService
 
 public interface ITokenIssuer
 {
-    TokenPair Create(UserInfo user, string sessionId, string refreshTokenId, System.DateTime refreshExpiration);
+    TokenPair Create(UserIdentity user, string sessionId, string refreshTokenId, System.DateTime refreshExpiration);
 }

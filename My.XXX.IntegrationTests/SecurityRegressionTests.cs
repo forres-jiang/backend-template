@@ -1,3 +1,4 @@
+using My.XXX.Services.Authentication.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -152,7 +153,7 @@ public class SecurityRegressionTests
                         second.ServiceProvider.GetRequiredService<DBContext>());
                 }
 
-                var user = new UserInfo
+                var user = new UserIdentity
                 {
                     UserId = "test-user",
                     UserName = "Test",
@@ -185,10 +186,10 @@ public class SecurityRegressionTests
                 var nextAccess = (string)refreshedJson["accessToken"];
                 var nextRefresh = (string)refreshedJson["refreshToken"];
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", nextAccess);
-                user.Roles = new() { "AppAdmin" };
+                user = user with { Roles = new List<string> { "AppAdmin" } };
                 await authority.SetUserAsync(user, true);
                 Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/v2/permissions/catalog")).StatusCode);
-                user.Roles.Clear();
+                user = user with { Roles = Array.Empty<string>() };
                 await authority.SetUserAsync(user, true);
                 Assert.AreEqual(HttpStatusCode.Forbidden, (await client.GetAsync("/api/v2/permissions/catalog")).StatusCode,
                     "An old access token must not preserve administrator access.");
@@ -200,7 +201,7 @@ public class SecurityRegressionTests
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", nextRefresh);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsync("/api/User/RefreshToken", null)).StatusCode);
                 // 即使旧式令牌签名正确，在没有已持久化会话的情况下仍会被拒绝。
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTokenBuilder.CreateTokens(Jwt, user).AccessToken);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JwtTokenBuilder.CreateTokens(Jwt, new UserInfo { UserId = user.UserId, UserName = user.UserName, Email = user.Email, Roles = new(user.Roles), RoleIds = new(user.RoleIds) }).AccessToken);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User/GetRoles")).StatusCode);
             }
             finally { await app.StopAsync(); }

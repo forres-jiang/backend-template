@@ -171,9 +171,11 @@ PostgreSQL 表名、列名以实体映射为准，注意带双引号的大小写
 
 应用没有默认登录账号。接入企业 SSO、第三方身份服务或自建登录流程时，应先验证用户身份，再在受信任的服务端流程中：
 
-1. 通过 `IAuthenticationStore.SetUserAsync` 保存用户及当前角色快照，或实现适配自身身份系统的存储端口。
+1. 通过 `IAuthenticationStore.SetUserAsync` 保存应用层 `UserIdentity` 身份快照，或实现适配自身身份系统的存储端口。`UserIdentity` 不包含菜单，角色集合会防御性复制并以只读方式暴露；身份变化使用新的快照（例如 `identity with { Roles = new[] { "Reader" } }`）替换。
 2. 通过 `ISessionService.IssueAsync(userId)` 创建持久化会话并签发令牌对。
 3. 将 Access Token 和 Refresh Token 返回给已验证身份的调用方。
+
+`ICurrentUser.User`、认证存储和 `ITokenIssuer.Create` 使用 `UserIdentity`；旧 HTTP 响应仍使用 `UserInfo`，由 `UserService` 显式映射，修改响应集合不会修改当前身份。自定义认证适配器需同步更新这些 C# 接口；数据库身份快照格式和现有 HTTP 字段保持兼容。
 
 `ITokenIssuer` 只负责编码令牌；直接调用它不会创建可验证的持久化会话。不能把任意传入的用户 ID 当作可信登录依据。
 
@@ -233,6 +235,10 @@ var result = await roleAccess.ReplaceAsync(
 
 目前没有暴露对应的组合 HTTP 端点。新增端点时，应校验调用者具备两类管理权限，再调用组合用例。
 
+`MenuReadRepository` 只实现菜单读取，`AccessControlTransaction` 独立管理权限修订锁、数据库事务和写会话生命周期；二者通过 DI 使用请求作用域中的 `DBContext`。
+
+所有公开写用例（`MenuCommandService`、`RoleMenuAssignmentService`、`PermissionAdministration`、`RoleAccessAdministration`）负责开启事务及读取调用上下文。`MenuMutations`、`RoleMenuMutations`、`PermissionMutations` 只接受已有的 `IAccessControlWriteSession`，不再自行提交事务，也不读取当前用户。无状态参数校验可在事务前完成，依赖数据库状态的校验必须留在加锁会话内。
+
 扩展事务时，使用 `IAccessControlTransaction.Execute` 中的会话级操作；不要在事务内调用另一个自行提交的用例，也不要开启嵌套事务。会话在事务结束后失效。`IRolePermissionStore` 只负责读取，写入必须经过共享事务端口。
 
 ### 6.3 菜单更新和查询约定
@@ -248,11 +254,13 @@ var result = await roleAccess.ReplaceAsync(
 
 允许清空的字段为 `Description`、`Icon`、`Url`、`Component`、`ControllerName`、`ActionName`、`LinkTarget`，忽略大小写。清空优先于同一请求中的赋值；标识、审计字段不能清空。父级调整会校验循环、父节点存在性以及动作节点不能作为父级等规则。
 
-查询输入使用一基页码，应用入口通过 `PageWindow` 规范化：非正页码归到第一页，页大小限制在 `1–100`。仓储接收规范化查询模型，不接收原始 HTTP 分页 DTO。菜单翻译在内部使用不可变 `LocalizedText`，到存储和响应边界再转换为兼容 JSON 字符串。
+查询输入使用一基页码，应用入口通过 `PageWindow` 规范化：非正页码归到第一页，页大小限制在 `1–100`。仓储接收规范化查询模型，不接收原始 HTTP 分页 DTO。菜单翻译在内部使用不可变 `LocalizedText`，查询在复制的 `MenuState` 上选择语言，通过类型化的 `MenuNode` 组装树和动作节点，最后由 `ApplicationMapper` 输出兼容 DTO 和 JSON 字符串。查询过程不解析响应 JSON，也不修改仓储返回的快照；数据库 JSON 仍由持久化映射器读写。
 
 ### 6.4 权限缓存一致性
 
 所有菜单、角色菜单和角色权限写入先在事务内更新单例 `PermissionRevision` 行，获得共享写锁，再读取和修改数据。数据与版本一起提交或回滚。
+
+`IPermissionQuery` 只提供异步权限查询，不暴露同步查询或缓存清理。版本化缓存是实现细节；需要主动清理时使用 Infrastructure 的 `PermissionCacheMaintenance`（配置 Redis 时注册），它会清理当前版本键和迁移期旧键。正常权限变更仍依赖事务修订号保证一致性，无需调用缓存清理；注销仍通过撤销会话生效。
 
 Redis 模式的缓存键包含前缀、修订号及用户和规范化角色集合的摘要。查询先读主库修订号，读取缓存或数据库权限后再次检查修订号；发生变化时重试，连续三次变化后回退到直接查询。慢查询只能写入旧版本键，后续新版本请求不会复用该键。
 
@@ -387,7 +395,7 @@ dotnet test MyXXXSolution.sln
 dotnet publish My.XXX.APIs/01My.XXX.APIs.csproj -c Release
 ```
 
-测试覆盖分层依赖、功能边界、菜单规则、映射和序列化、响应兼容、缓存修订竞争、会话边界、组合事务及迁移就绪检查。
+测试覆盖分层依赖、功能边界、菜单规则、映射和序列化、响应兼容、缓存修订竞争、会话边界、组合事务及迁移就绪检查。架构测试共用依赖扫描器，展开嵌套泛型、数组、方法体和泛型方法调用，并沿模型属性追踪间接依赖；身份模型不得包含响应 DTO，事务内操作不得依赖事务入口或当前用户。
 
 真实数据库测试需要显式提供可创建和删除数据库的隔离测试服务器连接：
 

@@ -10,6 +10,9 @@
         <member name="T:My.XXX.Services.AccessControl.Ports.IAccessControlWriteSession">
             <summary>仅在 Execute 内部可用。包含持久化原语，而非业务命令。</summary>
         </member>
+        <member name="T:My.XXX.Services.Authentication.Models.UserIdentity">
+            <summary>An immutable identity snapshot, independent of navigation and HTTP responses.</summary>
+        </member>
         <member name="T:My.XXX.Services.Authentication.Ports.IAuthenticationStore">
             <summary>共享的持久化权限存储。仅受信任的身份集成可以更新用户。</summary>
         </member>
@@ -31,7 +34,7 @@
         <member name="T:My.XXX.Services.Authorization.RoleMenuMutations">
             <summary>在共享的加锁事务内执行的角色/菜单分配规则。</summary>
         </member>
-        <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.#ctor(My.XXX.Services.AccessControl.Ports.IAccessControlTransaction,System.TimeProvider)">
+        <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.#ctor(System.TimeProvider)">
             <summary>在共享的加锁事务内执行的角色/菜单分配规则。</summary>
         </member>
         <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.SetRoleMenus(My.XXX.Services.AccessControl.Ports.IAccessControlWriteSession,System.Guid,System.Collections.Generic.List{System.Int32},My.XXX.Services.Authorization.Ports.RoleMenuChange,System.String,System.Threading.CancellationToken)">
@@ -51,10 +54,16 @@
              <param name="cancellationToken"></param>
              <returns></returns>
         </member>
+        <member name="T:My.XXX.Services.Menus.MenuCommandService">
+            <summary>Owns the request context and transaction boundary for menu commands.</summary>
+        </member>
+        <member name="M:My.XXX.Services.Menus.MenuCommandService.#ctor(My.XXX.Services.AccessControl.Ports.IAccessControlTransaction,My.XXX.Services.Menus.MenuMutations,My.XXX.Services.Abstractions.Interfaces.ICurrentUser,My.XXX.Services.Abstractions.Interfaces.ICurrentCulture)">
+            <summary>Owns the request context and transaction boundary for menu commands.</summary>
+        </member>
         <member name="T:My.XXX.Services.Menus.MenuMutations">
             <summary>负责菜单写入规则。所有依赖状态的决策都在适配器提供的加锁事务内运行。</summary>
         </member>
-        <member name="M:My.XXX.Services.Menus.MenuMutations.#ctor(My.XXX.Services.AccessControl.Ports.IAccessControlTransaction,System.TimeProvider)">
+        <member name="M:My.XXX.Services.Menus.MenuMutations.#ctor(System.TimeProvider)">
             <summary>负责菜单写入规则。所有依赖状态的决策都在适配器提供的加锁事务内运行。</summary>
         </member>
         <member name="T:My.XXX.Services.Menus.Models.LocalizedText">

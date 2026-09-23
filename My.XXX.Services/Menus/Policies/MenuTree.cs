@@ -1,21 +1,21 @@
-using My.XXX.Contracts.DTOs;
+using My.XXX.Services.Menus.Models;
 using System.Collections.Generic;
 using System.Linq;
 namespace My.XXX.Services.Menus.Policies;
 
 public static class MenuTree
 {
-    public static List<MenuDto> Build(List<MenuDto> menus)
+    public static List<MenuNode> Build(List<MenuNode> menus)
     {
-        var children = menus.ToLookup(m => m.ParentId);
+        var children = menus.ToLookup(m => m.Menu.ParentId);
         var visited = new HashSet<int>();
-        List<MenuDto> Visit(int parentId)
+        List<MenuNode> Visit(int parentId)
         {
-            var result = new List<MenuDto>();
-            foreach (var menu in children[parentId].OrderBy(m => m.Number).ThenBy(m => m.UpdatedTime))
+            var result = new List<MenuNode>();
+            foreach (var menu in children[parentId].OrderBy(m => m.Menu.Number).ThenBy(m => m.Menu.UpdatedTime))
             {
-                if (!visited.Add(menu.Id)) continue;
-                menu.Children = Visit(menu.Id);
+                if (!visited.Add(menu.Menu.Id)) continue;
+                menu.Children = Visit(menu.Menu.Id);
                 result.Add(menu);
             }
             return result;

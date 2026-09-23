@@ -37,6 +37,7 @@ public static class InfrastructureRegistration
         options.BacklogPolicy = BacklogPolicy.FailFast;
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(options));
         services.AddSingleton<IPermissionCache, PermissionCache>();
+        services.AddScoped<PermissionCacheMaintenance>();
         if (enabled) services.Replace(ServiceDescriptor.Scoped<IPermissionQuery, CachedPermissionQuery>());
         return services;
     }

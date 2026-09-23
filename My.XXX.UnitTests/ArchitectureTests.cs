@@ -1,3 +1,4 @@
+using static My.XXX.UnitTests.ArchitectureDependencies;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using My.XXX.APIs.Configurations;
 using My.XXX.APIs.Controllers;
@@ -141,43 +142,24 @@ public class ArchitectureTests
     [TestMethod]
     public void HttpEntryPointsDoNotUseStorageOrCacheImplementations()
     {
-        var codes = typeof(System.Reflection.Emit.OpCodes).GetFields()
-            .Where(f => f.FieldType == typeof(System.Reflection.Emit.OpCode))
-            .Select(f => (System.Reflection.Emit.OpCode)f.GetValue(null)).ToDictionary(c => unchecked((ushort)c.Value));
-        var controllers = typeof(UserController).Assembly.GetTypes().Where(t =>
-            (typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(t) &&
-            !Attribute.IsDefined(t, typeof(Microsoft.AspNetCore.Mvc.NonControllerAttribute))) ||
-            t.Namespace == "My.XXX.APIs.Common.JWT" ||
-            typeof(Microsoft.AspNetCore.Mvc.Filters.IFilterMetadata).IsAssignableFrom(t) ||
-            t.Name.StartsWith("ExceptionHandlingMiddleware"));
-        foreach (var controller in controllers)
-            foreach (var type in new[] { controller }.Concat(controller.GetNestedTypes(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)))
-                foreach (var method in type.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly))
-                {
-                    var il = method.GetMethodBody()?.GetILAsByteArray();
-                    if (il == null) continue;
-                    for (var offset = 0; offset < il.Length;)
-                    {
-                        ushort value = il[offset++];
-                        if (value == 0xfe) value = (ushort)(0xfe00 | il[offset++]);
-                        var operand = codes[value].OperandType;
-                        if (operand is System.Reflection.Emit.OperandType.InlineMethod or System.Reflection.Emit.OperandType.InlineField or System.Reflection.Emit.OperandType.InlineType or System.Reflection.Emit.OperandType.InlineTok)
-                        {
-                            var member = method.Module.ResolveMember(BitConverter.ToInt32(il, offset), type.GetGenericArguments(), method.IsGenericMethod ? method.GetGenericArguments() : null);
-                            var ns = (member as Type)?.Namespace ?? member.DeclaringType?.Namespace ?? "";
-                            Assert.IsFalse(ns.StartsWith("My.XXX.Persistences") || ns.StartsWith("LinqToDB") || ns.StartsWith("StackExchange.Redis") || ns.StartsWith("My.XXX.Infrastructure") || (ns.StartsWith("My.XXX.Services.") && ns.EndsWith(".Ports")), $"{controller.Name}.{method.Name}: {member}");
-                        }
-                        offset += operand switch
-                        {
-                            System.Reflection.Emit.OperandType.InlineNone => 0,
-                            System.Reflection.Emit.OperandType.ShortInlineBrTarget or System.Reflection.Emit.OperandType.ShortInlineI or System.Reflection.Emit.OperandType.ShortInlineVar => 1,
-                            System.Reflection.Emit.OperandType.InlineVar => 2,
-                            System.Reflection.Emit.OperandType.InlineI8 or System.Reflection.Emit.OperandType.InlineR => 8,
-                            System.Reflection.Emit.OperandType.InlineSwitch => 4 + 4 * BitConverter.ToInt32(il, offset),
-                            _ => 4
-                        };
-                    }
-                }
+        var assembly = typeof(UserController).Assembly;
+        foreach (var type in assembly.GetTypes())
+        {
+            var owner = Owner(type);
+            var entry = (typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(owner) &&
+                !Attribute.IsDefined(owner, typeof(Microsoft.AspNetCore.Mvc.NonControllerAttribute))) ||
+                owner.Namespace == "My.XXX.APIs.Common.JWT" ||
+                typeof(Microsoft.AspNetCore.Mvc.Filters.IFilterMetadata).IsAssignableFrom(owner) ||
+                owner == typeof(My.XXX.APIs.Common.Middleware.ExceptionHandlingMiddleware);
+            if (!entry) continue;
+            foreach (var dependency in Dependencies(type))
+            {
+                var ns = dependency.Namespace ?? "";
+                Assert.IsFalse(ns.StartsWith("My.XXX.Persistences") || ns.StartsWith("LinqToDB") ||
+                    ns.StartsWith("StackExchange.Redis") || ns.StartsWith("My.XXX.Infrastructure") ||
+                    (ns.StartsWith("My.XXX.Services.") && ns.EndsWith(".Ports")), $"{type}: {dependency}");
+            }
+        }
     }
 
     [TestMethod]
@@ -249,15 +231,6 @@ public class ArchitectureTests
         Assert.IsFalse(api.GetTypes().Any(t => typeof(Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck).IsAssignableFrom(t)));
         foreach (var assembly in new[] { api, infrastructure, persistence, typeof(IMenuService).Assembly })
             Assert.IsFalse(assembly.GetTypes().Any(t => (t.Namespace ?? "").StartsWith("My.XXX.Shared")), assembly.FullName);
-    }
-
-    private static IEnumerable<Type> Flatten(Type type)
-    {
-        yield return type;
-        if (type.HasElementType)
-            foreach (var item in Flatten(type.GetElementType())) yield return item;
-        foreach (var argument in type.GetGenericArguments())
-            foreach (var item in Flatten(argument)) yield return item;
     }
 
     private static string RepositoryRoot()

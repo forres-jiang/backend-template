@@ -13,7 +13,11 @@ namespace My.XXX.Services.Authentication
             _currentRequest = currentRequest;
         }
 
-        public UserInfo CurrentUser => _currentRequest.User;
+        public UserInfo CurrentUser => _currentRequest.User is { } user ? new UserInfo
+        {
+            UserId = user.UserId, UserName = user.UserName, Email = user.Email,
+            Roles = new(user.Roles), RoleIds = new(user.RoleIds), Menus = new()
+        } : null;
         public DateTime GetTokenExpirationTime() => _currentRequest.TokenExpirationTime;
     }
 }

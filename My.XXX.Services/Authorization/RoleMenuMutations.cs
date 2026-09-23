@@ -11,14 +11,8 @@ using System.Threading.Tasks;
 namespace My.XXX.Services.Authorization;
 
 /// <summary>在共享的加锁事务内执行的角色/菜单分配规则。</summary>
-public sealed class RoleMenuMutations(IAccessControlTransaction transaction, TimeProvider clock)
+public sealed class RoleMenuMutations(TimeProvider clock)
 {
-    public async Task<Result> SetRoleMenus(Guid roleId, List<int> ids, RoleMenuChange change, string userId, CancellationToken cancellationToken = default)
-    {
-        if (!ValidSelection(roleId, ids, change)) return Result.Fail(RoleMenuErrors.InvalidSelection());
-        return await transaction.Execute(session => SetRoleMenus(session, roleId, ids, change, userId, cancellationToken), cancellationToken);
-    }
-
     /// <summary>Compose rules without opening or committing another transaction.</summary>
     public async Task<Result> SetRoleMenus(IAccessControlWriteSession session, Guid roleId, List<int> ids,
         RoleMenuChange change, string userId, CancellationToken cancellationToken = default)

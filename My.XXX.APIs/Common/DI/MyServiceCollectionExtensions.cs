@@ -81,9 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var supportedCultures = new[]
                 {
                     CultureType.en_US,
-                    CultureType.zh_CN,
-                    CultureType.zh_TW,
-                    CultureType.zh_HK
+                    CultureType.zh_CN
                 };
 
                 options.SetDefaultCulture(supportedCultures.First())

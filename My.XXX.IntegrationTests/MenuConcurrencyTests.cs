@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using My.XXX.Services.Authentication.Models;
 using LinqToDB;
 using LinqToDB.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,14 +31,14 @@ public class MenuConcurrencyTests
         using var db = fixture.Open();
         var authentication = new AuthenticationStore(db);
         var role = Guid.NewGuid();
-        await authentication.SetUserAsync(new UserInfo { UserId = "migration-user", RoleIds = new() { role } }, true);
+        await authentication.SetUserAsync(new UserIdentity { UserId = "migration-user", RoleIds = new List<Guid> { role } }, true);
         await authentication.CreateSessionAsync(new My.XXX.Services.Authentication.Models.SessionState
         {
             SessionId = "migration-session", UserId = "migration-user", RefreshTokenId = "first",
             ExpiresUtc = DateTime.UtcNow.AddHours(1)
         });
         var session = await authentication.GetActiveSessionAsync("migration-session", DateTime.UtcNow);
-        CollectionAssert.AreEqual(new[] { role }, session.User.RoleIds);
+        CollectionAssert.AreEqual(new[] { role }, session.User.RoleIds.ToArray());
         var rotations = await Task.WhenAll(Enumerable.Range(0, 2).Select(async i =>
         {
             using var other = fixture.Open();
@@ -45,7 +47,7 @@ public class MenuConcurrencyTests
         Assert.AreEqual(1, rotations.Count(success => success));
         var permissions = new PermissionStore(db);
         var before = await permissions.GetPermissionRevisionAsync();
-        Assert.IsTrue((await new PermissionAdministration(new RolePermissionStore(db), new MenuRepository(db),
+        Assert.IsTrue((await new PermissionAdministration(new RolePermissionStore(db), new AccessControlTransaction(db),
             new PermissionMutations()).ReplaceAsync(role, new() { "menu.add" })).IsSuccess);
         Assert.AreEqual(before + 1, await permissions.GetPermissionRevisionAsync());
         CollectionAssert.AreEqual(new[] { "menu.add" }, await permissions.GetPermissionCodesAsync(new() { role }));
@@ -165,8 +167,9 @@ public class MenuConcurrencyTests
     {
         await using var fixture = await Fixture.Create(providerName);
         using var db = fixture.Open();
-        var repository = new MenuRepository(db);
-        var before = (await repository.GetMenus()).First();
+        var repository = new AccessControlTransaction(db);
+        var reads = new MenuReadRepository(db);
+        var before = (await reads.GetMenus()).First();
         IAccessControlWriteSession captured = null;
         var result = (await repository.Execute(async session =>
         {
@@ -177,7 +180,7 @@ public class MenuConcurrencyTests
             return FluentResults.Result.Fail("application rejected subsequent operation");
         }));
         Assert.IsTrue(result.IsFailed);
-        Assert.AreEqual(before.DisplayName, (await repository.Get(before.Id)).DisplayName);
+        Assert.AreEqual(before.DisplayName, (await reads.Get(before.Id)).DisplayName);
         Assert.AreEqual(1L, await new PermissionStore(db).GetPermissionRevisionAsync());
         await Assert.ThrowsAsync<InvalidOperationException>(async () => { await captured.LoadMenus(); });
         await Assert.ThrowsAsync<InvalidOperationException>(async () => { await repository.Execute(_ => repository.Execute(_ => Task.FromResult(FluentResults.Result.Ok()))); });
@@ -192,8 +195,8 @@ public class MenuConcurrencyTests
     {
         await using var fixture = await Fixture.Create(providerName);
         using var db = fixture.Open();
-        var transaction = new MenuRepository(db);
-        var useCase = new RoleAccessAdministration(transaction, new RoleMenuMutations(transaction, TimeProvider.System),
+        var transaction = new AccessControlTransaction(db);
+        var useCase = new RoleAccessAdministration(transaction, new RoleMenuMutations(TimeProvider.System),
             new PermissionMutations(), new CurrentUser());
         var role = Guid.NewGuid();
         var ids = db.Menus.Select(m => m.Id).ToArray();
@@ -251,21 +254,31 @@ public class MenuConcurrencyTests
 
     private sealed class CurrentUser : My.XXX.Services.Abstractions.Interfaces.ICurrentUser
     {
-        public UserInfo User => new() { UserId = "editor" };
+        public UserIdentity User => new() { UserId = "editor" };
     }
 
+    private sealed class CommandContext(string culture, string user) : My.XXX.Services.Abstractions.Interfaces.ICurrentUser, My.XXX.Services.Abstractions.Interfaces.ICurrentCulture
+    {
+        public UserIdentity User => new() { UserId = user };
+        public string CultureName => culture;
+    }
     private sealed class MenuTestDriver(DBContext db)
     {
-        private readonly MenuRepository reads = new(db);
-        private readonly MenuMutations writes = new(new MenuRepository(db), TimeProvider.System);
-        private readonly RoleMenuMutations assignments = new(new MenuRepository(db), TimeProvider.System);
-        public async Task<System.Collections.Generic.List<My.XXX.Services.Menus.Models.MenuState>> GetMenus() => (await reads.GetMenus());
-        public async Task<My.XXX.Services.Menus.Models.MenuState> Get(int id) => (await reads.Get(id));
+        private readonly MenuReadRepository reads = new(db);
+        private readonly AccessControlTransaction transaction = new(db);
+        private MenuCommandService Commands(string culture, string user)
+        {
+            var context = new CommandContext(culture, user);
+            return new(transaction, new MenuMutations(TimeProvider.System), context, context);
+        }
+        public Task<List<My.XXX.Services.Menus.Models.MenuState>> GetMenus() => reads.GetMenus();
+        public Task<My.XXX.Services.Menus.Models.MenuState> Get(int id) => reads.Get(id);
         public Task<long> GetPermissionRevisionAsync() => new PermissionStore(db).GetPermissionRevisionAsync();
-        public async Task<bool> SetRoleMenus(Guid role, System.Collections.Generic.List<int> ids, RoleMenuChange change, string user) =>
-            (await assignments.SetRoleMenus(role, ids, change, user)).IsSuccess;
-        public async Task<bool> Move(MenuSortModel model, string user) => (await writes.Move(model, user)).IsSuccess;
-        public async Task<int> Update(EditMenu model, string culture, string user) => (await writes.Update(model, culture, user)).IsSuccess ? 1 : 0;
+        public async Task<bool> SetRoleMenus(Guid role, List<int> ids, RoleMenuChange change, string user) =>
+            (await new RoleMenuAssignmentService(transaction, new RoleMenuMutations(TimeProvider.System),
+                new CommandContext("en-US", user), TimeProvider.System).SetRoleMenus(role, ids, change)).IsSuccess;
+        public async Task<bool> Move(MenuSortModel model, string user) => (await Commands("en-US", user).UpdateSort(model)).IsSuccess;
+        public async Task<int> Update(EditMenu model, string culture, string user) => (await Commands(culture, user).Update(model)).IsSuccess ? 1 : 0;
     }
     private sealed class Fixture : IAsyncDisposable
     {

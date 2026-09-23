@@ -27,19 +27,19 @@ public class MenuPolicyTests
     [TestMethod]
     public void TreeRetainsOrderAndDoesNotLoopOnCorruptCycles()
     {
-        var menus = new List<MenuDto>
+        var menus = new List<MenuState>
         {
             new() { Id = 1, Number = 2 }, new() { Id = 2, Number = 1 }, new() { Id = 3, ParentId = 1 },
             new() { Id = 4, ParentId = 5 }, new() { Id = 5, ParentId = 4 }
         };
-        var tree = MenuTree.Build(menus);
-        CollectionAssert.AreEqual(new[] { 2, 1 }, tree.Select(m => m.Id).ToArray());
-        Assert.AreEqual(3, tree[1].Children.Single().Id);
+        var tree = MenuTree.Build(menus.Select(menu => new MenuNode(menu)).ToList());
+        CollectionAssert.AreEqual(new[] { 2, 1 }, tree.Select(m => m.Menu.Id).ToArray());
+        Assert.AreEqual(3, tree[1].Children.Single().Menu.Id);
     }
     [TestMethod]
     public void LocalizationFallsBackForLegacyInvalidOrMissingValues()
     {
-        Assert.AreEqual("fallback", MenuDisplayNames.Get(My.XXX.Services.Menus.Mapping.ApplicationMapper.ReadLocalizedText("not-json"), "zh-CN", "fallback"));
+        Assert.AreEqual("fallback", MenuDisplayNames.Get(new My.XXX.Persistences.Mapping.PersistenceMapper().ToMenuState(new My.XXX.Persistences.PersistentObjects.Menus { DisplayNames = "not-json" }).DisplayNames, "zh-CN", "fallback"));
         Assert.AreEqual("fallback", MenuDisplayNames.Get(null, "zh-CN", "fallback"));
         var value = MenuDisplayNames.Set(new LocalizedText(new Dictionary<string, string> { ["en-US"] = "English" }), "zh-CN", " 中文 ");
         Assert.AreEqual("English", MenuDisplayNames.Get(value, "en-us", "fallback"));

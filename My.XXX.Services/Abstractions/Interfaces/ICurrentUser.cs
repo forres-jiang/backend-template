@@ -1,10 +1,10 @@
-using My.XXX.Contracts.DTOs;
+using My.XXX.Services.Authentication.Models;
 
 namespace My.XXX.Services.Abstractions.Interfaces;
 
 public interface ICurrentUser
 {
-    UserInfo User { get; }
+    UserIdentity User { get; }
 }
 
 public interface ICurrentCulture
