@@ -16,14 +16,26 @@
         <member name="T:My.XXX.Services.Authorization.Interfaces.IPermissionCache">
             <summary>按由应用自身持有的不透明缓存键存储权限投影。</summary>
         </member>
+        <member name="T:My.XXX.Services.Authorization.PermissionMutations">
+            <summary>Permission rules composed inside an existing access-control transaction.</summary>
+        </member>
         <member name="T:My.XXX.Services.Authorization.Policies.PermissionCodes">
             <summary>稳定的安全标识符。导航标签、路由和 CLR 名称都不是权限。</summary>
+        </member>
+        <member name="T:My.XXX.Services.Authorization.RoleAccessAdministration">
+            <summary>Replace menu selection and permission codes as one atomic use case.</summary>
+        </member>
+        <member name="M:My.XXX.Services.Authorization.RoleAccessAdministration.#ctor(My.XXX.Services.AccessControl.Ports.IAccessControlTransaction,My.XXX.Services.Authorization.RoleMenuMutations,My.XXX.Services.Authorization.PermissionMutations,My.XXX.Services.Abstractions.Interfaces.ICurrentUser)">
+            <summary>Replace menu selection and permission codes as one atomic use case.</summary>
         </member>
         <member name="T:My.XXX.Services.Authorization.RoleMenuMutations">
             <summary>在共享的加锁事务内执行的角色/菜单分配规则。</summary>
         </member>
         <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.#ctor(My.XXX.Services.AccessControl.Ports.IAccessControlTransaction,System.TimeProvider)">
             <summary>在共享的加锁事务内执行的角色/菜单分配规则。</summary>
+        </member>
+        <member name="M:My.XXX.Services.Authorization.RoleMenuMutations.SetRoleMenus(My.XXX.Services.AccessControl.Ports.IAccessControlWriteSession,System.Guid,System.Collections.Generic.List{System.Int32},My.XXX.Services.Authorization.Ports.RoleMenuChange,System.String,System.Threading.CancellationToken)">
+            <summary>Compose rules without opening or committing another transaction.</summary>
         </member>
         <member name="T:My.XXX.Services.Compatibility.MenuService">
             <summary>面向现有 HTTP 契约的兼容性外观。</summary>

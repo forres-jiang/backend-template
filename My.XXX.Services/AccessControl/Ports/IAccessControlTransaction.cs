@@ -23,5 +23,5 @@ public interface IAccessControlWriteSession
     Task<int> Update(MenuState menu, CancellationToken cancellationToken = default);
     Task<int> Remove(List<int> ids, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
     Task<bool> ApplyRoleChanges(Guid roleId, List<int> additions, List<int> removals, string userId, DateTime timestamp, CancellationToken cancellationToken = default);
+    Task ReplaceRolePermissions(Guid roleId, List<string> codes, CancellationToken cancellationToken = default);
 }
-

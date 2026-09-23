@@ -6,7 +6,7 @@ using My.XXX.APIs.Models;
 using My.XXX.Contracts.DTOs;
 using My.XXX.Infrastructure.Security;
 using My.XXX.Services.Examples.Interfaces;
-using My.XXX.Services.Menus.Interfaces;
+using My.XXX.Services.Authorization;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
@@ -25,19 +25,19 @@ namespace My.XXX.APIs.Controllers
     public class DemoController : ControllerBase
     {
         private readonly IStringLocalizer<DemoController> _localizer;
-        private readonly IMenuService _menuService;
+        private readonly RoleMenuAssignmentService _roleMenus;
         private readonly IDemoService _demoService;
         private readonly IConnectionMultiplexer _redis;
 
         public DemoController(
             IStringLocalizer<DemoController> localizer,
             IDemoService demoService,
-            IMenuService menuService,
+            RoleMenuAssignmentService roleMenus,
             IConnectionMultiplexer redis)
         {
             _redis = redis;
             _demoService = demoService;
-            _menuService = menuService;
+            _roleMenus = roleMenus;
             _localizer = localizer;
         }
 
@@ -118,7 +118,7 @@ namespace My.XXX.APIs.Controllers
         [HttpPost("RoleMenuAction")]
         public async Task<MyResult> RoleMenuAction(RoleMenuActionModel model)
         {
-            return (await _menuService.RoleMenuAction(model, HttpContext.RequestAborted)).ToApiResult();
+            return (await _roleMenus.RoleMenuAction(model, HttpContext.RequestAborted)).ToApiResult();
         }
 
         [AllowAnonymous]

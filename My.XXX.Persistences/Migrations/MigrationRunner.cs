@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
@@ -30,14 +31,9 @@ public static class MigrationRunner
             await Execute(connection, postgres
                 ? $"CREATE TABLE IF NOT EXISTS {table} (name varchar(200) PRIMARY KEY, checksum varchar(64) NOT NULL, applied_utc timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'));"
                 : $"IF OBJECT_ID(N'{table}', N'U') IS NULL CREATE TABLE {table} (name varchar(200) PRIMARY KEY, checksum varchar(64) NOT NULL, applied_utc datetime2 NOT NULL DEFAULT SYSUTCDATETIME());", cancellationToken);
-            var assembly = typeof(MigrationRunner).Assembly;
-            var suffix = postgres ? ".postgresql.sql" : ".sqlserver.sql";
-            foreach (var name in assembly.GetManifestResourceNames().Where(n => n.EndsWith(suffix, StringComparison.Ordinal)).OrderBy(n => n, StringComparer.Ordinal))
+            foreach (var migration in RequiredMigrations(provider))
             {
-                using var stream = assembly.GetManifestResourceStream(name);
-                using var reader = new StreamReader(stream!);
-                var sql = await reader.ReadToEndAsync(cancellationToken);
-                var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sql.Replace("\r\n", "\n"))));
+                var (name, sql, checksum) = migration;
                 await using var lookup = connection.CreateCommand();
                 lookup.CommandText = $"SELECT checksum FROM {table} WHERE name = @name";
                 Parameter(lookup, "name", name);
@@ -60,6 +56,39 @@ public static class MigrationRunner
         {
             // Closing the unpooled session rolls back unfinished transactions and releases its lock.
             await connection.CloseAsync();
+        }
+    }
+
+    /// <summary>Read-only compatibility check; newer migrations are allowed for additive rolling upgrades.</summary>
+    public static async Task VerifyAsync(string connectionString, DatabaseProvider provider,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = DatabaseConfiguration.CreateConnection(connectionString, provider);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        var table = provider == DatabaseProvider.PostgreSQL ? "public.\"SchemaMigrations\"" : "dbo.SchemaMigrations";
+        command.CommandText = $"SELECT name, checksum FROM {table}";
+        command.CommandTimeout = 5;
+        var applied = new Dictionary<string, string>(StringComparer.Ordinal);
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken))
+                applied.Add(reader.GetString(0), reader.GetString(1));
+        foreach (var migration in RequiredMigrations(provider))
+            if (!applied.TryGetValue(migration.Name, out var checksum) || checksum != migration.Checksum)
+                throw new InvalidOperationException($"Required migration missing or changed: {migration.Name}.");
+    }
+
+    private static IEnumerable<(string Name, string Sql, string Checksum)> RequiredMigrations(DatabaseProvider provider)
+    {
+        var assembly = typeof(MigrationRunner).Assembly;
+        var suffix = provider == DatabaseProvider.PostgreSQL ? ".postgresql.sql" : ".sqlserver.sql";
+        foreach (var name in assembly.GetManifestResourceNames().Where(n => n.EndsWith(suffix, StringComparison.Ordinal)).OrderBy(n => n, StringComparer.Ordinal))
+        {
+            using var stream = assembly.GetManifestResourceStream(name);
+            using var reader = new StreamReader(stream!);
+            var sql = reader.ReadToEnd();
+            var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sql.Replace("\r\n", "\n"))));
+            yield return (name, sql, checksum);
         }
     }
 

@@ -76,6 +76,13 @@ public sealed class MenuRepository(DBContext db) : IMenuReadRepository, IAccessC
         private bool active = true;
         public void Close() => active = false;
         private void Check() { if (!active) throw new InvalidOperationException("The menu write session has ended."); }
+        public async Task ReplaceRolePermissions(Guid roleId, List<string> codes, CancellationToken cancellationToken = default)
+        {
+            Check();
+            await db.GetTable<RolePermission>().Where(p => p.RoleId == roleId).DeleteAsync(cancellationToken);
+            foreach (var code in codes)
+                await db.InsertAsync(new RolePermission { RoleId = roleId, Code = code }, token: cancellationToken);
+        }
         public async Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default) { Check(); return mapper.ToMenuStates(await db.Menus.Where(m => !m.IsDeleted).ToListAsync(cancellationToken)); }
         public Task<List<int>> LoadMenuIds(CancellationToken cancellationToken = default) { Check(); return db.Menus.Where(m => !m.IsDeleted).Select(m => m.Id).ToListAsync(cancellationToken); }
         public async Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default)

@@ -15,19 +15,26 @@ public sealed class RoleMenuMutations(IAccessControlTransaction transaction, Tim
 {
     public async Task<Result> SetRoleMenus(Guid roleId, List<int> ids, RoleMenuChange change, string userId, CancellationToken cancellationToken = default)
     {
-        if (roleId == Guid.Empty || ids == null || ids.Any(id => id <= 0) || !Enum.IsDefined(change))
-            return Result.Fail(RoleMenuErrors.InvalidSelection());
-        var selected = ids.Distinct().ToList();
-        return (await transaction.Execute(async session =>
-        {
-            if (change != RoleMenuChange.Remove && selected.Except(await session.LoadMenuIds(cancellationToken)).Any())
-                return Result.Fail(RoleMenuErrors.InvalidSelection());
-            var existing = (await session.LoadRoleMenus(roleId, cancellationToken));
-            var removals = change == RoleMenuChange.Replace ? existing.Except(selected).ToList()
-                : change == RoleMenuChange.Remove ? existing.Intersect(selected).ToList() : new();
-            var additions = change == RoleMenuChange.Remove ? new List<int>() : selected.Except(existing).ToList();
-            return Result.OkIf((await session.ApplyRoleChanges(roleId, additions, removals, userId, clock.GetLocalNow().DateTime, cancellationToken)), RoleMenuErrors.WriteFailed());
-        }, cancellationToken));
+        if (!ValidSelection(roleId, ids, change)) return Result.Fail(RoleMenuErrors.InvalidSelection());
+        return await transaction.Execute(session => SetRoleMenus(session, roleId, ids, change, userId, cancellationToken), cancellationToken);
     }
 
+    /// <summary>Compose rules without opening or committing another transaction.</summary>
+    public async Task<Result> SetRoleMenus(IAccessControlWriteSession session, Guid roleId, List<int> ids,
+        RoleMenuChange change, string userId, CancellationToken cancellationToken = default)
+    {
+        if (!ValidSelection(roleId, ids, change))
+            return Result.Fail(RoleMenuErrors.InvalidSelection());
+        var selected = ids.Distinct().ToList();
+        if (change != RoleMenuChange.Remove && selected.Except(await session.LoadMenuIds(cancellationToken)).Any())
+            return Result.Fail(RoleMenuErrors.InvalidSelection());
+        var existing = await session.LoadRoleMenus(roleId, cancellationToken);
+        var removals = change == RoleMenuChange.Replace ? existing.Except(selected).ToList()
+            : change == RoleMenuChange.Remove ? existing.Intersect(selected).ToList() : new();
+        var additions = change == RoleMenuChange.Remove ? new List<int>() : selected.Except(existing).ToList();
+        return Result.OkIf(await session.ApplyRoleChanges(roleId, additions, removals, userId, clock.GetLocalNow().DateTime, cancellationToken), RoleMenuErrors.WriteFailed());
+    }
+
+    private static bool ValidSelection(Guid roleId, List<int> ids, RoleMenuChange change) =>
+        roleId != Guid.Empty && ids != null && ids.All(id => id > 0) && Enum.IsDefined(change);
 }

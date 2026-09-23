@@ -7,5 +7,4 @@ namespace My.XXX.Services.Authorization.Ports;
 public interface IRolePermissionStore
 {
     Task<List<string>> GetAsync(Guid roleId, CancellationToken cancellationToken = default);
-    Task ReplaceAsync(Guid roleId, List<string> codes, CancellationToken cancellationToken = default);
 }

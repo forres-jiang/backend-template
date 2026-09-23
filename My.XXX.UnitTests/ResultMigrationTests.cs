@@ -27,6 +27,25 @@ namespace My.XXX.UnitTests;
 public class ResultMigrationTests
 {
     [TestMethod]
+    [DataRow(BusinessErrorKind.Validation, 400)]
+    [DataRow(BusinessErrorKind.NotFound, 404)]
+    [DataRow(BusinessErrorKind.Conflict, 409)]
+    [DataRow(BusinessErrorKind.Unauthorized, 401)]
+    [DataRow(BusinessErrorKind.Forbidden, 403)]
+    public void NewBusinessCodesMapByCategoryWithoutChangingLegacyContracts(BusinessErrorKind kind, int status)
+    {
+        var error = new BusinessError("failure", 73, "FutureFeature.NewCode", kind);
+        var result = Result.Fail(error);
+        var http = (ObjectResult)result.ToHttpResult("trace").Result;
+        var generic = (ObjectResult)Result.Fail<string>(error).ToHttpResult("trace").Result;
+        Assert.AreEqual(status, http.StatusCode);
+        Assert.AreEqual(status, generic.StatusCode);
+        Assert.AreEqual("FutureFeature.NewCode", ((ApiResponse<bool>)http.Value).Code);
+        AssertJson(MyResult.Fail("failure", 73), result.ToApiResult());
+        AssertJson(new MyResult<bool>(0, "failure", false), result.ToBooleanApiResult());
+    }
+
+    [TestMethod]
     public void ConversionPreservesSuccessAndFailureJson()
     {
         AssertJson(MyResult.Success(), Result.Ok().ToApiResult());

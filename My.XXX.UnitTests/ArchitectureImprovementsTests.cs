@@ -39,7 +39,7 @@ public class ArchitectureImprovementsTests
     [TestMethod]
     public void ExplicitFailurePreservesErrorCodeStatusAndTraceWithoutLeakingMetadata()
     {
-        var result = Result.Fail<string>(new BusinessError("Missing", code: "Menu.NotFound").WithMetadata("secret", "hidden"));
+        var result = Result.Fail<string>(My.XXX.Services.Menus.Policies.MenuErrors.NotFound().WithMetadata("secret", "hidden"));
         var http = (ObjectResult)result.ToHttpResult("trace").Result;
         Assert.AreEqual(404, http.StatusCode);
         var response = (ApiResponse<string>)http.Value;

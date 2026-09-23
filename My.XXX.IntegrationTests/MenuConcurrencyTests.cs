@@ -45,7 +45,8 @@ public class MenuConcurrencyTests
         Assert.AreEqual(1, rotations.Count(success => success));
         var permissions = new PermissionStore(db);
         var before = await permissions.GetPermissionRevisionAsync();
-        await new RolePermissionStore(db).ReplaceAsync(role, new() { "menu.add" });
+        Assert.IsTrue((await new PermissionAdministration(new RolePermissionStore(db), new MenuRepository(db),
+            new PermissionMutations()).ReplaceAsync(role, new() { "menu.add" })).IsSuccess);
         Assert.AreEqual(before + 1, await permissions.GetPermissionRevisionAsync());
         CollectionAssert.AreEqual(new[] { "menu.add" }, await permissions.GetPermissionCodesAsync(new() { role }));
         await My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, DatabaseConfiguration.ParseProvider(providerName));
@@ -184,6 +185,75 @@ public class MenuConcurrencyTests
     }
 
     // 使用真实的事务适配器来执行应用程序用例。
+    [TestMethod]
+    [DataRow("PostgreSQL")]
+    [DataRow("SqlServer")]
+    public async Task CombinedRoleAccessRollsBackBothGrantsAndRevisionOnFailure(string providerName)
+    {
+        await using var fixture = await Fixture.Create(providerName);
+        using var db = fixture.Open();
+        var transaction = new MenuRepository(db);
+        var useCase = new RoleAccessAdministration(transaction, new RoleMenuMutations(transaction, TimeProvider.System),
+            new PermissionMutations(), new CurrentUser());
+        var role = Guid.NewGuid();
+        var ids = db.Menus.Select(m => m.Id).ToArray();
+        Assert.IsTrue((await useCase.ReplaceAsync(role, new() { ids[0] }, new() { "menu.add" })).IsSuccess);
+        var revision = await new PermissionStore(db).GetPermissionRevisionAsync();
+        Assert.AreEqual(2L, revision, "Combined save increments the revision only once.");
+        Assert.IsTrue((await useCase.ReplaceAsync(role, new() { ids[1] }, new() { "unknown" })).IsFailed);
+        AssertUnchanged();
+        if (providerName == "PostgreSQL")
+            db.Execute("""
+                CREATE FUNCTION reject_permission_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN RAISE EXCEPTION 'Injected permission failure'; END $$;
+                CREATE TRIGGER reject_permission_insert BEFORE INSERT ON public."RolePermissions"
+                FOR EACH ROW EXECUTE FUNCTION reject_permission_insert();
+                """);
+        else
+            db.Execute("""
+                CREATE TRIGGER reject_permission_insert ON dbo.RolePermissions AFTER INSERT AS
+                BEGIN THROW 51000, 'Injected permission failure', 1; END
+                """);
+        await Assert.ThrowsAsync<DbException>(() => useCase.ReplaceAsync(role, new() { ids[1] }, new() { "menu.edit" }));
+        AssertUnchanged();
+        void AssertUnchanged()
+        {
+            CollectionAssert.AreEqual(new[] { ids[0] }, db.RoleMenu.Where(m => m.RoleId == role && !m.IsDeleted).Select(m => m.MenuId).ToArray());
+            CollectionAssert.AreEqual(new[] { "menu.add" }, db.GetTable<RolePermission>().Where(p => p.RoleId == role).Select(p => p.Code).ToArray());
+            Assert.AreEqual(revision, db.GetTable<PermissionRevision>().Single().Version);
+        }
+    }
+
+    [TestMethod]
+    [DataRow("PostgreSQL")]
+    [DataRow("SqlServer")]
+    public async Task SchemaReadinessRequiresMigrationJournalAndMatchingChecksums(string providerName)
+    {
+        await using var fixture = await Fixture.Create(providerName);
+        using var db = fixture.Open();
+        var provider = DatabaseConfiguration.ParseProvider(providerName);
+        var health = new My.XXX.Persistences.Health.MigrationSchemaHealthCheck(fixture.ConnectionString, provider);
+        var context = new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext();
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy, (await health.CheckHealthAsync(context)).Status);
+        var table = providerName == "PostgreSQL" ? "public.\"SchemaMigrations\"" : "dbo.SchemaMigrations";
+        db.Execute($"UPDATE {table} SET checksum = 'changed'");
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy, (await health.CheckHealthAsync(context)).Status);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, provider));
+        db.Execute($"DELETE FROM {table}");
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy, (await health.CheckHealthAsync(context)).Status);
+        await My.XXX.Persistences.Migrations.MigrationRunner.ApplyAsync(fixture.ConnectionString, provider);
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy, (await health.CheckHealthAsync(context)).Status);
+        db.Execute($"INSERT INTO {table} (name, checksum) VALUES ('999_additive_future_migration', 'future')");
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy, (await health.CheckHealthAsync(context)).Status);
+        db.Execute($"DROP TABLE {table}");
+        Assert.AreEqual(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy, (await health.CheckHealthAsync(context)).Status);
+    }
+
+    private sealed class CurrentUser : My.XXX.Services.Abstractions.Interfaces.ICurrentUser
+    {
+        public UserInfo User => new() { UserId = "editor" };
+    }
+
     private sealed class MenuTestDriver(DBContext db)
     {
         private readonly MenuRepository reads = new(db);

@@ -31,6 +31,8 @@ public static class ServiceRegistration
         services.AddScoped<MenuCommandService>();
         services.AddScoped<MenuMutations>();
         services.AddScoped<RoleMenuMutations>();
+        services.AddScoped<PermissionMutations>();
+        services.AddScoped<RoleAccessAdministration>();
         services.TryAddSingleton(System.TimeProvider.System);
         services.AddScoped<MenuQueryService>();
         services.AddScoped<RoleMenuAssignmentService>();

@@ -33,7 +33,7 @@ public sealed class BoundaryProbeController : ControllerBase
     [HttpGet("explicit-failure")]
     [ExplicitApiContract]
     public ActionResult<ApiResponse<string>> ExplicitFailure() =>
-        Result.Fail<string>(new My.XXX.Shared.BusinessError("Missing", code: "Menu.NotFound")).ToHttpResult(HttpContext.TraceIdentifier);
+        Result.Fail<string>(My.XXX.Services.Menus.Policies.MenuErrors.NotFound()).ToHttpResult(HttpContext.TraceIdentifier);
 
     [HttpPost("explicit-validate")]
     [ExplicitApiContract]

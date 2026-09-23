@@ -20,6 +20,39 @@ namespace My.XXX.UnitTests;
 public class MenuUseCaseTests
 {
     [TestMethod]
+    public async Task CombinedRoleAccessCommitsOnceAndRollsBackSecondStepFailures()
+    {
+        var store = Store();
+        var role = Guid.NewGuid();
+        var useCase = new RoleAccessAdministration(store, new RoleMenuMutations(store, TimeProvider.System),
+            new PermissionMutations(), new CurrentUser());
+        Assert.IsTrue((await useCase.ReplaceAsync(role, new() { 1 }, new() { "menu.add", "menu.add" })).IsSuccess);
+        Assert.AreEqual(1, store.Transactions);
+        Assert.AreEqual(1L, store.Revision);
+        CollectionAssert.AreEqual(new[] { "menu.add" }, store.Codes);
+        var invalid = await useCase.ReplaceAsync(role, new() { 2 }, new() { "unknown" });
+        Assert.AreEqual("Permission.InvalidInput", Code(invalid));
+        CollectionAssert.AreEqual(new[] { 1 }, store.Grants);
+        CollectionAssert.AreEqual(new[] { "menu.add" }, store.Codes);
+        Assert.AreEqual(1L, store.Revision);
+        store.ThrowOnPermissionWrite = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ReplaceAsync(role, new() { 2 }, new() { "menu.edit" }));
+        CollectionAssert.AreEqual(new[] { 1 }, store.Grants);
+        CollectionAssert.AreEqual(new[] { "menu.add" }, store.Codes);
+        Assert.AreEqual(1L, store.Revision);
+        store.ThrowOnPermissionWrite = false;
+        Assert.IsTrue((await useCase.ReplaceAsync(role, new(), new())).IsSuccess);
+        Assert.HasCount(0, store.Grants);
+        Assert.HasCount(0, store.Codes);
+        Assert.AreEqual(2L, store.Revision);
+    }
+
+    private sealed class CurrentUser : My.XXX.Services.Abstractions.Interfaces.ICurrentUser
+    {
+        public UserInfo User => new() { UserId = "editor" };
+    }
+
+    [TestMethod]
     public async Task InvalidParentAndMissingMenuKeepDistinctErrorsAndNeverWrite()
     {
         var store = Store();
@@ -107,6 +140,8 @@ public class MenuUseCaseTests
     {
         public List<MenuState> Menus = new();
         public List<int> Grants = new();
+        public List<string> Codes = new();
+        public bool ThrowOnPermissionWrite;
         public long Revision;
         public int Writes, Transactions, FailOnWrite;
         public bool ThrowOnFailure;
@@ -118,6 +153,7 @@ public class MenuUseCaseTests
             active = true;
             var menus = Menus.Select(m => m.Copy()).ToList();
             var grants = Grants.ToList();
+            var codes = Codes.ToList();
             var committed = false;
             try
             {
@@ -130,11 +166,19 @@ public class MenuUseCaseTests
             }
             finally
             {
-                if (!committed) { Menus = menus; Grants = grants; }
+                if (!committed) { Menus = menus; Grants = grants; Codes = codes; }
                 active = false;
             }
         }
         public async Task<List<MenuState>> LoadMenus(CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Menus.Select(m => m.Copy()).ToList(); }
+        public Task ReplaceRolePermissions(Guid roleId, List<string> codes, CancellationToken cancellationToken = default)
+        {
+            Assert.IsTrue(active);
+            Codes.Clear();
+            if (ThrowOnPermissionWrite) throw new InvalidOperationException("injected permission failure");
+            Codes.AddRange(codes);
+            return Task.CompletedTask;
+        }
         public Task<List<int>> LoadMenuIds(CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Task.FromResult(Menus.Select(m => m.Id).ToList()); }
         public async Task<List<int>> LoadRoleMenus(Guid roleId, CancellationToken cancellationToken = default) { Assert.IsTrue(active); return Grants.ToList(); }
         public async Task<int> Insert(MenuState menu, CancellationToken cancellationToken = default) { Assert.IsTrue(active); Writes++; Menus.Add(menu.Copy()); return 1; }

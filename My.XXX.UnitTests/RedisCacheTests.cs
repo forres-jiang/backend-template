@@ -108,7 +108,7 @@ public class RedisCacheTests
         services.AddDBs(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
         using var provider = services.BuildServiceProvider();
         var registrations = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckServiceOptions>>().Value.Registrations;
-        var expected = new List<string> { "database", "permission-schema", "authentication-schema" };
+        var expected = new List<string> { "database", "schema-version", "permission-schema", "authentication-schema" };
         if (configureRedis) expected.Add("redis");
         CollectionAssert.AreEquivalent(expected, registrations.Select(r => r.Name).ToList());
         foreach (var registration in registrations)

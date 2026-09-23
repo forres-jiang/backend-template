@@ -27,12 +27,12 @@ public static class ResultResponseExtensions
     }
     private static string ErrorCode(ResultBase result) => result.IsSuccess ? null
         : result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code ?? "Request.Failed";
-    private static int HttpStatus(ResultBase result) => result.Errors.OfType<BusinessError>().FirstOrDefault()?.Code switch
+    private static int HttpStatus(ResultBase result) => result.Errors.OfType<BusinessError>().FirstOrDefault()?.Kind switch
     {
-        "Menu.NotFound" => 404,
-        "Menu.HasChildren" => 409,
-        "Menu.WriteFailed" => 409,
-        "Authentication.InvalidToken" or "Authentication.RefreshRejected" => 401,
+        BusinessErrorKind.NotFound => 404,
+        BusinessErrorKind.Conflict => 409,
+        BusinessErrorKind.Unauthorized => 401,
+        BusinessErrorKind.Forbidden => 403,
         _ => 400
     };
     public static MyResult<bool> ToBooleanApiResult(this Result result) => result.IsSuccess

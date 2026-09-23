@@ -59,6 +59,6 @@ public sealed class SessionService(IAuthenticationStore store, ITokenIssuer toke
 
 public static class AuthenticationErrors
 {
-    public static BusinessError InvalidToken() => new("Token invalid.", code: "Authentication.InvalidToken");
-    public static BusinessError RefreshRejected() => new("Refresh token has already been used or revoked.", code: "Authentication.RefreshRejected");
+    public static BusinessError InvalidToken() => new("Token invalid.", code: "Authentication.InvalidToken", kind: BusinessErrorKind.Unauthorized);
+    public static BusinessError RefreshRejected() => new("Refresh token has already been used or revoked.", code: "Authentication.RefreshRejected", kind: BusinessErrorKind.Unauthorized);
 }

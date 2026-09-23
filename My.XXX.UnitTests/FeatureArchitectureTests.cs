@@ -13,6 +13,34 @@ namespace My.XXX.UnitTests;
 public class FeatureArchitectureTests
 {
     [TestMethod]
+    public void CompatibilityFacadeHasOnlyExplicitlyGrandfatheredConsumers()
+    {
+        var allowed = new[] { typeof(My.XXX.APIs.Controllers.MenuController),
+            typeof(My.XXX.Services.Compatibility.MenuService), typeof(My.XXX.Services.ServiceRegistration),
+            typeof(My.XXX.Services.Menus.Interfaces.IMenuService) };
+        var assemblies = new[] { typeof(MenuQueryService).Assembly, typeof(My.XXX.APIs.Program).Assembly,
+            typeof(My.XXX.Persistences.PersistenceRegistration).Assembly, typeof(My.XXX.Infrastructure.InfrastructureRegistration).Assembly };
+        foreach (var type in assemblies.SelectMany(a => a.GetTypes()))
+        {
+            var owner = type;
+            while (owner.DeclaringType != null) owner = owner.DeclaringType;
+            if (allowed.Contains(owner)) continue;
+            foreach (var dependency in Dependencies(type).SelectMany(Flatten))
+                Assert.IsFalse(dependency == typeof(My.XXX.Services.Menus.Interfaces.IMenuService) ||
+                    dependency.Namespace == "My.XXX.Services.Compatibility", $"New compatibility consumer: {type} -> {dependency}");
+        }
+    }
+
+    private static IEnumerable<Type> Flatten(Type type)
+    {
+        yield return type;
+        if (type.HasElementType)
+            foreach (var item in Flatten(type.GetElementType())) yield return item;
+        foreach (var argument in type.GetGenericArguments())
+            foreach (var item in Flatten(argument)) yield return item;
+    }
+
+    [TestMethod]
     public void FeaturesDoNotReachIntoEachOtherOrTheCompatibilityFacade()
     {
         foreach (var type in typeof(MenuQueryService).Assembly.GetTypes())
@@ -49,6 +77,8 @@ public class FeatureArchitectureTests
     private static IEnumerable<Type> Dependencies(Type type)
     {
         const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        if (type.BaseType != null) yield return type.BaseType;
+        foreach (var contract in type.GetInterfaces()) yield return contract;
         foreach (var field in type.GetFields(flags)) yield return field.FieldType;
         foreach (var method in type.GetMethods(flags).Cast<MethodBase>().Concat(type.GetConstructors(flags)))
         {
