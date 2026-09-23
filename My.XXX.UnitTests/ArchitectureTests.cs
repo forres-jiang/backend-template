@@ -28,7 +28,7 @@ public class ArchitectureTests
             .SelectMany(path => File.ReadLines(path).Select(line => (path, line)));
 
         var violations = source.Where(x => x.line.Contains("Microsoft.AspNetCore", StringComparison.Ordinal)
-            || x.line.Contains("RedisHelper", StringComparison.Ordinal)).ToList();
+            || x.line.Contains("StackExchange.Redis", StringComparison.Ordinal)).ToList();
 
         Assert.AreEqual(0, violations.Count,
             string.Join(Environment.NewLine, violations.Select(x => $"{x.path}: {x.line.Trim()}")));
@@ -88,7 +88,7 @@ public class ArchitectureTests
     [TestMethod]
     public void ApplicationAssemblyDoesNotReferenceTechnicalImplementations()
     {
-        var forbidden = new[] { "linq2db", "Npgsql", "Microsoft.Data.SqlClient", "CSRedisCore", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs", "My.XXX.Persistences" };
+        var forbidden = new[] { "linq2db", "Npgsql", "Microsoft.Data.SqlClient", "StackExchange.Redis", "ClosedXML", "My.XXX.Infrastructure", "My.XXX.APIs", "My.XXX.Persistences" };
         foreach (var reference in typeof(IMenuService).Assembly.GetReferencedAssemblies())
             Assert.IsFalse(forbidden.Contains(reference.Name), reference.Name);
     }

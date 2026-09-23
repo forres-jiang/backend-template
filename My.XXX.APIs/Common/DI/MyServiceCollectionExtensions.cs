@@ -13,6 +13,7 @@ using My.XXX.APIs.Configurations;
 using My.XXX.APIs.Models;
 using My.XXX.Infrastructure;
 using My.XXX.Infrastructure.Caching;
+using My.XXX.Infrastructure.Health;
 using My.XXX.Infrastructure.Security;
 using My.XXX.Persistences;
 using Newtonsoft.Json;

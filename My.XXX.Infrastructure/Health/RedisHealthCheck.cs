@@ -15,8 +15,9 @@ public sealed class RedisHealthCheck(IConnectionMultiplexer connection) : IHealt
             await connection.GetDatabase().PingAsync().WaitAsync(cancellationToken);
             return HealthCheckResult.Healthy();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex.Message);
             return HealthCheckResult.Unhealthy("Redis unavailable.");
         }
     }
